@@ -11,6 +11,7 @@ import { RechargeModule } from './modules/recharge/recharge.module';
 import { GamesModule } from './modules/games/games.module';
 import { GameCoreModule } from './modules/game-core/game-core.module';
 import { AgentsModule } from './modules/agents/agents.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -34,6 +35,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     GamesModule,
     GameCoreModule,
     AgentsModule,
+    AdminModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
