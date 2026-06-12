@@ -1,0 +1,15 @@
+{
+  "name": "@gamebox/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "多端共享：TS 类型 / API 契约 / 枚举常量 / 纯工具函数（无 UI、无副作用）",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "lint": "echo \"(shared) eslint todo\""
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}

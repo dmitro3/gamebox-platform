@@ -1,0 +1,26 @@
+import { Controller, Get, Patch, Body } from '@nestjs/common';
+import { UsersService } from './users.service';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { IsString, MinLength, MaxLength } from 'class-validator';
+
+export class ChangePwdDto {
+  @IsString() oldPassword!: string;
+  @IsString() @MinLength(6) @MaxLength(30) newPassword!: string;
+}
+
+@Controller('users')
+export class UsersController {
+  constructor(private users: UsersService) {}
+
+  /** GET /api/users/me — 当前用户资料 */
+  @Get('me')
+  me(@CurrentUser() user: { id: string }) {
+    return this.users.getProfile(user.id);
+  }
+
+  /** PATCH /api/users/me/password — 修改密码 */
+  @Patch('me/password')
+  changePassword(@CurrentUser() user: { id: string }, @Body() dto: ChangePwdDto) {
+    return this.users.changePassword(user.id, dto.oldPassword, dto.newPassword);
+  }
+}

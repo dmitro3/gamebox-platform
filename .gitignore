@@ -1,0 +1,47 @@
+# 依赖
+node_modules/
+.pnpm-store/
+
+# 构建产物
+dist/
+build/
+*.tsbuildinfo
+
+# 环境变量（绝不提交）
+.env
+.env.*
+!.env.example
+
+# 数据库（本地开发）
+*.sqlite
+*.sqlite-journal
+*.db
+
+# 日志
+*.log
+logs/
+
+# 编辑器 / 系统
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Capacitor 原生构建产物
+client-app/android/app/build/
+client-app/ios/App/Pods/
+client-app/android/.gradle/
+
+# 压缩包 / 备份
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# 上传 / 临时
+uploads/
+tmp/
+.cache/
+
+# 游戏美术生成脚本的中间产物（按需）
+games-assets/**/__pycache__/

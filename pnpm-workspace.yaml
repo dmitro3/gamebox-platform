@@ -1,0 +1,12 @@
+# 工作区成员
+# 说明：
+#   - server / packages 是新建的最优方案工程（TypeScript）
+#   - client-app(新Vue工程) / admin-panel(新Vue工程) 在迁移阶段建立后再启用其下方条目
+#   - 现有的原生 HTML 原型保留在 _prototype/ 作为页面与交互逻辑的迁移蓝本
+packages:
+  - "server"
+  - "packages/*"
+  - "client-app"
+  # 迁移阶段启用 ↓
+  # - "admin-panel"
+  # - "games-assets/*"

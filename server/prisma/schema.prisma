@@ -1,0 +1,545 @@
+// =============================================================
+// 游戏盒子平台 · 数据库设计（PostgreSQL）· 最优方案
+// 覆盖：多级代理分销树 + 四类游戏(彩票/棋牌/电子/街机) + 爆率引擎 + 积分账本 + 风控
+//
+// 核心原则：
+//   1. server 唯一权威：积分/爆率/开奖/分润全后端裁决
+//   2. 积分账本是变动唯一入口：每笔写流水、记 balanceAfter、幂等、事务
+//   3. 金额一律整数（积分最小单位），不用浮点
+//   4. 配置版本化（爆率/赔率），可灰度可回滚
+//   5. 可证明公平：每局 serverSeed/clientSeed/nonce
+// =============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ======================= 枚举 =======================
+
+enum UserRole {
+  ADMIN // 平台管理员（后台）
+  BRANCH // 分公司
+  AGENT // 代理
+  PROXY // 代分
+  PLAYER // 玩家
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum AccountOwnerType {
+  PLATFORM
+  BRANCH
+  AGENT
+  PROXY
+  PLAYER
+}
+
+enum LedgerBizType {
+  RECHARGE
+  WITHDRAW
+  TRANSFER_OUT
+  TRANSFER_IN
+  BET
+  WIN
+  FEE
+  COMMISSION
+  REBATE
+  ACTIVITY
+  ADJUST
+}
+
+enum RechargeType {
+  UP
+  DOWN
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum GameCategory {
+  LOTTERY
+  TABLE
+  SLOT
+  ARCADE
+}
+
+enum GameStatus {
+  ONLINE
+  OFFLINE
+  MAINTENANCE
+}
+
+enum IssueStatus {
+  PENDING
+  LOCKED
+  DRAWN
+  CANCELLED
+}
+
+enum BetStatus {
+  PENDING
+  WON
+  LOST
+  CANCELLED
+}
+
+enum ActivityType {
+  FIRST_DEPOSIT
+  WIN_STREAK
+  ACCUMULATE
+  VIP
+  PROMO
+  NEWBIE
+}
+
+enum AppPlatform {
+  ANDROID
+  IOS
+}
+
+// ======================= 用户 / 多级代理树 =======================
+
+model User {
+  id           String     @id @default(cuid())
+  username     String     @unique // 登录账号：8-20 英文+数字（小写存）
+  passwordHash String
+  uid          String     @unique // 对外展示 9 位编号
+  nickname     String
+  avatar       String?
+  role         UserRole   @default(PLAYER)
+  status       UserStatus @default(ACTIVE)
+
+  // —— 多级代理树（自引用）——
+  parentId  String? // 直接上级
+  parent    User?   @relation("UserParent", fields: [parentId], references: [id])
+  children  User[]  @relation("UserParent")
+  // 物化路径：根到本节点的祖先 id 串，如 "/p1/b1/a1/"，便于按团队整树查询
+  agentPath String  @default("/")
+  // 树深度（玩家最深），便于分润逐级遍历
+  depth     Int     @default(0)
+
+  promoCode String? @unique // 推广码（代理/代分用）
+
+  lastLoginAt DateTime?
+  lastLoginIp String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  agent          Agent?
+  bets           Bet[]
+  gameRounds     GameRound[]
+  rechargeOrders RechargeOrder[] @relation("RechargePlayer")
+  reviewedOrders RechargeOrder[] @relation("RechargeReviewer")
+  commissionsAsBeneficiary CommissionRecord[] @relation("CommissionBeneficiary")
+  commissionsAsSource      CommissionRecord[] @relation("CommissionSource")
+  rebates        RebateRecord[]
+  activityClaims ActivityClaim[]
+  feedbacks      Feedback[]
+  csMessages     CsMessage[]
+  ledgerOps      PointsLedger[]  @relation("LedgerOperator")
+  adminLogs      AdminLog[]
+
+  @@index([role, status])
+  @@index([parentId])
+  @@index([agentPath])
+}
+
+// 代理扩展（role=BRANCH/AGENT/PROXY 的用户拥有一条）
+model Agent {
+  id        String @id @default(cuid())
+  userId    String @unique
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  levelId   String?
+  level     AgentLevel? @relation(fields: [levelId], references: [id])
+
+  // 自营参数（也可继承等级默认值）
+  commissionRate Float @default(0.0) // 下线流水分成比例
+  rebateRate     Float @default(0.0) // 给下线的回水比例上限
+
+  // 团队统计（缓存，定时/事件更新）
+  teamFlowTotal Int @default(0) // 团队累计有效流水（用于晋级）
+  teamFlowMonth Int @default(0)
+
+  pointsQuota Int @default(0) // 上级下发的可用额度
+  pointsUsed  Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rooms Room[]
+}
+
+// 代理等级配置（对应原型 team-data 的 V1-V5）
+model AgentLevel {
+  id             String  @id @default(cuid())
+  code           String  @unique // V1..V5
+  name           String // 青铜代理...
+  minTeamFlow    Int     @default(0) // 晋级所需团队累计流水
+  commissionRate Float   @default(0) // 该等级佣金率
+  accent         String? // 展示色
+  sortOrder      Int     @default(0)
+
+  agents Agent[]
+}
+
+// ======================= 房间 / 推荐码 =======================
+
+model Room {
+  id           String     @id @default(cuid())
+  roomNo       String     @unique // 房间号 = 推荐码
+  name         String
+  icon         String?
+  ownerAgentId String?
+  ownerAgent   Agent?     @relation(fields: [ownerAgentId], references: [id])
+  status       String     @default("OPEN") // OPEN | CLOSED
+  enabledGames String     @default("[]") // JSON 数组：["ssc","mahjong",...]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  gameRounds GameRound[]
+}
+
+// ======================= 积分账本（变动唯一入口）=======================
+
+model PointsAccount {
+  id        String           @id @default(cuid())
+  ownerType AccountOwnerType
+  ownerId   String           @unique // PLATFORM 时为 "PLATFORM"，其余为 userId
+  balance   Int              @default(0)
+  frozen    Int              @default(0) // 冻结额（下分待审核）
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  ledgers PointsLedger[]
+}
+
+model PointsLedger {
+  id             String        @id @default(cuid())
+  accountId      String
+  account        PointsAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  bizType        LedgerBizType
+  amount         Int // 正入负出
+  balanceAfter   Int
+  refType        String? // bet / round / issue / recharge / activity / transfer
+  refId          String?
+  idempotencyKey String?       @unique
+  operatorId     String?
+  operator       User?         @relation("LedgerOperator", fields: [operatorId], references: [id], onDelete: SetNull)
+  remark         String?
+  createdAt      DateTime      @default(now())
+
+  @@index([accountId, createdAt])
+  @@index([refType, refId])
+  @@index([bizType, createdAt])
+}
+
+// ======================= 上分 / 下分 =======================
+
+model RechargeOrder {
+  id           String       @id @default(cuid())
+  orderNo      String       @unique
+  playerId     String
+  player       User         @relation("RechargePlayer", fields: [playerId], references: [id], onDelete: Cascade)
+  type         RechargeType
+  amount       Int
+  status       ReviewStatus @default(PENDING)
+  channel      String?
+  reviewerId   String?
+  reviewer     User?        @relation("RechargeReviewer", fields: [reviewerId], references: [id])
+  reviewedAt   DateTime?
+  rejectReason String?
+  ledgerId     String?
+  createdAt    DateTime     @default(now())
+
+  @@index([playerId, createdAt])
+  @@index([status, type])
+}
+
+// ======================= 游戏目录 + 爆率/赔率配置 =======================
+
+model Game {
+  id        String       @id @default(cuid())
+  code      String       @unique // ssc / mahjong / slots / bcbm ...
+  name      String
+  category  GameCategory
+  status    GameStatus   @default(OFFLINE)
+  iconUrl   String?
+  entryUrl  String? // games-assets 入口
+  minBet    Int          @default(1)
+  maxBet    Int          @default(1000000)
+  sortOrder Int          @default(0)
+  // 彩票专用：开奖周期（秒），如 SSC=60；非彩票为 null
+  drawIntervalSec Int?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  configs    GameConfig[]
+  issues     LotteryIssue[]
+  rounds     GameRound[]
+  bets       Bet[]
+}
+
+// 爆率/赔率配置：服务端据此裁决结果，前端拿不到、改不了
+// 版本化；同一 game 同时刻只有一条 active
+model GameConfig {
+  id        String   @id @default(cuid())
+  gameId    String
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  version   Int      @default(1)
+  active    Boolean  @default(false)
+  rtp       Float    @default(0.95) // 目标返奖率
+
+  // 电子/街机：奖项+倍率+权重 [{label,multiplier,weight}]
+  // 彩票：各玩法赔率 {"big":1.98,"small":1.98,...}
+  // 棋牌：抽水率/底注等
+  payTable  Json
+  params    Json? // 各游戏自定义参数
+  remark    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([gameId, version])
+  @@index([gameId, active])
+}
+
+// ======================= 彩票：期号 + 开奖 =======================
+
+model LotteryIssue {
+  id          String      @id @default(cuid())
+  gameId      String
+  game        Game        @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  issueNo     String // 期号，如 20260613001
+  status      IssueStatus @default(PENDING)
+  openAt      DateTime // 开奖时间
+  lockAt      DateTime // 封盘时间
+  drawNumbers String? // 开奖号码（JSON/字符串）
+  drawnAt     DateTime?
+  serverSeed  String? // 可证明公平
+  serverSeedHash String?
+  totalFlow   Int         @default(0)
+  createdAt   DateTime    @default(now())
+
+  bets Bet[]
+
+  @@unique([gameId, issueNo])
+  @@index([gameId, status, openAt])
+}
+
+// ======================= 棋牌/电子/街机：一局 =======================
+
+model GameRound {
+  id           String   @id @default(cuid())
+  roundNo      String   @unique
+  gameId       String
+  game         Game     @relation(fields: [gameId], references: [id])
+  category     GameCategory
+  configVer    Int      @default(1)
+  roomId       String?
+  room         Room?    @relation(fields: [roomId], references: [id])
+  // 棋牌为对局发起者/桌主；电子/街机为玩家本人
+  playerId     String?
+  player       User?    @relation(fields: [playerId], references: [id])
+  state        String   @default("SETTLED") // PLAYING | SETTLED | CANCELLED
+  totalFlow    Int      @default(0)
+  outcome      Json? // 开奖/牌局明细
+  serverSeed   String?
+  serverSeedHash String?
+  clientSeed   String?
+  nonce        Int      @default(0)
+  startedAt    DateTime @default(now())
+  endedAt      DateTime?
+
+  bets        Bet[]
+  commissions CommissionRecord[]
+  rebates     RebateRecord[]
+
+  @@index([gameId, startedAt])
+  @@index([roomId, startedAt])
+  @@index([playerId, startedAt])
+}
+
+// ======================= 统一注单 =======================
+// 彩票：关联 issueId + betType(玩法) + 赔率
+// 棋牌/电子/街机：关联 roundId + action/payload
+model Bet {
+  id           String    @id @default(cuid())
+  betNo        String    @unique
+  playerId     String
+  player       User      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  gameId       String
+  game         Game      @relation(fields: [gameId], references: [id])
+
+  issueId      String?
+  issue        LotteryIssue? @relation(fields: [issueId], references: [id])
+  roundId      String?
+  round        GameRound?    @relation(fields: [roundId], references: [id])
+
+  betType      String? // 玩法（彩票）/ 动作（棋牌）
+  payload      Json? // 投注明细
+  amount       Int // 下注额
+  odds         Float     @default(0) // 命中赔率
+  multiplier   Float     @default(0) // 命中倍率（电子）
+  payout       Int       @default(0) // 派彩
+  status       BetStatus @default(PENDING)
+  validFlow    Int       @default(0) // 有效流水（算分润/回水用）
+  settledAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([playerId, createdAt])
+  @@index([issueId, status])
+  @@index([roundId, status])
+}
+
+// ======================= 多级分润 / 回水 =======================
+
+// 逐级代理分成：一笔有效流水沿代理链产生多条（每级一条）
+model CommissionRecord {
+  id            String     @id @default(cuid())
+  beneficiaryId String // 受益代理 userId
+  beneficiary   User       @relation("CommissionBeneficiary", fields: [beneficiaryId], references: [id], onDelete: Cascade)
+  sourceUserId  String // 产生流水的下线 userId
+  sourceUser    User       @relation("CommissionSource", fields: [sourceUserId], references: [id], onDelete: Cascade)
+  level         Int // 第几级（1=直属）
+  sourceRoundId String?
+  sourceRound   GameRound? @relation(fields: [sourceRoundId], references: [id], onDelete: SetNull)
+  baseFlow      Int
+  rate          Float
+  amount        Int
+  ledgerId      String?
+  settledAt     DateTime   @default(now())
+
+  @@index([beneficiaryId, settledAt])
+  @@index([sourceUserId, settledAt])
+}
+
+model RebateRecord {
+  id            String     @id @default(cuid())
+  playerId      String
+  player        User       @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  sourceRoundId String?
+  sourceRound   GameRound? @relation(fields: [sourceRoundId], references: [id], onDelete: SetNull)
+  personalFlow  Int
+  rate          Float
+  amount        Int
+  ledgerId      String?
+  settledAt     DateTime   @default(now())
+
+  @@index([playerId, settledAt])
+}
+
+// ======================= 活动 / 营销 =======================
+
+model Activity {
+  id        String       @id @default(cuid())
+  code      String       @unique
+  type      ActivityType
+  title     String
+  config    Json // 规则（阶梯/门槛/奖励），后端解释执行
+  bannerUrl String?
+  startAt   DateTime?
+  endAt     DateTime?
+  status    String       @default("OFFLINE")
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  claims ActivityClaim[]
+
+  @@index([type, status])
+}
+
+model ActivityClaim {
+  id           String   @id @default(cuid())
+  activityId   String
+  activity     Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  playerId     String
+  player       User     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  rewardPoints Int      @default(0)
+  status       String   @default("PENDING") // PENDING | GRANTED | REJECTED
+  ledgerId     String?
+  claimedAt    DateTime @default(now())
+
+  @@index([activityId, playerId])
+  @@index([playerId, claimedAt])
+}
+
+// ======================= 客服 / 反馈 / 运营 =======================
+
+model CsMessage {
+  id        String   @id @default(cuid())
+  playerId  String
+  player    User     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  roomNo    String?
+  sender    String // PLAYER | AGENT | SYSTEM
+  text      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([playerId, roomNo, createdAt])
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  playerId  String?
+  player    User?    @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  content   String
+  contact   String?
+  handled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([handled, createdAt])
+}
+
+model AppVersion {
+  id          String      @id @default(cuid())
+  platform    AppPlatform
+  versionName String
+  versionCode Int
+  downloadUrl String
+  changelog   String?
+  forceUpdate Boolean     @default(false)
+  isLatest    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+
+  @@index([platform, isLatest])
+}
+
+// ======================= 风控 / 审计 =======================
+
+// 风控事件（异常胜率/大额/RTP 偏离/疑似对刷）
+model RiskEvent {
+  id        String   @id @default(cuid())
+  type      String // RTP_DEVIATION | BIG_WIN | ABNORMAL_WINRATE | COLLUSION
+  level     String   @default("INFO") // INFO | WARN | CRITICAL
+  targetId  String? // 关联 user/game/round
+  detail    Json?
+  handled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([type, level, createdAt])
+}
+
+model AdminLog {
+  id         String   @id @default(cuid())
+  operatorId String
+  operator   User     @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  action     String // RECHARGE_REVIEW | GAME_CONFIG_UPDATE | ADJUST_BALANCE ...
+  target     String?
+  detail     Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([operatorId, createdAt])
+  @@index([action, createdAt])
+}
