@@ -30,17 +30,25 @@ export class CommissionService {
    * @param tx        外部事务
    * @param sourceUser 产生流水的下线（含 agentPath）
    * @param validFlow  有效流水
-   * @param refRoundId 关联局（可空）
+   * @param refRoundId 关联 GameRound（可空，外键约束仅接受 GameRound id）
+   * @param idemScope  幂等作用域；彩票等非 GameRound 来源必须传唯一值（如 bet.id），
+   *                   否则同一玩家的后续分润会被幂等机制跳过
    */
   async distributeInTx(
     tx: Prisma.TransactionClient,
     sourceUser: { id: string; agentPath: string },
     validFlow: number,
     refRoundId?: string,
+    idemScope?: string,
   ): Promise<void> {
     if (validFlow <= 0) return;
     const maxLevel = Number(this.cfg.get('COMMISSION_MAX_LEVEL') ?? 5);
     const ancestors = this.parseAncestors(sourceUser.agentPath).slice(0, maxLevel);
+
+    const scope = idemScope ?? refRoundId;
+    if (!scope) {
+      throw new Error('distributeInTx 需要 refRoundId 或 idemScope 之一作为幂等作用域');
+    }
 
     for (let i = 0; i < ancestors.length; i++) {
       const beneficiaryUserId = ancestors[i];
@@ -50,7 +58,7 @@ export class CommissionService {
       const amount = Math.floor(validFlow * agent.commissionRate);
       if (amount <= 0) continue;
 
-      const key = `commission:${refRoundId ?? 'flow'}:${sourceUser.id}:${beneficiaryUserId}`;
+      const key = `commission:${scope}:${sourceUser.id}:${beneficiaryUserId}`;
       // 平台出账 → 代理入账
       await this.points.creditInTx(tx, 'PLATFORM', PLATFORM_OWNER_ID, -amount, 'COMMISSION', {
         refType: 'round',
@@ -66,6 +74,10 @@ export class CommissionService {
         'COMMISSION',
         { refType: 'round', refId: refRoundId, idempotencyKey: `${key}:IN` },
       );
+
+      // 幂等命中（重复结算）时账本未新增，对应记录也必须跳过，否则记录与钱不一致
+      const recordExists = await tx.commissionRecord.findFirst({ where: { ledgerId: ledger.id } });
+      if (recordExists) continue;
 
       await tx.commissionRecord.create({
         data: {

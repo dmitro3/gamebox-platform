@@ -49,10 +49,13 @@ export class DashboardController {
     const todayWinOut = todayWinAgg._sum.amount ?? 0;
     const todayPnl = todayBetFlow + todayWinOut;
 
-    // 今日活跃（有下注的玩家数）
+    // 今日活跃（有下注的玩家数，排除平台账户）
     const activeTodayGroups = await this.prisma.pointsLedger.groupBy({
       by: ['accountId'],
-      where: { bizType: 'BET', createdAt: { gte: todayStart } },
+      where: {
+        bizType: 'BET', createdAt: { gte: todayStart },
+        account: { ownerType: 'PLAYER' },
+      },
     });
 
     return {

@@ -141,9 +141,9 @@ export class LotteryService {
           data: { status: won ? 'WON' : 'LOST', payout, odds, validFlow: bet.amount, settledAt: new Date() },
         });
 
-        // 多级代理佣金
+        // 多级代理佣金（idemScope 用 bet.id 保证每注独立分润）
         if (bet.player?.agentPath) {
-          await this.commission.distributeInTx(tx, bet.player, bet.amount, undefined);
+          await this.commission.distributeInTx(tx, bet.player, bet.amount, undefined, `lottery_${bet.id}`);
         }
       }
 
@@ -198,25 +198,26 @@ export class LotteryService {
 
     const payload: LotteryBetPayload = { betType, value: betValue };
 
-    // 扣款 + 平台入账 + 写注单（事务）
+    // 写注单 + 扣款 + 平台入账（事务；幂等键基于 bet.id，杜绝同毫秒重复键碰撞）
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await this.points.creditInTx(tx, 'PLAYER', playerId, -amount, 'BET', {
-        refType: 'issue', refId: issue.id,
-        idempotencyKey: `lottery_bet_player_${playerId}_${issue.id}_${Date.now()}`,
-      });
-      await this.points.creditInTx(tx, 'PLATFORM', PLATFORM_OWNER_ID, amount, 'BET', {
-        refType: 'issue', refId: issue.id,
-        idempotencyKey: `lottery_bet_plat_${playerId}_${issue.id}_${Date.now()}`,
-      });
-
       const bet = await tx.bet.create({
         data: {
-          betNo: `B${Date.now()}`,
+          betNo: `B${Date.now()}${Math.floor(Math.random() * 1000)}`,
           playerId, gameId: game.id,
           issueId: issue.id,
           betType, payload: payload as never,
           amount, status: 'PENDING',
         },
+      });
+
+      await this.points.creditInTx(tx, 'PLAYER', playerId, -amount, 'BET', {
+        refType: 'issue', refId: issue.id,
+        remark: `投注 ${betType}`,
+        idempotencyKey: `lottery_bet_player_${bet.id}`,
+      });
+      await this.points.creditInTx(tx, 'PLATFORM', PLATFORM_OWNER_ID, amount, 'BET', {
+        refType: 'issue', refId: issue.id,
+        idempotencyKey: `lottery_bet_plat_${bet.id}`,
       });
 
       return {

@@ -1,9 +1,9 @@
 /**
- * 分分彩 / 时时彩 游戏定义（5 球 0-9，总和 3-45）
+ * 分分彩 / 时时彩 游戏定义（5 球 0-9，总和 0-45，均值 22.5）
  *
  * 玩法：
- *   big      总和 11-18
- *   small    总和 3-10
+ *   big      总和 23-45（对称分布，恰好 50%）
+ *   small    总和 0-22
  *   odd      总和奇数
  *   even     总和偶数
  *   exact:N  猜个位数字（0-9）
@@ -43,7 +43,7 @@ export const ffcGame: LotteryGameDef = {
       sum,
       extras: {
         last: numbers[4],  // 个位
-        isBig: sum >= 11 && sum <= 18,
+        isBig: sum >= 23,
         isOdd: sum % 2 !== 0,
       },
     };
@@ -54,10 +54,10 @@ export const ffcGame: LotteryGameDef = {
     const { sum, extras } = draw;
 
     switch (betType) {
-      case 'big':   return (sum >= 11 && sum <= 18) ? 'big'   : null;
-      case 'small': return (sum >= 3  && sum <= 10) ? 'small' : null;
-      case 'odd':   return (sum % 2 !== 0)          ? 'odd'   : null;
-      case 'even':  return (sum % 2 === 0)          ? 'even'  : null;
+      case 'big':   return (sum >= 23)     ? 'big'   : null;
+      case 'small': return (sum <= 22)     ? 'small' : null;
+      case 'odd':   return (sum % 2 !== 0) ? 'odd'   : null;
+      case 'even':  return (sum % 2 === 0) ? 'even'  : null;
       case 'exact':
         return Number(value) === (extras['last'] as number) ? 'exact' : null;
       default:

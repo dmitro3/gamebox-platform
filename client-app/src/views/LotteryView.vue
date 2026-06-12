@@ -41,17 +41,17 @@
         </button>
       </div>
 
-      <!-- 精确猜数（exact 玩法） -->
-      <div v-if="selected === 'exact'" class="exact-row">
-        <span>猜个位数：</span>
+      <!-- 选号器（exact: 0-9 / champion·runner: 1-10） -->
+      <div v-if="needsValuePick" class="exact-row">
+        <span>{{ pickLabel }}：</span>
         <div class="exact-nums">
           <button
-            v-for="n in 10"
-            :key="n-1"
+            v-for="n in pickOptions"
+            :key="n"
             class="exact-num"
-            :class="{ active: exactValue === String(n-1) }"
-            @click="exactValue = String(n-1)"
-          >{{ n-1 }}</button>
+            :class="{ active: exactValue === String(n) }"
+            @click="exactValue = String(n)"
+          >{{ n }}</button>
         </div>
       </div>
 
@@ -86,8 +86,8 @@
             <span v-for="(n,i) in parseNumbers(h.drawNumbers)" :key="i" class="ball small">{{ n }}</span>
           </div>
           <span class="h-sum">{{ parseNumbers(h.drawNumbers).reduce((a,b)=>a+b,0) }}</span>
-          <span class="h-flag" :class="parseNumbers(h.drawNumbers).reduce((a,b)=>a+b,0)>=11 ? 'big' : 'small'">
-            {{ parseNumbers(h.drawNumbers).reduce((a,b)=>a+b,0)>=11 ? '大' : '小' }}
+          <span class="h-flag" :class="isBigDraw(h.drawNumbers) ? 'big' : 'small'">
+            {{ isBigDraw(h.drawNumbers) ? '大' : '小' }}
           </span>
         </div>
       </div>
@@ -112,7 +112,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useWalletStore } from '@/stores/wallet'
 import { useToast } from '@/composables/useToast'
@@ -147,11 +147,12 @@ const BET_TYPES: Record<string, Array<{ key: string; label: string; odds: number
     { key: 'exact', label: '猜个位', odds: 9.00 },
   ],
   kuai3: [
-    { key: 'big',     label: '大',   odds: 1.98 },
-    { key: 'small',   label: '小',   odds: 1.98 },
-    { key: 'odd',     label: '单',   odds: 1.98 },
-    { key: 'even',    label: '双',   odds: 1.98 },
-    { key: 'triplet', label: '豹子', odds: 24.00 },
+    { key: 'big',     label: '大',     odds: 1.98 },
+    { key: 'small',   label: '小',     odds: 1.98 },
+    { key: 'odd',     label: '单',     odds: 1.98 },
+    { key: 'even',    label: '双',     odds: 1.98 },
+    { key: 'triplet', label: '豹子',   odds: 24.00 },
+    { key: 'sum',     label: '猜总和', odds: 6.50 },
   ],
   bjsc: [
     { key: 'top2big',   label: '冠亚大',   odds: 1.98 },
@@ -179,8 +180,41 @@ const countdown = ref('--:--')
 
 const isLocked = computed(() => !current.value || current.value.status === 'LOCKED')
 
+/** 需要额外选号的玩法 */
+const VALUE_PICK_TYPES = ['exact', 'champion', 'runner', 'sum']
+const needsValuePick = computed(() => VALUE_PICK_TYPES.includes(selected.value))
+const pickLabel = computed(() => {
+  if (selected.value === 'exact') return '猜个位数'
+  if (selected.value === 'champion') return '猜冠军号'
+  if (selected.value === 'runner') return '猜亚军号'
+  if (selected.value === 'sum') return '猜总和'
+  return '选号'
+})
+const pickOptions = computed<number[]>(() => {
+  if (selected.value === 'exact') return Array.from({ length: 10 }, (_, i) => i)        // 0-9
+  if (selected.value === 'champion' || selected.value === 'runner')
+    return Array.from({ length: 10 }, (_, i) => i + 1)                                   // 1-10
+  if (selected.value === 'sum') return Array.from({ length: 14 }, (_, i) => i + 4)       // 4-17
+  return []
+})
+
+// 切换玩法时把选号重置为该玩法的第一个合法值
+watch(selected, () => {
+  if (needsValuePick.value && !pickOptions.value.includes(Number(exactValue.value))) {
+    exactValue.value = String(pickOptions.value[0] ?? 0)
+  }
+})
+
 function parseNumbers(s: string | null): number[] {
   try { return JSON.parse(s ?? '[]') } catch { return [] }
+}
+
+/** 各游戏的"大"阈值：ffc/ssc 总和≥23；kuai3 ≥11；赛车冠亚和≥12 */
+function isBigDraw(s: string | null): boolean {
+  const nums = parseNumbers(s)
+  if (gameCode.value === 'kuai3') return nums.reduce((a, b) => a + b, 0) >= 11
+  if (gameCode.value === 'bjsc' || gameCode.value === 'speed-racing') return (nums[0] ?? 0) + (nums[1] ?? 0) >= 12
+  return nums.reduce((a, b) => a + b, 0) >= 23
 }
 
 function updateCountdown() {
@@ -207,9 +241,12 @@ async function doBet() {
   if (amount.value < 1) { toastError('投注额须 ≥ 1'); return }
   loading.value = true
   try {
-    const betValue = selected.value === 'exact' ? exactValue.value
-                   : (selected.value === 'champion' || selected.value === 'runner') ? exactValue.value
-                   : undefined
+    const betValue = needsValuePick.value ? exactValue.value : undefined
+    if (needsValuePick.value && !pickOptions.value.includes(Number(exactValue.value))) {
+      toastError(`请先${pickLabel.value}`)
+      loading.value = false
+      return
+    }
     const res = await lotteryApi.bet(gameCode.value, { betType: selected.value, betValue, amount: amount.value })
     toastSuccess(`已投注 ${selected.value}，期号 ${res.issueNo}`)
     walletStore.fetchBalance()

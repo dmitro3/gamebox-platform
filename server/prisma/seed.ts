@@ -41,8 +41,8 @@ const GAMES = [
     status: 'ONLINE' as const, sortOrder: 2, drawIntervalSec: 60, minBet: 1, maxBet: 10000,
     rtp: 0.95,
     payTable: {
-      big:   { multiplier: 1.98, desc: '总和 11-18' },
-      small: { multiplier: 1.98, desc: '总和 3-10'  },
+      big:   { multiplier: 1.98, desc: '总和 23-45' },
+      small: { multiplier: 1.98, desc: '总和 0-22'  },
       odd:   { multiplier: 1.98, desc: '总和为奇数' },
       even:  { multiplier: 1.98, desc: '总和为偶数' },
       exact: { multiplier: 9.00, desc: '猜中个位数字' },
@@ -68,8 +68,8 @@ const GAMES = [
     status: 'ONLINE' as const, sortOrder: 4, drawIntervalSec: 600, minBet: 1, maxBet: 10000,
     rtp: 0.95,
     payTable: {
-      big:   { multiplier: 1.98, desc: '总和 11-18' },
-      small: { multiplier: 1.98, desc: '总和 3-10'  },
+      big:   { multiplier: 1.98, desc: '总和 23-45' },
+      small: { multiplier: 1.98, desc: '总和 0-22'  },
       odd:   { multiplier: 1.98, desc: '总和为奇数' },
       even:  { multiplier: 1.98, desc: '总和为偶数' },
       exact: { multiplier: 9.00, desc: '猜中个位数字' },

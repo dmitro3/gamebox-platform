@@ -184,7 +184,7 @@ onUnmounted(() => clearInterval(timer))
 const LOTTERY_CODES = ['ffc', 'ssc', 'kuai3', 'bjsc', 'speed-racing']
 
 function onApiGameClick(game: GameItem) {
-  if (game.code === 'lucky-wheel' || game.code === 'slots-classic') {
+  if (game.code === 'lucky-wheel') {
     router.push('/game/lucky-wheel')
     return
   }
