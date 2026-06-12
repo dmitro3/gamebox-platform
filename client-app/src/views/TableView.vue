@@ -121,14 +121,12 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { io, Socket } from 'socket.io-client'
 import { useWalletStore } from '@/stores/wallet'
-import { useUserStore } from '@/stores/user'
 import { useToast } from '@/composables/useToast'
 import TabBar from '@/components/TabBar.vue'
 
 const route   = useRoute()
 const router  = useRouter()
 const walletStore = useWalletStore()
-const userStore   = useUserStore()
 const { success: toastOk, error: toastErr } = useToast()
 
 const gameCode = computed(() => route.params.gameCode as string)
@@ -182,7 +180,7 @@ function sideLabel(s: string) {
 
 function connect() {
   socket = io(`${WS_URL}/table`, {
-    auth: { userId: userStore.profile?.id ?? '' },
+    auth: { token: localStorage.getItem('token') ?? '' },
     transports: ['websocket'],
   })
   socket.on('connect', () => {
