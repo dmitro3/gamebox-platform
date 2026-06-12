@@ -62,6 +62,47 @@ const GAMES = [
       { label: '×100',     multiplier: 100, weight: 1  },
     ],
   },
+  // ── 更多 SLOT ──
+  {
+    code: 'slots-queen', name: '赏金女王', category: 'SLOT' as const,
+    status: 'ONLINE' as const, sortOrder: 4, minBet: 1, maxBet: 5000,
+    rtp: 0.96,
+    payTable: [
+      { label: '谢谢参与', multiplier: 0,   weight: 30 },
+      { label: '×1',       multiplier: 1,   weight: 25 },
+      { label: '×3',       multiplier: 3,   weight: 18 },
+      { label: '×8',       multiplier: 8,   weight: 12 },
+      { label: '×15',      multiplier: 15,  weight: 8  },
+      { label: '×50',      multiplier: 50,  weight: 5  },
+      { label: '×200',     multiplier: 200, weight: 2  },
+    ],
+  },
+  {
+    code: 'slots-mahjong', name: '麻将胡了', category: 'SLOT' as const,
+    status: 'ONLINE' as const, sortOrder: 5, minBet: 1, maxBet: 10000,
+    rtp: 0.96,
+    payTable: [
+      { label: '和了！',  multiplier: 0,    weight: 28 },
+      { label: '×1',     multiplier: 1,    weight: 26 },
+      { label: '×2',     multiplier: 2,    weight: 18 },
+      { label: '×5',     multiplier: 5,    weight: 12 },
+      { label: '×10',    multiplier: 10,   weight: 8  },
+      { label: '×30',    multiplier: 30,   weight: 5  },
+      { label: '天胡×88', multiplier: 88,  weight: 2  },
+      { label: '地胡×188', multiplier: 188, weight: 1 },
+    ],
+  },
+  // ── 棋牌类游戏 ──
+  {
+    code: 'dragon-tiger', name: '龙虎斗', category: 'TABLE' as const,
+    status: 'ONLINE' as const, sortOrder: 10, minBet: 10, maxBet: 100_000,
+    rtp: 0.965,
+    payTable: [
+      { label: '龙',    multiplier: 2,  weight: 46 },
+      { label: '虎',    multiplier: 2,  weight: 46 },
+      { label: '和(×9)', multiplier: 9, weight: 8  },
+    ],
+  },
   // ── 彩票类游戏 ──
   {
     code: 'ssc', name: '时时彩', category: 'LOTTERY' as const,

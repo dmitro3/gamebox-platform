@@ -182,14 +182,24 @@ onMounted(async () => {
 onUnmounted(() => clearInterval(timer))
 
 const LOTTERY_CODES = ['ffc', 'ssc', 'kuai3', 'bjsc', 'speed-racing']
+const SLOT_CODES    = ['slots-classic', 'slots-queen', 'slots-mahjong']
+const TABLE_CODES   = ['dragon-tiger', 'baccarat']
 
 function onApiGameClick(game: GameItem) {
   if (game.code === 'lucky-wheel') {
     router.push('/game/lucky-wheel')
     return
   }
+  if (SLOT_CODES.includes(game.code)) {
+    router.push(`/game/slot/${game.code}`)
+    return
+  }
   if (LOTTERY_CODES.includes(game.code)) {
     router.push(`/game/lottery/${game.code}`)
+    return
+  }
+  if (TABLE_CODES.includes(game.code)) {
+    router.push(`/game/table/${game.code}`)
     return
   }
   toast(`${game.name}  即将开放，敬请期待！`)

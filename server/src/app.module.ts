@@ -13,6 +13,7 @@ import { GameCoreModule } from './modules/game-core/game-core.module';
 import { AgentsModule } from './modules/agents/agents.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { LotteryModule } from './modules/lottery/lottery.module';
+import { TableModule } from './modules/table/table.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -38,6 +39,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     AgentsModule,
     AdminModule,
     LotteryModule,
+    TableModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
