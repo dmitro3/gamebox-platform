@@ -41,6 +41,16 @@
         </div>
       </div>
 
+      <!-- 活动横幅 -->
+      <div class="activity-banner" @click="router.push('/activities')">
+        <span class="ab-icon">🎁</span>
+        <div class="ab-text">
+          <div class="ab-title">活动中心</div>
+          <div class="ab-sub">新人礼 · 首充豪礼 · VIP礼包</div>
+        </div>
+        <span class="ab-arrow">›</span>
+      </div>
+
       <!-- 游戏列表 -->
       <div class="games-list">
         <!-- 后端游戏（实时数据） -->
@@ -67,6 +77,7 @@
               <div class="gc-name">{{ game.name }}</div>
               <div class="gc-desc">
                 <template v-if="game.category === 'SLOT'">即 进 即 转 · 随 时 开 玩</template>
+                <template v-else-if="game.category === 'TABLE'">实 时 棋 牌 · WebSocket</template>
                 <template v-else>彩票游戏</template>
               </div>
             </div>
@@ -217,6 +228,21 @@ function confirmLogout() {
 </script>
 
 <style scoped>
+/* 活动横幅 */
+.activity-banner {
+  display: flex; align-items: center; gap: 12px;
+  margin: 0 16px 14px; padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(80,10,40,0.85), rgba(40,5,20,0.95));
+  border: 1px solid rgba(255,100,150,0.35); border-radius: 12px;
+  cursor: pointer; transition: all 0.2s;
+}
+.activity-banner:active { transform: scale(0.98); }
+.ab-icon { font-size: 28px; line-height: 1; }
+.ab-text { flex: 1; }
+.ab-title { font-size: 15px; font-weight: 700; color: #ff8fb5; }
+.ab-sub { font-size: 12px; color: rgba(255,140,180,0.6); margin-top: 2px; }
+.ab-arrow { font-size: 22px; color: rgba(255,100,150,0.6); }
+
 /* 余额展示条 */
 .lobby-balance-bar {
   display: flex;

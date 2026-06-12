@@ -225,6 +225,55 @@ async function main() {
     console.log(`[seed] 游戏: ${g.name} ✔`);
   }
 
+  // ── 活动配置 ──
+  const ACTIVITIES = [
+    {
+      code: 'newbie_gift',
+      type: 'NEWBIE' as const,
+      title: '新人注册礼 · 领 100 分',
+      status: 'ONLINE',
+      config: { reward: 100, expiresHours: 72 },
+    },
+    {
+      code: 'first_deposit',
+      type: 'FIRST_DEPOSIT' as const,
+      title: '首充豪礼',
+      status: 'ONLINE',
+      config: {
+        tiers: [
+          { minDeposit: 100,    reward: 20   },
+          { minDeposit: 500,    reward: 80   },
+          { minDeposit: 1000,   reward: 200  },
+          { minDeposit: 5000,   reward: 800  },
+          { minDeposit: 10000,  reward: 2000 },
+        ],
+      },
+    },
+    {
+      code: 'vip_gift',
+      type: 'VIP' as const,
+      title: 'VIP 充值礼包',
+      status: 'ONLINE',
+      config: {
+        tiers: [
+          { minDeposit: 1000,   reward: 100  },
+          { minDeposit: 5000,   reward: 500  },
+          { minDeposit: 20000,  reward: 2000 },
+          { minDeposit: 100000, reward: 10000 },
+        ],
+      },
+    },
+  ];
+
+  for (const act of ACTIVITIES) {
+    await prisma.activity.upsert({
+      where: { code: act.code },
+      update: { status: act.status, config: act.config },
+      create: act,
+    });
+    console.log(`[seed] 活动: ${act.title} ✔`);
+  }
+
   console.log('\n[seed] 全部完成 🎉');
 }
 

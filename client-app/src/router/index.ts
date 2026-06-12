@@ -33,6 +33,7 @@ const router = createRouter({
     { path: '/game/slot/:gameCode',    name: 'slot',    component: () => import('@/views/SlotView.vue') },
     { path: '/game/lottery/:gameCode', name: 'lottery', component: () => import('@/views/LotteryView.vue') },
     { path: '/game/table/:gameCode',   name: 'table',   component: () => import('@/views/TableView.vue') },
+    { path: '/activities',             name: 'activities', component: () => import('@/views/ActivityView.vue') },
   ],
 })
 
