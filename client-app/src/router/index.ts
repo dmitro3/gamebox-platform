@@ -30,6 +30,7 @@ const router = createRouter({
     { path: '/cs',       name: 'cs',       component: () => import('@/views/PlaceholderView.vue') },
     { path: '/settings', name: 'settings', component: () => import('@/views/PlaceholderView.vue') },
     { path: '/game/lucky-wheel', name: 'lucky-wheel', component: () => import('@/views/LuckyWheelView.vue') },
+    { path: '/game/lottery/:gameCode', name: 'lottery', component: () => import('@/views/LotteryView.vue') },
   ],
 })
 

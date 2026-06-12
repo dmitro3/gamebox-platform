@@ -181,13 +181,15 @@ onMounted(async () => {
 
 onUnmounted(() => clearInterval(timer))
 
+const LOTTERY_CODES = ['ffc', 'ssc', 'kuai3', 'bjsc', 'speed-racing']
+
 function onApiGameClick(game: GameItem) {
-  if (game.code === 'lucky-wheel') {
+  if (game.code === 'lucky-wheel' || game.code === 'slots-classic') {
     router.push('/game/lucky-wheel')
     return
   }
-  if (game.code === 'ffc') {
-    toast(`${game.name}  彩票模块即将上线！`)
+  if (LOTTERY_CODES.includes(game.code)) {
+    router.push(`/game/lottery/${game.code}`)
     return
   }
   toast(`${game.name}  即将开放，敬请期待！`)

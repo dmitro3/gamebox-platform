@@ -62,6 +62,58 @@ const GAMES = [
       { label: '×100',     multiplier: 100, weight: 1  },
     ],
   },
+  // ── 彩票类游戏 ──
+  {
+    code: 'ssc', name: '时时彩', category: 'LOTTERY' as const,
+    status: 'ONLINE' as const, sortOrder: 4, drawIntervalSec: 600, minBet: 1, maxBet: 10000,
+    rtp: 0.95,
+    payTable: {
+      big:   { multiplier: 1.98, desc: '总和 11-18' },
+      small: { multiplier: 1.98, desc: '总和 3-10'  },
+      odd:   { multiplier: 1.98, desc: '总和为奇数' },
+      even:  { multiplier: 1.98, desc: '总和为偶数' },
+      exact: { multiplier: 9.00, desc: '猜中个位数字' },
+    },
+  },
+  {
+    code: 'kuai3', name: '极速快三', category: 'LOTTERY' as const,
+    status: 'ONLINE' as const, sortOrder: 5, drawIntervalSec: 60, minBet: 1, maxBet: 5000,
+    rtp: 0.95,
+    payTable: {
+      big:     { multiplier: 1.98, desc: '总和 11-17（非豹子）' },
+      small:   { multiplier: 1.98, desc: '总和 4-10（非豹子）'  },
+      odd:     { multiplier: 1.98, desc: '总和奇数（非豹子）'   },
+      even:    { multiplier: 1.98, desc: '总和偶数（非豹子）'   },
+      triplet: { multiplier: 24.0, desc: '豹子（全同）'         },
+      sum:     { multiplier: 6.50, desc: '猜总和（4-17）'       },
+    },
+  },
+  {
+    code: 'speed-racing', name: '极速赛车', category: 'LOTTERY' as const,
+    status: 'ONLINE' as const, sortOrder: 6, drawIntervalSec: 60, minBet: 1, maxBet: 5000,
+    rtp: 0.95,
+    payTable: {
+      champion: { multiplier: 9.00, desc: '猜冠军号码（1-10）' },
+      runner:   { multiplier: 9.00, desc: '猜亚军号码（1-10）' },
+      top2big:  { multiplier: 1.98, desc: '冠亚和大（12-19）'  },
+      top2small:{ multiplier: 1.98, desc: '冠亚和小（3-11）'   },
+      top2odd:  { multiplier: 1.98, desc: '冠亚和奇'           },
+      top2even: { multiplier: 1.98, desc: '冠亚和偶'           },
+    },
+  },
+  {
+    code: 'bjsc', name: '北京赛车', category: 'LOTTERY' as const,
+    status: 'ONLINE' as const, sortOrder: 7, drawIntervalSec: 300, minBet: 1, maxBet: 5000,
+    rtp: 0.95,
+    payTable: {
+      champion: { multiplier: 9.00, desc: '猜冠军号码（1-10）' },
+      runner:   { multiplier: 9.00, desc: '猜亚军号码（1-10）' },
+      top2big:  { multiplier: 1.98, desc: '冠亚和大（12-19）'  },
+      top2small:{ multiplier: 1.98, desc: '冠亚和小（3-11）'   },
+      top2odd:  { multiplier: 1.98, desc: '冠亚和奇'           },
+      top2even: { multiplier: 1.98, desc: '冠亚和偶'           },
+    },
+  },
 ];
 
 async function main() {
