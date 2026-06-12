@@ -1,7 +1,8 @@
 import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SlotEngine } from './slot-engine';
-import { IsString, IsInt, IsOptional, Min, Max } from 'class-validator';
+import { BcbmEngine } from './bcbm-engine';
+import { IsString, IsInt, IsOptional, IsObject, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -11,10 +12,17 @@ export class PlaceBetDto {
   @IsOptional() @IsString() clientSeed?: string;
 }
 
+export class BcbmSpinDto {
+  @IsString() gameCode!: string;
+  @IsObject() bets!: Record<string, number>;
+  @IsOptional() @IsString() clientSeed?: string;
+}
+
 @Controller('bet')
 export class BetController {
   constructor(
     private slot: SlotEngine,
+    private bcbm: BcbmEngine,
     private prisma: PrismaService,
   ) {}
 
@@ -42,6 +50,19 @@ export class BetController {
       ...result,
       balance: account?.balance ?? 0,
     };
+  }
+
+  /**
+   * POST /api/bet/bcbm — 奔驰宝马街机：多仓位押注 + 即时开奖
+   */
+  @Post('bcbm')
+  async bcbmSpin(@CurrentUser() u: { id: string }, @Body() dto: BcbmSpinDto) {
+    return this.bcbm.spin({
+      playerId: u.id,
+      gameCode: dto.gameCode,
+      bets: dto.bets,
+      clientSeed: dto.clientSeed,
+    });
   }
 
   /** GET /api/bet/history — 下注历史 */

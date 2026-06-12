@@ -92,6 +92,20 @@ const GAMES = [
       { label: '地胡×188', multiplier: 188, weight: 1 },
     ],
   },
+  // ── 街机类游戏 ──
+  {
+    code: 'bcbm', name: '奔驰宝马', category: 'ARCADE' as const,
+    status: 'ONLINE' as const, sortOrder: 8, minBet: 10, maxBet: 50_000,
+    rtp: 0.95,
+    // RTP = multiplier × weight / Σweight（Σ=400）：大众 0.96，奥迪/奔驰/宝马 0.95
+    payTable: [
+      { label: '大众', multiplier: 2,  weight: 192 },
+      { label: '奥迪', multiplier: 5,  weight: 76  },
+      { label: '奔驰', multiplier: 10, weight: 38  },
+      { label: '宝马', multiplier: 20, weight: 19  },
+      { label: '空门', multiplier: 0,  weight: 75  },
+    ],
+  },
   // ── 棋牌类游戏 ──
   {
     code: 'dragon-tiger', name: '龙虎斗', category: 'TABLE' as const,

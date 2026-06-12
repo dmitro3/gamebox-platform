@@ -78,6 +78,7 @@
               <div class="gc-desc">
                 <template v-if="game.category === 'SLOT'">即 进 即 转 · 随 时 开 玩</template>
                 <template v-else-if="game.category === 'TABLE'">实 时 棋 牌 · WebSocket</template>
+                <template v-else-if="game.category === 'ARCADE'">经 典 街 机 · 多 仓 押 注</template>
                 <template v-else>彩票游戏</template>
               </div>
             </div>
@@ -195,6 +196,7 @@ onUnmounted(() => clearInterval(timer))
 const LOTTERY_CODES = ['ffc', 'ssc', 'kuai3', 'bjsc', 'speed-racing']
 const SLOT_CODES    = ['slots-classic', 'slots-queen', 'slots-mahjong']
 const TABLE_CODES   = ['dragon-tiger', 'baccarat']
+const ARCADE_CODES  = ['bcbm']
 
 function onApiGameClick(game: GameItem) {
   if (game.code === 'lucky-wheel') {
@@ -211,6 +213,10 @@ function onApiGameClick(game: GameItem) {
   }
   if (TABLE_CODES.includes(game.code)) {
     router.push(`/game/table/${game.code}`)
+    return
+  }
+  if (ARCADE_CODES.includes(game.code)) {
+    router.push(`/game/arcade/${game.code}`)
     return
   }
   toast(`${game.name}  即将开放，敬请期待！`)
