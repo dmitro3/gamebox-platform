@@ -39,6 +39,18 @@
         <span class="mi-sub"></span>
         <span class="mi-arrow">›</span>
       </div>
+      <div class="menu-item" @click="router.push('/bets')">
+        <span class="mi-icon purple">♠</span>
+        <span class="mi-text">投注记录</span>
+        <span class="mi-sub">输赢一目了然</span>
+        <span class="mi-arrow">›</span>
+      </div>
+      <div class="menu-item" @click="router.push('/password')">
+        <span class="mi-icon gray">🔒</span>
+        <span class="mi-text">修改密码</span>
+        <span class="mi-sub"></span>
+        <span class="mi-arrow">›</span>
+      </div>
     </div>
 
     <!-- 退出 -->
@@ -128,6 +140,8 @@ onMounted(() => walletStore.fetchBalance())
 .mi-icon.pink  { background: rgba(255,100,150,0.15); }
 .mi-icon.gold  { background: rgba(232,192,50,0.15); color: #e8c032; }
 .mi-icon.green { background: rgba(0,200,90,0.15); color: #00e567; }
+.mi-icon.purple { background: rgba(170,90,255,0.15); color: #c98fff; }
+.mi-icon.gray  { background: rgba(255,255,255,0.08); font-size: 14px; }
 .mi-text { font-size: 15px; font-weight: 500; }
 .mi-sub { flex: 1; font-size: 11px; color: rgba(255,255,255,0.3); text-align: right; }
 .mi-arrow { font-size: 20px; color: rgba(255,255,255,0.25); }

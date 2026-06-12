@@ -156,13 +156,9 @@ const notices = [
   '💰 每日签到可领取积分奖励，快来参与吧！',
 ]
 
-// 静态占位游戏（尚未接入后端）
+// 静态占位游戏（尚未接入后端，接入后从此列表移除避免与动态列表重复）
 const staticGames = [
-  { key: 'ssc',     name: '时时彩',   desc: '5 位数字 · 10 分一期',  tag: '',      type: 'lottery', intervalSec: 600, iconImg: '/images/games/ssc.png' },
-  { key: 'speed-racing', name: '极速赛车', desc: '1-10 号 · 1 分一期', tag: '新 品', type: 'lottery', intervalSec: 60, iconImg: '/images/games/speed-racing.png' },
-  { key: 'bjsc',    name: '北京赛车', desc: '10 选号 · 5 分一期',     tag: '',      type: 'lottery', intervalSec: 300, iconImg: '/images/games/bjsc.png' },
-  { key: 'lhc',     name: '六合彩',   desc: '49 选 7 · 1 分一期',     tag: '',      type: 'lottery', intervalSec: 60,  iconImg: '/images/games/hk-mark6.png' },
-  { key: 'kuai3',   name: '极速快三', desc: '3 颗骰子 · 1 分一期',    tag: '',      type: 'lottery', intervalSec: 60,  iconImg: '/images/games/kuai3.png' },
+  { key: 'lhc', name: '六合彩', desc: '49 选 7 · 即将上线', tag: '敬请期待', type: 'lottery', intervalSec: 60, iconImg: '/images/games/hk-mark6.png' },
 ]
 
 // 实时倒计时（响应式 reactive 对象）
