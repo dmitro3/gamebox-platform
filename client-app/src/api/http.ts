@@ -1,7 +1,6 @@
 import axios from 'axios'
 import type { AxiosResponse } from 'axios'
 import { useUserStore } from '@/stores/user'
-import router from '@/router'
 
 /** 后端统一响应信封 */
 interface Envelope<T = unknown> {
@@ -33,7 +32,7 @@ http.interceptors.response.use(
     if (err.response?.status === 401) {
       const userStore = useUserStore()
       userStore.logout()
-      router.push('/login')
+      window.location.replace('/login')
     }
     const msg = err.response?.data?.message ?? err.message ?? '网络异常'
     return Promise.reject(new Error(msg))

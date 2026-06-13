@@ -1,93 +1,158 @@
 <template>
-  <div class="page bets-page">
-    <div class="bets-header">
-      <button class="back-btn" @click="router.back()">‹</button>
-      <span class="title">投注记录</span>
-      <span class="spacer"></span>
+  <div class="screen-deco" aria-hidden="true">
+    <img class="cd cd-tl" src="/images/corner-flourish.png" alt="">
+    <img class="cd cd-tr" src="/images/corner-flourish.png" alt="">
+    <img class="cd cd-bl" src="/images/corner-flourish.png" alt="">
+    <img class="cd cd-br" src="/images/corner-flourish.png" alt="">
+  </div>
+
+  <div class="page br-page">
+    <div class="app-bar">
+      <div class="back" @click="goBack">‹</div>
+      <div class="title">竞猜记录</div>
+      <div class="right"></div>
     </div>
 
-    <!-- 状态筛选 -->
-    <div class="filter-row">
-      <button v-for="f in FILTERS" :key="f.value"
-        class="filter-btn" :class="{ active: filter === f.value }"
-        @click="filter = f.value">{{ f.label }}</button>
-    </div>
+    <div class="page-body">
+      <h1 class="br-title">竞 猜 记 录</h1>
 
-    <div v-if="loading" class="loading-tip">加载中…</div>
+      <div class="time-tabs">
+        <button
+          v-for="t in RANGES"
+          :key="t.key"
+          :class="['tt-item', range === t.key ? 'active' : '']"
+          @click="range = t.key"
+        >{{ t.label }}</button>
+      </div>
 
-    <template v-else>
-      <div v-if="filtered.length === 0" class="empty-tip">暂无投注记录</div>
-
-      <div class="bet-list">
-        <div v-for="b in filtered" :key="b.id" class="bet-card">
-          <div class="bc-row">
-            <span class="bc-game">{{ b.game.name }}</span>
-            <span class="bc-status" :class="statusClass(b.status)">{{ statusLabel(b.status) }}</span>
+      <div class="br-list">
+        <div v-if="loading" class="br-empty">
+          <div class="br-empty-icon">◇</div>
+          <div class="br-empty-text">加 载 中 …</div>
+        </div>
+        <div v-else-if="!summary" class="br-empty">
+          <div class="br-empty-icon">◇</div>
+          <div class="br-empty-text">该 时 段 暂 无 记 录</div>
+        </div>
+        <div v-else class="br-card">
+          <div class="br-time">{{ summary.start }}  ~  {{ summary.end }}</div>
+          <div class="br-kpi">
+            <div class="br-kpi-cell">
+              <span class="br-kpi-num">{{ summary.orders }}</span>
+              <span class="br-kpi-label">总 注 单</span>
+            </div>
+            <div class="br-kpi-cell">
+              <span class="br-kpi-num">{{ fmt(summary.amount) }}</span>
+              <span class="br-kpi-label">总 金 额</span>
+            </div>
+            <div class="br-kpi-cell">
+              <span class="br-kpi-num">{{ fmt(summary.rebate) }}</span>
+              <span class="br-kpi-label">总 反 点</span>
+            </div>
           </div>
-          <div class="bc-row">
-            <span class="bc-detail">
-              {{ b.betType === 'SPIN' ? '旋转' : b.betType }}
-              · 押 {{ b.amount.toLocaleString() }}
-            </span>
-            <span class="bc-payout" :class="{ win: b.payout > 0 }">
-              {{ b.payout > 0 ? `+${b.payout.toLocaleString()}` : '—' }}
-            </span>
+          <div class="br-summary">
+            <div class="br-summary-cell">
+              游戏总结过 <span :class="['br-summary-num', summary.gameSettle >= 0 ? 'pos' : 'neg']">{{ fmt(summary.gameSettle) }}</span>
+            </div>
+            <div class="br-summary-cell">
+              玩家总结过 <span :class="['br-summary-num', summary.playerSettle >= 0 ? 'pos' : 'neg']">{{ fmt(summary.playerSettle) }}</span>
+            </div>
           </div>
-          <div class="bc-time">{{ fmtTime(b.createdAt) }}</div>
         </div>
       </div>
-    </template>
 
-    <div class="page-bottom-spacer" />
-    <TabBar />
+      <div class="lobby-spacer"></div>
+    </div>
   </div>
+
+  <TabBar />
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import http from '@/api/http'
+import { useBodyClass } from '@/composables/useBodyClass'
 import TabBar from '@/components/TabBar.vue'
+import '@/assets/bet-records.css'
+
+useBodyClass('deco-bg')
 
 const router = useRouter()
 
 interface BetRecord {
   id: string
-  betNo: string
   amount: number
   payout: number
   status: 'PENDING' | 'WON' | 'LOST' | 'CANCELLED'
-  betType: string | null
-  settledAt: string | null
   createdAt: string
-  game: { name: string; code: string }
 }
 
-const FILTERS = [
-  { value: 'ALL',  label: '全部' },
-  { value: 'WON',  label: '已中奖' },
-  { value: 'LOST', label: '未中奖' },
-  { value: 'PENDING', label: '待开奖' },
+const RANGES = [
+  { key: 'today',     label: '今 日' },
+  { key: 'yesterday', label: '昨 日' },
+  { key: 'thisweek',  label: '本 周' },
+  { key: 'lastweek',  label: '上 周' },
+  { key: 'thismonth', label: '本 月' },
+  { key: 'lastmonth', label: '上 个 月' },
 ] as const
 
+type RangeKey = typeof RANGES[number]['key']
+
+const range = ref<RangeKey>('today')
 const loading = ref(true)
 const records = ref<BetRecord[]>([])
-const filter  = ref<string>('ALL')
 
-const filtered = computed(() =>
-  filter.value === 'ALL'
-    ? records.value
-    : records.value.filter(b => b.status === filter.value))
+function rangeBounds(key: RangeKey): [number, number] {
+  const now = new Date()
+  const DAY = 86400000
+  const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  const weekday = (now.getDay() + 6) % 7
+  const week0 = today0 - weekday * DAY
+  const month0 = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
+  const lastMonth0 = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime()
+  switch (key) {
+    case 'today':     return [today0, today0 + DAY]
+    case 'yesterday': return [today0 - DAY, today0]
+    case 'thisweek':  return [week0, week0 + 7 * DAY]
+    case 'lastweek':  return [week0 - 7 * DAY, week0]
+    case 'thismonth': return [month0, Date.now() + DAY]
+    case 'lastmonth': return [lastMonth0, month0]
+  }
+}
 
-function statusLabel(s: string) {
-  return { PENDING: '待开奖', WON: '已中奖', LOST: '未中奖', CANCELLED: '已退款' }[s] ?? s
+const summary = computed(() => {
+  const [from, to] = rangeBounds(range.value)
+  const list = records.value.filter(r => {
+    const t = new Date(r.createdAt).getTime()
+    return t >= from && t < to && r.status !== 'CANCELLED'
+  })
+  if (!list.length) return null
+  const amount = list.reduce((s, r) => s + r.amount, 0)
+  const payout = list.reduce((s, r) => s + r.payout, 0)
+  const fmtD = (ts: number) => {
+    const d = new Date(ts)
+    const pad = (n: number) => (n < 10 ? '0' + n : '' + n)
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+  }
+  return {
+    start: fmtD(from),
+    end: fmtD(Math.min(to - 60000, Date.now())),
+    orders: list.length,
+    amount,
+    rebate: 0,
+    gameSettle: amount - payout,
+    playerSettle: payout - amount,
+  }
+})
+
+function fmt(n: number) {
+  return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
-function statusClass(s: string) {
-  return { PENDING: 'pending', WON: 'won', LOST: 'lost', CANCELLED: 'cancelled' }[s] ?? ''
-}
-function fmtTime(s: string) {
-  const d = new Date(s)
-  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`
+
+function goBack() {
+  if (window.history.length > 1) router.back()
+  else router.push('/settings')
 }
 
 onMounted(async () => {
@@ -98,50 +163,3 @@ onMounted(async () => {
   }
 })
 </script>
-
-<style scoped>
-.bets-page { min-height: 100vh; background: #0a0a12; color: #fff; padding-bottom: 60px; }
-
-.bets-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 16px; background: rgba(14,14,26,0.96);
-  border-bottom: 1px solid rgba(232,192,50,0.15);
-}
-.back-btn { background: none; border: none; color: #e8c032; font-size: 28px; cursor: pointer; }
-.title { font-size: 18px; font-weight: 700; }
-.spacer { width: 28px; }
-
-.filter-row { display: flex; gap: 8px; padding: 12px 16px; }
-.filter-btn {
-  flex: 1; padding: 8px 4px; border-radius: 18px; cursor: pointer;
-  border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04);
-  color: rgba(255,255,255,0.5); font-size: 13px; transition: all 0.15s;
-}
-.filter-btn.active {
-  border-color: rgba(232,192,50,0.5); background: rgba(232,192,50,0.12);
-  color: #e8c032; font-weight: 600;
-}
-
-.loading-tip, .empty-tip {
-  text-align: center; padding: 60px 20px; color: rgba(255,255,255,0.3); font-size: 13px;
-}
-
-.bet-list { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; }
-.bet-card {
-  padding: 12px 14px; border-radius: 10px;
-  background: rgba(25,25,45,0.55); border: 1px solid rgba(255,255,255,0.06);
-}
-.bc-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-.bc-game { font-size: 15px; font-weight: 600; }
-.bc-status { font-size: 12px; padding: 2px 10px; border-radius: 12px; }
-.bc-status.won       { background: rgba(46,204,113,0.15); color: #2ecc71; }
-.bc-status.lost      { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.4); }
-.bc-status.pending   { background: rgba(255,200,50,0.15); color: #ffd700; }
-.bc-status.cancelled { background: rgba(255,100,100,0.12); color: #ff8f8f; }
-.bc-detail { font-size: 13px; color: rgba(255,255,255,0.55); }
-.bc-payout { font-size: 15px; color: rgba(255,255,255,0.35); }
-.bc-payout.win { color: #2ecc71; font-weight: 700; }
-.bc-time { font-size: 11px; color: rgba(255,255,255,0.28); }
-
-.page-bottom-spacer { height: 80px; }
-</style>

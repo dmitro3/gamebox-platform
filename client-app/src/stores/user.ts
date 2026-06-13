@@ -18,6 +18,7 @@ export const useUserStore = defineStore('user', () => {
   function logout() {
     profile.value = null
     token.value = ''
+    restored.value = false   // 重置，让下次进入应用时重新走 restoreSession
     localStorage.removeItem('token')
   }
 

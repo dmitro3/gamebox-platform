@@ -13,3 +13,4 @@ app.mount('#app')
 // 全局点击音效
 const { attach } = useClickSound()
 attach()
+

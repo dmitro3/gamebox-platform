@@ -1,23 +1,21 @@
 <template>
   <Teleport to="body">
-    <Transition name="modal">
-      <div v-if="visible" class="app-modal-mask" @click.self="onCancel">
-        <div class="app-modal" role="dialog" aria-modal="true">
-          <div class="app-modal-card">
-            <div :class="['app-modal-title', props.danger ? 'danger' : '']">{{ props.title }}</div>
-            <div v-if="props.message" class="app-modal-body">{{ props.message }}</div>
-            <div class="app-modal-actions">
-              <button v-if="props.showCancel" class="app-modal-btn app-modal-btn-cancel" @click="onCancel">
-                {{ props.cancelText ?? '取消' }}
-              </button>
-              <button :class="['app-modal-btn app-modal-btn-ok', props.danger ? 'danger' : '']" @click="onOk">
-                {{ props.okText ?? '确定' }}
-              </button>
-            </div>
+    <div v-show="visible" class="app-modal-mask" @click.self="onCancel">
+      <div class="app-modal" role="dialog" aria-modal="true">
+        <div class="app-modal-card">
+          <div :class="['app-modal-title', props.danger ? 'danger' : '']">{{ props.title }}</div>
+          <div v-if="props.message" class="app-modal-body">{{ props.message }}</div>
+          <div class="app-modal-actions">
+            <button v-if="props.showCancel" class="app-modal-btn app-modal-btn-cancel" @click="onCancel">
+              {{ props.cancelText ?? '取消' }}
+            </button>
+            <button :class="['app-modal-btn app-modal-btn-ok', props.danger ? 'danger' : '']" @click="onOk">
+              {{ props.okText ?? '确定' }}
+            </button>
           </div>
         </div>
       </div>
-    </Transition>
+    </div>
   </Teleport>
 </template>
 
@@ -86,6 +84,4 @@ const onCancel = () => emit('cancel')
   background: linear-gradient(135deg, #c83030, #f06060);
   color: #fff;
 }
-.modal-enter-active, .modal-leave-active { transition: opacity 0.2s ease; }
-.modal-enter-from, .modal-leave-to { opacity: 0; }
 </style>

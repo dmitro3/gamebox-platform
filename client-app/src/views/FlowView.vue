@@ -1,101 +1,125 @@
 <template>
-  <div class="page flow-page deco-bg">
+  <div class="screen-deco" aria-hidden="true">
+    <img class="cd cd-tl" src="/images/corner-flourish.png" alt="">
+    <img class="cd cd-tr" src="/images/corner-flourish.png" alt="">
+    <img class="cd cd-bl" src="/images/corner-flourish.png" alt="">
+    <img class="cd cd-br" src="/images/corner-flourish.png" alt="">
+  </div>
+
+  <div class="page detail-page">
+
     <div class="app-bar">
-      <div class="back" @click="router.back()">‹</div>
-      <div class="title"><span class="brand-dot"></span><span class="brand-wordmark">明 细</span></div>
+      <div class="back" @click="goBack">‹</div>
+      <div class="title">明 细</div>
       <div class="right"></div>
     </div>
 
-    <div class="page-body" style="padding:16px;padding-bottom:70px">
+    <div class="page-body">
 
-      <div v-if="loading && !list.length" class="fl-empty">加载中...</div>
-      <div v-else-if="!list.length" class="fl-empty">暂无流水记录</div>
+      <h1 class="detail-title">明 细</h1>
 
-      <div v-for="item in list" :key="item.id" class="flow-card">
-        <div class="fc-left">
-          <span class="fc-type">{{ bizTypeText(item.bizType) }}</span>
-          <span class="fc-time">{{ new Date(item.createdAt).toLocaleString() }}</span>
+      <!-- 顶部两个 tab 按钮 -->
+      <div class="detail-tabs">
+        <button type="button" :class="['dt-tab', tab === 'settled' ? 'active' : '']" @click="tab = 'settled'">今 日 已 结</button>
+        <button type="button" :class="['dt-tab', tab === 'unsettled' ? 'active' : '']" @click="tab = 'unsettled'">未 结 明 细</button>
+      </div>
+
+      <!-- 4 列表格：期号 / 游戏类型 / 下注金额 / 结果 -->
+      <div class="detail-table">
+        <div class="dt-head">
+          <div class="dt-col col-issue">期 号</div>
+          <div class="dt-col col-game">游戏类型</div>
+          <div class="dt-col col-stake">下注金额</div>
+          <div class="dt-col col-result">结 果</div>
         </div>
-        <div :class="['fc-amount', item.amount > 0 ? 'pos' : 'neg']">
-          {{ item.amount > 0 ? '+' : '' }}{{ item.amount.toLocaleString() }}
+        <div class="dt-body">
+          <div v-if="loading" class="dt-empty">
+            <div class="empty-icon">◇</div>
+            <div class="empty-text">加 载 中 …</div>
+          </div>
+          <div v-else-if="!rows.length" class="dt-empty">
+            <div class="empty-icon">◇</div>
+            <div class="empty-text">暂 无 数 据</div>
+          </div>
+          <template v-else>
+            <div v-for="r in rows" :key="r.id" class="dt-row">
+              <div class="dt-col col-issue">{{ r.issue }}</div>
+              <div class="dt-col col-game">{{ r.game }}</div>
+              <div class="dt-col col-stake">{{ fmt(r.stake) }}</div>
+              <div class="dt-col col-result">
+                <span v-if="r.result === null" class="dt-pending">待 开 奖</span>
+                <span v-else :class="['dt-result', r.result >= 0 ? 'pos' : 'neg']">{{ r.result >= 0 ? '+' : '' }}{{ fmt(r.result) }}</span>
+              </div>
+            </div>
+          </template>
         </div>
       </div>
 
-      <div v-if="hasMore" class="fl-more">
-        <button @click="loadMore" :disabled="loading">{{ loading ? '加载中...' : '加载更多' }}</button>
-      </div>
+      <div class="lobby-spacer"></div>
     </div>
   </div>
+
   <TabBar />
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { walletApi, type LedgerItem } from '@/api/wallet'
+import http from '@/api/http'
+import { useBodyClass } from '@/composables/useBodyClass'
 import TabBar from '@/components/TabBar.vue'
+import '@/assets/flow.css'
+
+useBodyClass('deco-bg')
 
 const router = useRouter()
-const list = ref<LedgerItem[]>([])
-const loading = ref(false)
-const page = ref(1)
-const total = ref(0)
-const pageSize = 20
-const hasMore = ref(false)
 
-onMounted(() => load())
+interface BetRecord {
+  id: string
+  betNo: string
+  amount: number
+  payout: number
+  status: 'PENDING' | 'WON' | 'LOST' | 'CANCELLED'
+  createdAt: string
+  game: { name: string; code: string }
+}
 
-async function load() {
-  loading.value = true
+const tab = ref<'settled' | 'unsettled'>('settled')
+const loading = ref(true)
+const records = ref<BetRecord[]>([])
+
+const rows = computed(() => {
+  const today0 = (() => {
+    const d = new Date()
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  })()
+  const src = tab.value === 'settled'
+    ? records.value.filter(b => b.status !== 'PENDING' && new Date(b.createdAt).getTime() >= today0)
+    : records.value.filter(b => b.status === 'PENDING')
+  return src.map(b => ({
+    id: b.id,
+    issue: b.betNo,
+    game: b.game.name.replace(/\s+/g, ''),
+    stake: b.amount,
+    // 已结：结果 = 派彩 - 本金（输 = -本金）；未结：null → 待开奖
+    result: b.status === 'PENDING' ? null : b.payout - b.amount,
+  }))
+})
+
+function fmt(n: number) {
+  return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function goBack() {
+  if (window.history.length > 1) router.back()
+  else router.push('/lobby')
+}
+
+onMounted(async () => {
   try {
-    const res = await walletApi.ledger(1, pageSize)
-    list.value = res.list
-    total.value = res.total
-    page.value = 1
-    hasMore.value = res.list.length < res.total
-  } finally {
+    records.value = await http.get<BetRecord[], BetRecord[]>('/bet/history')
+  } catch { /* 静默 */ } finally {
     loading.value = false
   }
-}
-
-async function loadMore() {
-  loading.value = true
-  try {
-    const res = await walletApi.ledger(page.value + 1, pageSize)
-    list.value.push(...res.list)
-    page.value++
-    hasMore.value = list.value.length < total.value
-  } finally {
-    loading.value = false
-  }
-}
-
-const BIZ_TYPES: Record<string, string> = {
-  RECHARGE: '上分', WITHDRAW: '下分',
-  BET: '下注', WIN: '中奖', FEE: '手续费',
-  COMMISSION: '佣金', REBATE: '回水', ACTIVITY: '活动',
-  TRANSFER_IN: '转入', TRANSFER_OUT: '转出', ADJUST: '调整',
-}
-function bizTypeText(t: string) { return BIZ_TYPES[t] ?? t }
+})
 </script>
-
-<style scoped>
-.flow-page { min-height: 100vh; }
-.flow-card {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(200,160,40,.12);
-}
-.fc-left { display: flex; flex-direction: column; gap: 4px; }
-.fc-type { color: rgba(255,255,255,.8); font-size: 14px; }
-.fc-time { color: rgba(255,255,255,.35); font-size: 12px; }
-.fc-amount { font-size: 18px; font-weight: 700; }
-.fc-amount.pos { color: #4caf50; }
-.fc-amount.neg { color: #f06060; }
-.fl-empty { text-align: center; color: rgba(255,255,255,.3); padding: 60px 0; }
-.fl-more { text-align: center; padding: 16px; }
-.fl-more button {
-  background: rgba(200,160,40,.15); border: 1px solid rgba(200,160,40,.4);
-  color: #e8c032; padding: 10px 32px; border-radius: 8px; font-size: 14px; cursor: pointer;
-}
-</style>

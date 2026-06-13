@@ -7,7 +7,7 @@
     <img class="cd cd-br" src="/images/corner-flourish.png" alt="">
   </div>
 
-  <div class="page register-page deco-bg">
+  <div class="page register-page">
     <div class="app-bar">
       <div class="back" @click="router.back()">‹</div>
       <div class="title">
@@ -73,8 +73,11 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { authApi } from '@/api/auth'
 import { useToast } from '@/composables/useToast'
+import { useBodyClass } from '@/composables/useBodyClass'
 import '@/assets/welcome.css'
 import '@/assets/register.css'
+
+useBodyClass('deco-bg')
 
 const router = useRouter()
 const userStore = useUserStore()

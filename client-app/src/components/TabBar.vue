@@ -4,6 +4,7 @@
       v-for="tab in TABS"
       :key="tab.key"
       :class="['tab-item', route.name === tab.name ? 'active' : '']"
+      :data-tab="tab.key"
       @click="go(tab)"
     >
       <span class="t-icon">{{ tab.icon }}</span>
@@ -13,9 +14,15 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+
 const route = useRoute()
 const router = useRouter()
+
+// 样式复用原型 common.css 的 .lobby-tabbar；body.has-tabbar 让 .page 自动留底部空间
+onMounted(() => document.body.classList.add('has-tabbar'))
+onUnmounted(() => document.body.classList.remove('has-tabbar'))
 
 const TABS = [
   { key: 'home',     name: 'lobby',    icon: '⛨', text: '游 戏' },
@@ -30,28 +37,3 @@ function go(tab: typeof TABS[number]) {
   router.push({ name: tab.name })
 }
 </script>
-
-<style scoped>
-.lobby-tabbar {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  height: 58px;
-  display: flex;
-  background: linear-gradient(0deg, #0e0a02 0%, #1a1204 100%);
-  border-top: 1px solid rgba(200,160,60,0.25);
-  z-index: 500;
-}
-.tab-item {
-  flex: 1;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 2px;
-  cursor: pointer;
-  color: rgba(255,255,255,0.4);
-  transition: color 0.2s;
-  user-select: none;
-}
-.tab-item.active { color: #e8c032; }
-.t-icon { font-size: 18px; line-height: 1; }
-.t-text { font-size: 10px; letter-spacing: 0.05em; }
-</style>

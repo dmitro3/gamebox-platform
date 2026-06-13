@@ -1,5 +1,5 @@
 <template>
-  <!-- 屏幕级装饰层 -->
+  <!-- 屏幕级装饰层：皇冠铺底 + 四角卷草（与原型一致，依赖 body.deco-bg 的 fixed 定位） -->
   <div class="screen-deco" aria-hidden="true">
     <img class="crown-deco" src="/images/crown-emblem.png" alt="">
     <img class="cd cd-tl" src="/images/corner-flourish.png" alt="">
@@ -8,7 +8,7 @@
     <img class="cd cd-br" src="/images/corner-flourish.png" alt="">
   </div>
 
-  <div class="page welcome-page deco-bg welcome-login">
+  <div class="page welcome-page">
 
     <!-- 顶部品牌栏 -->
     <div class="brand-bar">
@@ -96,7 +96,10 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { authApi } from '@/api/auth'
 import { useToast } from '@/composables/useToast'
+import { useBodyClass } from '@/composables/useBodyClass'
 import '@/assets/welcome.css'
+
+useBodyClass('deco-bg', 'welcome-login')
 
 const router = useRouter()
 const userStore = useUserStore()

@@ -1,97 +1,254 @@
 <template>
-  <div class="page recharge-page deco-bg">
+  <div class="screen-deco" aria-hidden="true">
+    <img class="cd cd-tl" src="/images/corner-flourish.png" alt="">
+    <img class="cd cd-tr" src="/images/corner-flourish.png" alt="">
+    <img class="cd cd-bl" src="/images/corner-flourish.png" alt="">
+    <img class="cd cd-br" src="/images/corner-flourish.png" alt="">
+  </div>
+
+  <div class="page recharge-page">
+
     <div class="app-bar">
-      <div class="back" @click="router.back()">‹</div>
-      <div class="title"><span class="brand-dot"></span><span class="brand-wordmark">充 值</span></div>
+      <div class="back" @click="goBack">‹</div>
+      <div class="title">线 上 支 付</div>
       <div class="right"></div>
     </div>
 
-    <div class="page-body" style="padding:16px">
+    <h1 class="recharge-title">线 上 支 付</h1>
 
-      <!-- 余额展示 -->
-      <div class="balance-card">
-        <span class="bc-label">当前余额</span>
-        <span class="bc-value">{{ walletStore.balance.toLocaleString() }}</span>
-        <span class="bc-unit">积分</span>
-      </div>
+    <div class="page-body">
 
-      <!-- Tab 切换 -->
-      <div class="rc-tabs">
-        <div :class="['rc-tab', tab==='up' ? 'active' : '']" @click="tab='up'">上 分</div>
-        <div :class="['rc-tab', tab==='down' ? 'active' : '']" @click="tab='down'">下 分</div>
-        <div :class="['rc-tab', tab==='records' ? 'active' : '']" @click="tab='records'; loadOrders()">记 录</div>
-      </div>
-
-      <!-- 上分 / 下分 表单 -->
-      <div v-if="tab !== 'records'" class="rc-form">
-        <div class="field-luxe">
-          <span class="ic">¥</span>
-          <input v-model.number="amount" type="number" class="field" :placeholder="`${tab==='up'?'上':'下'}分金额（积分）`" min="1">
-        </div>
-        <div class="rc-presets">
-          <button v-for="n in [100,500,1000,5000]" :key="n" class="preset-btn" @click="amount=n">{{ n }}</button>
-        </div>
-        <button class="btn btn-primary btn-block" :disabled="loading" @click="submit">
-          <span class="ruby ruby-l"></span>
-          <span class="btn-text">{{ loading ? '提交中...' : (tab==='up' ? '提交上分申请' : '提交下分申请') }}</span>
-          <span class="ruby ruby-r"></span>
-        </button>
-        <p class="rc-note">申请提交后，请等待代理/客服审核。审核通过后积分自动到账。</p>
-      </div>
-
-      <!-- 记录 -->
-      <div v-else>
-        <div v-if="ordersLoading" class="rc-empty">加载中...</div>
-        <div v-else-if="!orders.length" class="rc-empty">暂无记录</div>
-        <div v-for="o in orders" :key="o.id" class="order-card">
-          <div class="oc-row">
-            <span class="oc-type">{{ o.type === 'UP' ? '上分' : '下分' }}</span>
-            <span :class="['oc-status', o.status.toLowerCase()]">{{ statusText(o.status) }}</span>
+      <!-- 卡片 1：账户信息 -->
+      <div class="r-card r-account">
+        <div class="ra-row">
+          <div class="ra-avatar"><img :src="avatarSrc" alt=""></div>
+          <div class="ra-info">
+            <div class="ra-name">{{ userStore.profile?.nickname ?? '—' }}</div>
+            <div class="ra-id">
+              <span class="dot"></span>ID&nbsp;<span>{{ userStore.profile?.uid ?? '———' }}</span>
+            </div>
           </div>
-          <div class="oc-amount">{{ o.amount.toLocaleString() }} 积分</div>
-          <div class="oc-time">{{ new Date(o.createdAt).toLocaleString() }}</div>
-          <div v-if="o.rejectReason" class="oc-reason">拒绝原因：{{ o.rejectReason }}</div>
+          <div class="ra-balance">
+            <div class="rb-label">当 前 积 分</div>
+            <div class="rb-num">{{ walletStore.balance.toLocaleString('en-US') }}</div>
+          </div>
         </div>
+      </div>
+
+      <!-- 卡片 2：上 / 下分 + 金额 -->
+      <div class="r-card r-main">
+
+        <div class="r-tabs">
+          <div :class="['rt-item', curType === 'up' ? 'active' : '']" @click="switchType('up')">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 19V5"/>
+              <path d="M6 11l6-6 6 6"/>
+            </svg>
+            <span>上 分</span>
+          </div>
+          <div :class="['rt-item', curType === 'down' ? 'active' : '']" @click="switchType('down')">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5v14"/>
+              <path d="M6 13l6 6 6-6"/>
+            </svg>
+            <span>下 分</span>
+          </div>
+        </div>
+
+        <div class="r-field">
+          <div class="rf-label">
+            <span>{{ curType === 'up' ? '上 分 金 额' : '下 分 金 额' }}</span>
+            <span class="rf-hint">{{ amountHint }}</span>
+          </div>
+          <div class="rf-input">
+            <span class="rf-prefix">¥</span>
+            <input
+              v-model="amountStr"
+              type="text"
+              inputmode="numeric"
+              placeholder="请 输 入 金 额"
+              maxlength="9"
+              @input="onAmountInput"
+            />
+            <button v-show="amountStr" class="rf-clear" type="button" aria-label="清空" @click="clearAmount">×</button>
+          </div>
+          <div class="r-quick">
+            <button
+              v-for="q in QUICK"
+              :key="q"
+              type="button"
+              :class="['rq-item', quickActive === q ? 'active' : '']"
+              @click="pickQuick(q)"
+            >{{ q.toLocaleString('en-US') }}</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 上分 / 下分类型（单选） -->
+      <div class="r-card r-paytype">
+        <div class="rpt-head">{{ curType === 'up' ? '上 分 类 型' : '下 分 类 型' }}</div>
+        <div class="rpt-options" role="radiogroup">
+          <button
+            v-for="(name, key) in PAY_NAMES"
+            :key="key"
+            type="button"
+            :class="['rpt-item', curPayType === key ? 'active' : '']"
+            :aria-pressed="curPayType === key"
+            @click="curPayType = key"
+          >{{ name.split('').join(' ') }}</button>
+        </div>
+      </div>
+
+      <!-- 提交按钮 -->
+      <button type="button" class="r-submit" :disabled="loading" @click="submit">
+        {{ loading ? '提 交 中 …' : (curType === 'up' ? '提 交 上 分 申 请' : '提 交 下 分 申 请') }}
+      </button>
+
+      <div class="r-foot">
+        还 有 疑 问 ？ 请 联 系
+        <a class="rf-link" @click="router.push('/cs')">人 工 客 服</a>
       </div>
 
     </div>
   </div>
+
+  <!-- 提交结果抽屉 -->
+  <div :class="['r-sheet-mask', sheetShow ? 'show' : '']" @click="closeResult"></div>
+  <div :class="['r-sheet', sheetShow ? 'show' : '']" :aria-hidden="!sheetShow">
+    <div class="rs-handle"></div>
+
+    <div class="rs-icon-wrap">
+      <div :class="['rs-icon', result?.type === 'down' ? 'is-down' : '']">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M7.5 12.5l3 3 6-7"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="rs-title">{{ result?.type === 'up' ? '上 分 申 请 已 提 交' : '下 分 申 请 已 提 交' }}</div>
+    <div class="rs-subtitle">{{ result?.type === 'up' ? '请联系客服取得收款账号' : '已立即扣除积分，客服审核后将线下转账' }}</div>
+
+    <div class="rs-detail">
+      <div class="rsd-row">
+        <span class="rsd-k">申 请 内 容</span>
+        <span class="rsd-v rsd-v-gold">{{ result?.label ?? '—' }}</span>
+      </div>
+      <div class="rsd-row">
+        <span class="rsd-k">时 间</span>
+        <span class="rsd-v">{{ result?.time ?? '—' }}</span>
+      </div>
+      <div class="rsd-row">
+        <span class="rsd-k">状 态</span>
+        <span class="rsd-v rsd-status">待 审 核</span>
+      </div>
+    </div>
+
+    <div class="rs-actions">
+      <button type="button" class="rs-btn rs-btn-ghost" @click="closeResult">稍 后 再 说</button>
+      <button type="button" class="rs-btn rs-btn-primary" @click="goCs">立 即 联 系 客 服</button>
+    </div>
+  </div>
+
   <TabBar />
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 import { useWalletStore } from '@/stores/wallet'
-import { rechargeApi, type RechargeOrder } from '@/api/recharge'
+import { rechargeApi } from '@/api/recharge'
 import { useToast } from '@/composables/useToast'
+import { useBodyClass } from '@/composables/useBodyClass'
 import TabBar from '@/components/TabBar.vue'
+import '@/assets/recharge.css'
+
+useBodyClass('deco-bg')
 
 const router = useRouter()
+const userStore = useUserStore()
 const walletStore = useWalletStore()
 const { toast } = useToast()
 
-const tab = ref<'up' | 'down' | 'records'>('up')
-const amount = ref<number | ''>('')
-const loading = ref(false)
-const orders = ref<RechargeOrder[]>([])
-const ordersLoading = ref(false)
+const avatarSrc = computed(() => userStore.profile?.avatar || '/images/avatars/001.jpg')
 
-onMounted(() => walletStore.fetchBalance())
+const QUICK = [100, 500, 1000, 3000, 5000, 10000]
+const PAY_NAMES: Record<string, string> = { wechat: '微信', alipay: '支付宝', unionpay: '银联' }
+
+const curType = ref<'up' | 'down'>('up')
+const curPayType = ref('wechat')
+const amountStr = ref('')
+const quickActive = ref<number | null>(null)
+const loading = ref(false)
+
+const sheetShow = ref(false)
+const result = ref<{ type: 'up' | 'down'; label: string; time: string } | null>(null)
+
+const amountHint = computed(() =>
+  curType.value === 'up'
+    ? '（请输入整数积分，最低 100）'
+    : `（最多可下 ${walletStore.balance.toLocaleString('en-US')} 积分）`
+)
+
+function switchType(t: 'up' | 'down') {
+  if (t === curType.value) return
+  curType.value = t
+  quickActive.value = null
+}
+
+function onAmountInput() {
+  let v = amountStr.value.replace(/[^\d]/g, '')
+  if (v.length > 1) v = v.replace(/^0+/, '')
+  amountStr.value = v.slice(0, 9)
+  quickActive.value = null
+}
+
+function clearAmount() {
+  amountStr.value = ''
+  quickActive.value = null
+}
+
+function pickQuick(v: number) {
+  amountStr.value = String(v)
+  quickActive.value = v
+}
+
+function buildLabel(amount: number) {
+  return `${PAY_NAMES[curPayType.value]}${curType.value === 'up' ? '上分' : '下分'}（${amount}）`
+}
+
+function formatTime(ts: number) {
+  const d = new Date(ts)
+  const pad = (n: number) => (n < 10 ? '0' + n : '' + n)
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
 
 async function submit() {
-  if (!amount.value || amount.value < 1) { toast('请输入有效金额'); return }
+  const amount = parseInt(amountStr.value, 10)
+  if (!amountStr.value) { toast('请输入金额'); return }
+  if (!amount || amount <= 0) { toast('金额格式有误'); return }
+  if (curType.value === 'up' && amount < 100) { toast('上分最低 100 积分'); return }
+  if (curType.value === 'down') {
+    if (amount < 50) { toast('下分最低 50 积分'); return }
+    if (amount > walletStore.balance) { toast('下分金额不能大于当前积分'); return }
+  }
+
   loading.value = true
   try {
-    if (tab.value === 'up') {
-      await rechargeApi.apply(Number(amount.value))
-      toast('上分申请已提交，等待审核')
+    if (curType.value === 'up') {
+      await rechargeApi.apply(amount, curPayType.value)
     } else {
-      await rechargeApi.withdraw(Number(amount.value))
+      await rechargeApi.withdraw(amount)
       await walletStore.fetchBalance()
-      toast('下分申请已提交，等待审核')
     }
-    amount.value = ''
+    const label = buildLabel(amount)
+    result.value = { type: curType.value, label, time: formatTime(Date.now()) }
+    amountStr.value = ''
+    quickActive.value = null
+    toast(label)
+    sheetShow.value = true
   } catch (e: any) {
     toast(e.message ?? '提交失败')
   } finally {
@@ -99,58 +256,19 @@ async function submit() {
   }
 }
 
-async function loadOrders() {
-  ordersLoading.value = true
-  try {
-    const res = await rechargeApi.myOrders()
-    orders.value = res.list
-  } finally {
-    ordersLoading.value = false
-  }
+function closeResult() {
+  sheetShow.value = false
 }
 
-function statusText(s: string) {
-  return { PENDING: '审核中', APPROVED: '已通过', REJECTED: '已拒绝' }[s] ?? s
+function goCs() {
+  closeResult()
+  router.push('/cs')
 }
+
+function goBack() {
+  if (window.history.length > 1) router.back()
+  else router.push('/lobby')
+}
+
+onMounted(() => walletStore.fetchBalance())
 </script>
-
-<style scoped>
-.recharge-page { min-height: 100vh; padding-bottom: 70px; }
-.balance-card {
-  display: flex; align-items: baseline; gap: 8px;
-  background: linear-gradient(135deg, rgba(40,28,8,.9), rgba(20,14,4,.95));
-  border: 1px solid rgba(200,160,40,.35); border-radius: 14px;
-  padding: 16px 20px; margin-bottom: 20px;
-}
-.bc-label { color: rgba(255,255,255,.5); font-size: 13px; }
-.bc-value { color: #e8c032; font-size: 28px; font-weight: 700; flex: 1; text-align: right; }
-.bc-unit  { color: rgba(255,255,255,.4); font-size: 12px; }
-.rc-tabs  { display: flex; gap: 8px; margin-bottom: 20px; }
-.rc-tab {
-  flex: 1; padding: 10px 0; text-align: center; border-radius: 10px; font-size: 14px;
-  border: 1px solid rgba(200,160,40,.3); color: rgba(255,255,255,.5); cursor: pointer;
-}
-.rc-tab.active { background: rgba(200,160,40,.15); color: #e8c032; border-color: rgba(200,160,40,.6); }
-.rc-form { display: flex; flex-direction: column; gap: 16px; }
-.rc-presets { display: flex; gap: 8px; }
-.preset-btn {
-  flex: 1; padding: 8px 0; border-radius: 8px; font-size: 13px;
-  background: rgba(255,255,255,.06); border: 1px solid rgba(200,160,40,.3);
-  color: rgba(200,160,40,.9); cursor: pointer;
-}
-.rc-note { color: rgba(255,255,255,.35); font-size: 12px; text-align: center; line-height: 1.6; }
-.order-card {
-  background: rgba(255,255,255,.04); border: 1px solid rgba(200,160,40,.2);
-  border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
-}
-.oc-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
-.oc-type { color: rgba(255,255,255,.7); font-size: 14px; }
-.oc-status { font-size: 13px; font-weight: 600; }
-.oc-status.pending  { color: #e8c032; }
-.oc-status.approved { color: #4caf50; }
-.oc-status.rejected { color: #f06060; }
-.oc-amount { color: #e8c032; font-size: 18px; font-weight: 700; margin-bottom: 4px; }
-.oc-time   { color: rgba(255,255,255,.35); font-size: 12px; }
-.oc-reason { color: #f06060; font-size: 12px; margin-top: 6px; }
-.rc-empty  { text-align: center; color: rgba(255,255,255,.3); padding: 40px 0; }
-</style>
