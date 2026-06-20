@@ -1,0 +1,11 @@
+# 灵光 / PG 麻将胡了1 待替换素材清单
+# 当前预览图由现有 bg-base / multiplier-bar-bg 轻微暖色衍生（尺寸一致，无光晕）
+# PS 定稿后原样覆盖同名文件即可
+
+[免费旋转 - 背景与框]
+bg-base-free.png              720x1280 整屏底图（由 bg-base 暖色微调）
+multiplier-bar-bg-free.png    720x134  顶部倍数条框（由 multiplier-bar-bg 暖色微调）
+
+[免费旋转 - 弹窗]
+fs-trigger-panel-bg.png       420x520  触发弹窗底（扁平渐变，硬边，方便抠图）
+fs-end-panel-bg.png           440x540  结束弹窗底

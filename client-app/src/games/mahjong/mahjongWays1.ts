@@ -142,6 +142,16 @@ export function countScatters(grid: TileCell[][]): number {
   return n
 }
 
+export function getScatterCells(grid: TileCell[][]): GridPos[] {
+  const cells: GridPos[] = []
+  for (let c = 0; c < COLS; c++) {
+    for (const r of VISIBLE_ROW_INDICES) {
+      if (grid[c][r]?.symbol === 'hu') cells.push({ col: c, row: r })
+    }
+  }
+  return cells
+}
+
 export function evaluateWins(
   grid: TileCell[][],
   betAmount: number,
@@ -234,6 +244,53 @@ export function dropAndRefill(grid: TileCell[][], removeCells: GridPos[]): void 
     )
     grid[c] = [...kept, ...incoming]
   }
+}
+
+export interface TileDropMotion {
+  /** 从上方落入的行数 */
+  fallRows: number
+  delayMs: number
+}
+
+/** 消除后各牌下落/补牌动画（对齐 PG 逐列延迟） */
+export function computeTileDropMotions(
+  removeCells: GridPos[],
+  colStaggerMs: number,
+): Map<string, TileDropMotion> {
+  const byCol = new Map<number, Set<number>>()
+  for (const { col, row } of removeCells) {
+    if (!byCol.has(col)) byCol.set(col, new Set())
+    byCol.get(col)!.add(row)
+  }
+
+  const motions = new Map<string, TileDropMotion>()
+
+  for (let c = 0; c < COLS; c++) {
+    const removedSet = byCol.get(c) ?? new Set<number>()
+    const numRemoved = removedSet.size
+    if (numRemoved === 0) continue
+
+    const colDelay = c * colStaggerMs
+    const numKept = TOTAL_ROWS - numRemoved
+
+    for (let row = 0; row < TOTAL_ROWS; row++) {
+      if (removedSet.has(row)) continue
+      const fallRows = [...removedSet].filter((r) => r < row).length
+      if (fallRows > 0) {
+        motions.set(`${c}-${row - fallRows}`, { fallRows, delayMs: colDelay })
+      }
+    }
+
+    for (let i = 0; i < numRemoved; i++) {
+      const newRow = numKept + i
+      motions.set(`${c}-${newRow}`, {
+        fallRows: numRemoved - i,
+        delayMs: colDelay,
+      })
+    }
+  }
+
+  return motions
 }
 
 export function posKey(col: number, row: number): string {
