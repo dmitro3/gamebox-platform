@@ -2,47 +2,234 @@
   <Transition name="fs-end">
     <div
       v-if="visible"
-      class="fs-end-mask"
+      class="fs-end-scene"
       role="dialog"
       aria-modal="true"
-      aria-label="免费旋转结束"
-      @click="emit('confirm')"
+      aria-label="免费旋转共赢得"
+      @click="onSceneClick"
     >
-      <div class="fs-end-panel" @click.stop>
-        <img v-if="panelBg" class="fs-end-panel-bg" :src="panelBg" alt="" />
-        <div v-if="!panelBg" class="fs-end-rays" aria-hidden="true" />
-        <div class="fs-end-body">
-          <img :src="`${symBase}/hu.png`" class="fs-end-hu" alt="" />
-          <h2 class="fs-end-title">免费旋转结束</h2>
-          <p class="fs-end-sub">共完成 {{ spinsPlayed }} 次免费旋转</p>
-          <div class="fs-end-win-block" :class="{ 'is-zero-win': totalWin <= 0 }">
-            <span class="fs-end-win-label">共赢得</span>
-            <div class="fs-end-win-amount">
-              <span class="fs-end-win-currency">¥</span>
-              <span class="fs-end-win-value">{{ totalWin.toFixed(2) }}</span>
+      <!-- 正版 total_win 叠层（自下而上） -->
+      <img
+        v-if="bgTotal"
+        class="fs-end-layer fs-end-layer--total-bg"
+        :src="bgTotal"
+        alt=""
+        draggable="false"
+      />
+
+      <img
+        v-if="bgGlowBottom"
+        class="fs-end-layer fs-end-layer--glow-b"
+        :src="bgGlowBottom"
+        alt=""
+        draggable="false"
+      />
+      <img
+        v-if="bgGlowTop"
+        class="fs-end-layer fs-end-layer--glow-a"
+        :src="bgGlowTop"
+        alt=""
+        draggable="false"
+      />
+      <img
+        v-if="bgFlare"
+        class="fs-end-layer fs-end-layer--flare"
+        :src="bgFlare"
+        alt=""
+        draggable="false"
+      />
+      <img
+        v-if="bgFg"
+        class="fs-end-layer fs-end-layer--fg"
+        :src="bgFg"
+        alt=""
+        draggable="false"
+      />
+
+      <div class="fs-end-ui">
+        <div class="fs-end-win-holder">
+          <img
+            v-if="titleImg"
+            class="fs-end-title"
+            :src="titleImg"
+            alt="共赢得"
+            draggable="false"
+          />
+          <div class="fs-end-digits" :aria-label="`共赢得 ${formattedWin}`">
+            <div class="fs-end-digits__inner" :style="digitsWrapStyle">
+              <span
+                v-for="(ch, index) in winChars"
+                :key="`${index}-${ch}`"
+                class="fs-end-digits__cell"
+                :style="digitStyle(ch)"
+              />
             </div>
           </div>
-          <button type="button" class="fs-end-btn" @click="emit('confirm')">领取</button>
-          <p class="fs-end-hint">点击任意处继续</p>
         </div>
+
+        <button
+          v-show="countComplete"
+          type="button"
+          class="fs-end-collect"
+          @click.stop="emit('confirm')"
+          @pointerdown="btnPressed = true"
+          @pointerup="btnPressed = false"
+          @pointerleave="btnPressed = false"
+          @pointercancel="btnPressed = false"
+        >
+          <img
+            class="fs-end-collect__text"
+            :src="btnPressed && btnCollectPressed ? btnCollectPressed : btnCollect"
+            alt="领奖"
+            draggable="false"
+          />
+        </button>
       </div>
     </div>
   </Transition>
 </template>
 
 <script setup lang="ts">
-import { watch, onUnmounted } from 'vue'
+import { computed, ref, watch, onUnmounted } from 'vue'
+import { FS_END_DIGIT_H_PCT, digitSpriteStyle } from '../games/mahjong/digitAtlas'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
   totalWin: { type: Number, default: 0 },
-  spinsPlayed: { type: Number, default: 0 },
-  symBase: { type: String, default: '/images/games/mahjong/classic/symbols' },
-  panelBg: { type: String, default: '' },
+  canvasHeight: { type: Number, default: 640 },
+  canvasWidth: { type: Number, default: 360 },
+  titleImg: { type: String, default: '' },
+  btnCollect: { type: String, default: '' },
+  btnCollectPressed: { type: String, default: '' },
+  bgTotal: { type: String, default: '' },
+  bgGlowTop: { type: String, default: '' },
+  bgGlowBottom: { type: String, default: '' },
+  bgFlare: { type: String, default: '' },
+  bgFg: { type: String, default: '' },
+  digitsAtlas: { type: String, default: '' },
+  digitDot: { type: String, default: '' },
+  digitComma: { type: String, default: '' },
   autoDismissMs: { type: Number, default: 4800 },
+  /** 0 = 按金额自动计算时长 */
+  countUpMs: { type: Number, default: 0 },
 })
 
 const emit = defineEmits<{ confirm: [] }>()
+
+const btnPressed = ref(false)
+const displayedWin = ref(0)
+const countComplete = ref(false)
+
+let countRaf: number | null = null
+let countStart = 0
+let countTarget = 0
+let countDuration = 0
+
+function easeOutExpo(t: number): number {
+  return t >= 1 ? 1 : 1 - 2 ** (-10 * t)
+}
+
+function countUpDuration(target: number): number {
+  if (props.countUpMs > 0) return props.countUpMs
+  const mag = Math.log10(Math.max(target, 10))
+  return Math.min(3400, Math.max(1800, 1500 + mag * 380))
+}
+
+function stopCountUp() {
+  if (countRaf != null) {
+    cancelAnimationFrame(countRaf)
+    countRaf = null
+  }
+}
+
+function finishCountUp() {
+  stopCountUp()
+  displayedWin.value = countTarget
+  countComplete.value = true
+  scheduleAutoDismiss()
+}
+
+function scheduleAutoDismiss() {
+  clearAutoTimer()
+  if (props.visible && countComplete.value && props.autoDismissMs > 0) {
+    autoTimer = setTimeout(() => emit('confirm'), props.autoDismissMs)
+  }
+}
+
+function startCountUp(target: number) {
+  stopCountUp()
+  clearAutoTimer()
+  countTarget = target
+  countComplete.value = false
+  displayedWin.value = 0
+  countDuration = countUpDuration(target)
+  countStart = performance.now()
+
+  if (target <= 0) {
+    finishCountUp()
+    return
+  }
+
+  const tick = (now: number) => {
+    const t = Math.min(1, (now - countStart) / countDuration)
+    displayedWin.value = Math.round(countTarget * easeOutExpo(t) * 100) / 100
+    if (t < 1) {
+      countRaf = requestAnimationFrame(tick)
+    } else {
+      finishCountUp()
+    }
+  }
+  countRaf = requestAnimationFrame(tick)
+}
+
+function onSceneClick() {
+  if (!countComplete.value) {
+    finishCountUp()
+    return
+  }
+  emit('confirm')
+}
+
+const formattedWin = computed(() =>
+  displayedWin.value.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }),
+)
+
+const winChars = computed(() => formattedWin.value.split(''))
+
+/** Cocos total_win number_display：实际渲染略小于裸 heightPct */
+const digitHeightPx = computed(() =>
+  Math.max(20, Math.round(props.canvasHeight * (FS_END_DIGIT_H_PCT / 100))),
+)
+
+const digitsWrapStyle = computed(() => {
+  const h = digitHeightPx.value
+  const charCount = winChars.value.length
+  const estWidth = charCount * h * 0.46
+  const maxWidth = props.canvasWidth * 0.72
+  const scale = Math.min(1, maxWidth / Math.max(estWidth, 1))
+  return { transform: `scale(${scale.toFixed(3)})` }
+})
+
+function digitStyle(ch: string): Record<string, string> {
+  const h = digitHeightPx.value
+  const base = digitSpriteStyle(
+    ch,
+    h,
+    props.digitsAtlas,
+    props.digitDot,
+    props.digitComma,
+    'fs-end',
+  )
+  if (!Object.keys(base).length) return {}
+  if (ch === ',' || ch === '.') return base
+  return {
+    ...base,
+    filter: 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5))',
+  }
+}
 
 let autoTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -54,282 +241,202 @@ const clearAutoTimer = () => {
 }
 
 watch(
-  () => props.visible,
-  (show) => {
+  () => [props.visible, props.totalWin] as const,
+  ([show, target]) => {
     clearAutoTimer()
-    if (show && props.autoDismissMs > 0) {
-      autoTimer = setTimeout(() => emit('confirm'), props.autoDismissMs)
+    btnPressed.value = false
+    if (show) {
+      startCountUp(target)
+    } else {
+      stopCountUp()
+      displayedWin.value = 0
+      countComplete.value = false
     }
   },
   { immediate: true },
 )
 
-onUnmounted(clearAutoTimer)
+onUnmounted(() => {
+  clearAutoTimer()
+  stopCountUp()
+})
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+QingKe+HuangYou&display=swap');
-
-.fs-end-mask {
+.fs-end-scene {
   position: absolute;
   inset: 0;
   z-index: 31;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(8, 2, 2, 0.72);
-  backdrop-filter: blur(3px);
-  cursor: pointer;
-}
-
-.fs-end-panel {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  width: 88%;
-  max-width: 440px;
-  padding: 0;
-  border-radius: 16px;
-  font-family: 'ZCOOL QingKe HuangYou', 'Ma Shan Zheng', cursive;
-  background: linear-gradient(180deg, #7a1808 0%, #3d0808 52%, #220404 100%);
-  border: 3px solid #ffd700;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
-  cursor: default;
-  animation: fs-end-pop 0.5s cubic-bezier(0.34, 1.35, 0.64, 1) both;
   overflow: hidden;
+  cursor: pointer;
+  background: #120604;
+  animation: fs-end-scene-in 0.35s ease-out both;
 }
 
-.fs-end-panel:has(.fs-end-panel-bg) {
-  width: 88%;
-  max-width: 440px;
-  aspect-ratio: 834 / 1024;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+/* 底部两角暗角：遮住 total_bg 缩放后的亮黄边 */
+.fs-end-scene::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 16%;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    rgba(18, 6, 4, 0.92) 0%,
+    rgba(18, 6, 4, 0.45) 45%,
+    transparent 100%
+  );
 }
 
-.fs-end-panel-bg {
+.fs-end-layer {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* total_bg：scale 3.333 全屏暗底 */
+.fs-end-layer--total-bg {
+  z-index: 0;
+  left: -1.5%;
+  top: -10.938%;
+  width: 103%;
+  height: 121.875%;
+  object-fit: cover;
+  object-position: center 36%;
+}
+
+/* total_glow_b：scale 4，居中偏下 */
+.fs-end-layer--glow-b {
+  z-index: 1;
+  left: -10%;
+  top: -0.8%;
+  width: 120%;
+  height: 49%;
+  object-fit: cover;
+  object-position: center bottom;
+  opacity: 0.75;
+  mix-blend-mode: screen;
+  /* 避免 glow 在底部两角溢出亮边 */
+  clip-path: inset(0 3% 0 3%);
+}
+
+/* total_glow_a：顶部放射光 */
+.fs-end-layer--glow-a {
+  z-index: 2;
+  left: 0;
+  top: -11%;
+  width: 100%;
+  height: 76%;
+  object-fit: cover;
+  object-position: center top;
+  mix-blend-mode: screen;
+  opacity: 0.88;
+  animation: fs-end-glow-pulse 2.8s ease-in-out infinite alternate;
+}
+
+/* info_flare_a：标题/金额背后光晕 */
+.fs-end-layer--flare {
+  z-index: 3;
+  left: 50%;
+  top: 7.4%;
+  width: 102.6%;
+  height: 32%;
+  transform: translateX(-50%);
+  object-fit: cover;
+  object-position: center center;
+  mix-blend-mode: screen;
+  opacity: 0.82;
+}
+
+/* total_fg：anchor bottom，topPct 35.788 */
+.fs-end-layer--fg {
+  z-index: 4;
+  left: 50%;
+  top: 35.788%;
+  width: 100.1%;
+  height: 75.149%;
+  transform: translateX(-50%);
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.fs-end-ui {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
-  object-position: center center;
+  z-index: 5;
   pointer-events: none;
-  z-index: 0;
 }
 
-.fs-end-panel:has(.fs-end-panel-bg) > :not(.fs-end-panel-bg):not(.fs-end-rays) {
-  position: relative;
-  z-index: 1;
-}
-
-.fs-end-body {
-  position: relative;
-  z-index: 1;
+/* win_holder：top 4.915%, height 26.518% */
+.fs-end-win-holder {
+  position: absolute;
+  left: 50%;
+  top: 4.9%;
+  width: 60.6%;
+  height: 26.5%;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 100%;
-  padding: 8% 6% 7%;
-  box-sizing: border-box;
-}
-
-.fs-end-panel:not(:has(.fs-end-panel-bg)) .fs-end-body {
-  padding: 28px 22px 24px;
-}
-
-.fs-end-rays {
-  position: absolute;
-  inset: -22%;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    rgba(255, 215, 0, 0.1) 40deg,
-    transparent 80deg,
-    rgba(255, 215, 0, 0.07) 120deg,
-    transparent 160deg,
-    rgba(255, 215, 0, 0.1) 200deg,
-    transparent 240deg,
-    rgba(255, 215, 0, 0.07) 280deg,
-    transparent 320deg,
-    rgba(255, 215, 0, 0.1) 360deg
-  );
-  animation: fs-end-rays-spin 10s linear infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.fs-end-hu {
-  width: 64px;
-  height: 64px;
-  object-fit: contain;
-  filter: drop-shadow(0 0 12px rgba(255, 200, 60, 0.7));
-  margin: 0 0 8px;
-  opacity: 0.92;
+  justify-content: flex-start;
+  animation: fs-end-win-pop 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) both;
 }
 
 .fs-end-title {
-  margin: 0 0 4px;
-  font-family: 'Ma Shan Zheng', 'ZCOOL QingKe HuangYou', cursive;
-  font-size: 28px;
-  font-weight: 400;
-  letter-spacing: 2px;
-  line-height: 1.15;
-  text-align: center;
-  white-space: nowrap;
-  color: #ffd84a;
-  text-shadow:
-    0 2px 0 rgba(80, 35, 4, 0.85),
-    0 0 10px rgba(255, 200, 60, 0.45);
+  width: 100%;
+  max-height: 56%;
+  object-fit: contain;
+  object-position: center top;
+  filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.4));
+  flex-shrink: 0;
 }
 
-.fs-end-sub {
-  margin: 0 0 14px;
-  font-family: 'ZCOOL QingKe HuangYou', 'Ma Shan Zheng', cursive;
-  font-size: 15px;
-  font-weight: 400;
-  letter-spacing: 1px;
-  color: rgba(255, 230, 200, 0.78);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
-}
-
-.fs-end-win-block {
+.fs-end-digits {
+  flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  width: 92%;
-  margin: 4px 0 16px;
-  padding: 16px 10px 18px;
-  border-radius: 12px;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 220, 100, 0.28) 0%,
-    rgba(30, 8, 2, 0.42) 100%
-  );
-  border: 2px solid rgba(255, 215, 0, 0.62);
-  box-shadow:
-    inset 0 0 28px rgba(255, 200, 60, 0.18),
-    0 0 24px rgba(255, 180, 40, 0.22),
-    0 6px 20px rgba(0, 0, 0, 0.28);
-}
-
-.fs-end-panel:has(.fs-end-panel-bg) .fs-end-win-block {
-  background: rgba(12, 2, 0, 0.38);
-  border-color: rgba(255, 215, 0, 0.55);
-  backdrop-filter: blur(3px);
-  box-shadow:
-    inset 0 0 32px rgba(255, 200, 60, 0.14),
-    0 0 28px rgba(255, 160, 30, 0.28),
-    0 6px 20px rgba(0, 0, 0, 0.3);
-}
-
-.fs-end-win-block.is-zero-win {
-  border-color: rgba(255, 215, 0, 0.32);
-  box-shadow:
-    inset 0 0 16px rgba(255, 200, 60, 0.08),
-    0 4px 14px rgba(0, 0, 0, 0.22);
-}
-
-.fs-end-win-block.is-zero-win .fs-end-win-value,
-.fs-end-win-block.is-zero-win .fs-end-win-currency {
-  background: none;
-  -webkit-text-fill-color: rgba(255, 240, 220, 0.58);
-  color: rgba(255, 240, 220, 0.58);
-  animation: none;
-  filter: none;
-}
-
-.fs-end-win-label {
-  font-family: 'Ma Shan Zheng', 'ZCOOL QingKe HuangYou', cursive;
-  font-size: 20px;
-  font-weight: 400;
-  letter-spacing: 5px;
-  color: #ffe8a0;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-}
-
-.fs-end-win-amount {
-  display: flex;
-  align-items: baseline;
   justify-content: center;
-  gap: 2px;
-  max-width: 100%;
-  line-height: 1;
-  animation: fs-end-win-pop 0.7s cubic-bezier(0.22, 1.45, 0.36, 1) both;
+  width: 100%;
+  min-height: 0;
+  margin-top: 2%;
 }
 
-.fs-end-win-currency {
-  font-family: 'ZCOOL QingKe HuangYou', 'Ma Shan Zheng', cursive;
-  font-size: clamp(28px, 7vw, 38px);
-  font-weight: 400;
-  background: linear-gradient(180deg, #fffff8 0%, #ffef70 35%, #ffb818 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  -webkit-text-stroke: 1.2px rgba(100, 38, 4, 0.75);
-  paint-order: stroke fill;
-  filter: drop-shadow(0 2px 0 rgba(80, 35, 4, 0.88));
-  animation: fs-end-win-shine 1.1s ease-in-out infinite alternate;
+.fs-end-digits__inner {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.008em;
+  transform-origin: center center;
 }
 
-.fs-end-win-value {
-  font-family: 'ZCOOL QingKe HuangYou', 'Ma Shan Zheng', cursive;
-  font-size: clamp(40px, 11vw, 58px);
-  font-weight: 400;
-  line-height: 1;
-  letter-spacing: 1px;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  background: linear-gradient(180deg, #ffffff 0%, #fff8c0 18%, #ffd040 52%, #ff9800 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  -webkit-text-stroke: 1.8px rgba(100, 38, 4, 0.82);
-  paint-order: stroke fill;
-  filter:
-    drop-shadow(0 3px 0 rgba(80, 35, 4, 0.95))
-    drop-shadow(0 0 16px rgba(255, 210, 60, 0.85))
-    drop-shadow(0 0 32px rgba(255, 130, 20, 0.45));
-  animation: fs-end-win-shine 1.1s ease-in-out infinite alternate;
+.fs-end-digits__cell {
+  flex-shrink: 0;
 }
 
-.fs-end-btn {
-  min-width: 160px;
-  padding: 11px 34px;
-  border: 2px solid #ffd700;
-  border-radius: 26px;
-  background: linear-gradient(180deg, #f0c830 0%, #b8860b 55%, #8b6910 100%);
-  color: #2a1204;
-  font-family: 'ZCOOL QingKe HuangYou', 'Ma Shan Zheng', cursive;
-  font-size: 22px;
-  font-weight: 400;
-  letter-spacing: 8px;
-  text-indent: 8px;
+.fs-end-collect {
+  position: absolute;
+  left: 50%;
+  top: 85.4%;
+  transform: translateX(-50%);
+  width: min(36%, 250px);
+  padding: 0;
+  border: none;
+  background: transparent;
   cursor: pointer;
-  text-shadow: 0 1px 0 rgba(255, 240, 200, 0.35);
-  box-shadow:
-    0 4px 14px rgba(0, 0, 0, 0.38),
-    0 0 14px rgba(255, 200, 60, 0.22);
-  transition: transform 0.12s, filter 0.12s;
+  pointer-events: auto;
+  animation: fs-end-collect-in 0.45s ease-out 0.22s both;
 }
 
-.fs-end-btn:active {
-  transform: scale(0.96);
-  filter: brightness(1.08);
-}
-
-.fs-end-hint {
-  margin: 14px 0 0;
-  font-family: 'ZCOOL QingKe HuangYou', 'Ma Shan Zheng', cursive;
-  font-size: 13px;
-  font-weight: 400;
-  letter-spacing: 1px;
-  color: rgba(255, 220, 190, 0.5);
+.fs-end-collect__text {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.5));
+  pointer-events: none;
 }
 
 .fs-end-enter-active,
@@ -337,66 +444,28 @@ onUnmounted(clearAutoTimer)
   transition: opacity 0.38s ease;
 }
 
-.fs-end-enter-active .fs-end-panel,
-.fs-end-leave-active .fs-end-panel {
-  transition: transform 0.38s ease, opacity 0.38s ease;
-}
-
 .fs-end-enter-from,
 .fs-end-leave-to {
   opacity: 0;
 }
 
-.fs-end-enter-from .fs-end-panel,
-.fs-end-leave-to .fs-end-panel {
-  transform: scale(0.82);
-  opacity: 0;
-}
-
-@keyframes fs-end-pop {
-  0% {
-    transform: scale(0.65);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-@keyframes fs-end-rays-spin {
-  to {
-    transform: rotate(360deg);
-  }
+@keyframes fs-end-scene-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes fs-end-win-pop {
-  0% {
-    transform: scale(0.35);
-    opacity: 0;
-  }
-  65% {
-    transform: scale(1.1);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
+  0% { opacity: 0; transform: translateX(-50%) scale(0.72); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1); }
 }
 
-@keyframes fs-end-win-shine {
-  0% {
-    filter:
-      drop-shadow(0 3px 0 rgba(80, 35, 4, 0.95))
-      drop-shadow(0 0 14px rgba(255, 210, 60, 0.55))
-      drop-shadow(0 0 28px rgba(255, 130, 20, 0.35));
-  }
-  100% {
-    filter:
-      drop-shadow(0 3px 0 rgba(80, 35, 4, 0.95))
-      drop-shadow(0 0 26px rgba(255, 215, 0, 0.98))
-      drop-shadow(0 0 48px rgba(255, 140, 20, 0.58));
-  }
+@keyframes fs-end-collect-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes fs-end-glow-pulse {
+  0% { opacity: 0.78; }
+  100% { opacity: 0.92; }
 }
 </style>

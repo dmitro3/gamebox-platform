@@ -1,20 +1,194 @@
 <template>
-  <div class="mahjong-game-page">
-    <!-- 游戏画布 720×1280 竖屏（灵光素材） -->
-    <div class="game-container" :class="{ 'is-free-spin-mode': isInFreeSpinFeature, 'is-using-fs-assets': isInFreeSpinFeature && USE_FREE_SPIN_BG_ASSET }">
+  <!-- 第 0 步：正版进入页（加载动画 → 封面 → 点开始） -->
+  <MahjongCover v-if="showPgCover" @start="onPgCoverStart" />
 
-      <!-- PS 叠层：底图 → 顶栏 UI → 牌面 → 底栏 UI → 按钮 -->
+  <div v-show="!showPgCover" class="mahjong-game-page" :class="{ 'is-free-spin-bg': isInFreeSpinFeature }">
+    <!-- 游戏画布（尺寸来自正版 dump cocosLayout.design） -->
+    <div
+      class="game-container"
+      :class="{ 'is-free-spin-mode': isInFreeSpinFeature, 'is-using-fs-assets': isInFreeSpinFeature && hasFreeSpinBgAsset }"
+      :style="canvasBoxStyle"
+    >
 
-      <!-- ① 底图 -->
+      <!-- PG 正版叠层：底图 → 顶栏 → 牌面 → 信息带 → 底栏按钮 -->
+
+      <!-- ① 主界面底：正版为暗色纯色底（非红云纹 bg-base） -->
+      <div class="layer layer-base z-bg" :style="pctLayerStyle(bgImage)"></div>
+
+      <!-- ①c 顶部元宝装饰条 main_top_a（中间木纹靠 z-wood-top 底色，两侧铜钱） -->
       <div
-        class="layer layer-base z-bg"
-        :class="{ 'is-free-spin-mode': isInFreeSpinFeature, 'is-using-fs-assets': isInFreeSpinFeature && USE_FREE_SPIN_BG_ASSET }"
+        v-if="pgStep >= 1 && topCoinsBarUrl && L.woodTop"
+        class="layer z-wood-top"
+        :style="pctLayerStyle(L.woodTop)"
       >
-        <img class="layer-img layer-img--bg" :src="`${LG}/${bgAsset}.png?v=12`" alt="" />
-        <div v-if="!USE_FREE_SPIN_BG_ASSET" class="free-spin-bg-glow" aria-hidden="true" />
+        <img class="layer-img layer-img--coins-bar" :src="topCoinsBarUrl" alt="" draggable="false" />
       </div>
 
-      <!-- 游戏层：麻将牌（在底图之上、UI 框之下；边框已烘焙在 bg-base 内） -->
+      <!-- ② reel_a 整图：正版坐标，z=3 在牌层下方，绿毡+木框自然呈现 -->
+      <div v-if="pgStep >= 2 && pgUi('reel-green') && L.reelFrame" class="layer z-reel-green" :style="pctLayerStyle(L.reelFrame)">
+        <img class="layer-img" :src="pgUi('reel-green')!" alt="" />
+      </div>
+      <!-- ②b reel_glow：顶部暖光晕 -->
+      <div v-if="pgStep >= 2 && playReels" class="layer z-reel-glow" :style="pctLayerStyle({ topPct: playReels.topPct, heightPct: playReels.heightPct * 0.3, leftPct: playReels.leftPct, widthPct: playReels.widthPct })"></div>
+      <!-- ③ 底栏木框 main_bottom_a（木纹+元宝，底部自带渐暗） -->
+      <div v-if="pgStep >= 3 && pgUi('bottom-wood')" class="layer z-wood" :style="pctLayerStyle(L.bottomWood)">
+        <img class="layer-img" :src="pgUi('bottom-wood')!" alt="" draggable="false" />
+      </div>
+
+      <!-- ③a 底栏分隔条 main_bottom_b（橙色弧形盖帽，信息栏与底栏交界） -->
+      <div v-if="pgStep >= 3 && pgUi('bg-bottom-bar') && L.bottomBar" class="layer z-bottom-bar" :style="pctLayerStyle(L.bottomBar)">
+        <img class="layer-img" :src="pgUi('bg-bottom-bar')!" alt="" draggable="false" />
+      </div>
+
+      <!-- ③a-1 按钮区半透明暗层 footer_darken（Cocos: opacity=100, color=#000000）
+           叠在木纹之上、按钮之下，让旋转按钮区域变暗 -->
+      <div
+        v-if="pgStep >= 3 && L.footerDarken"
+        class="layer z-footer-darken"
+        :style="pctLayerStyle(L.footerDarken)"
+      />
+
+      <!-- ③b 信息栏框
+           Cocos dump 对照：
+           stage 0 = 普通旋转（normal_frontBoard = infoboard_a 金框）
+           stage 1 = 免费旋转模式（bonus_frontBoard  = infoboard_b 绿框）
+           stage 2 = 大赢（medium_winboard = infoboard_c 紫框，覆盖在底框之上）
+           三档的尺寸/坐标统一用 L.infoboard，紫框用 L.infoboardWin -->
+      <div
+        v-if="pgStep >= 3"
+        class="layer z-infoboard"
+        :class="`infoboard-stage-${infoBoardStage}`"
+        :style="pctLayerStyle(infoBoardStage === 2 ? L.infoboardWin : L.infoboard)"
+      >
+        <img v-if="infoBoardStage === 2" class="layer-img" :src="pgUi('infoboard-c')!" alt="" />
+        <img v-else-if="infoBoardStage === 1" class="layer-img" :src="pgUi('infoboard-b')!" alt="" />
+        <img v-else class="layer-img" :src="pgUi('infoboard-a')!" alt="" />
+      </div>
+
+      <!-- ③c infoboard 内容层
+           Cocos dump 对照：
+           content/message (info2) = ticker，active 当 win=0
+           win_content/win (win_info "赢得") = 普通旋转有赢时
+           win_content/total_win (totalwin_info "共赢得") = 免费旋转中
+           大赢(stage 2)也显示"赢得"；免费旋转时改"共赢得" -->
+      <div
+        v-if="pgStep >= 3 && L.infoboardText"
+        class="layer z-infoboard-text"
+        :class="{ 'is-win-display': hudWinDisplay > 0 }"
+        :style="pctLayerStyle(infoBoardStage === 2 ? L.infoboardWin : L.infoboardText)"
+      >
+        <!-- 无赢：正版 PNG 广告文案（短句居中 / 长句滚出） -->
+        <template v-if="hudWinDisplay <= 0">
+          <div ref="adMsgContainerRef" class="ad-msg-container">
+            <img
+              v-if="currentAdMsgUrl"
+              :key="adMsgAnimKey"
+              class="ad-msg-img"
+              :class="adMsgIsFit ? 'ad-msg-center' : 'ad-msg-scroll'"
+              :style="adMsgIsFit ? {} : { '--scroll-dur': adMsgScrollDur }"
+              :src="currentAdMsgUrl"
+              draggable="false"
+              alt=""
+              @animationend="onAdMsgAnimEnd"
+            />
+          </div>
+        </template>
+        <!-- 有赢：显示赢钱金额（对应 win_content active=true） -->
+        <template v-else>
+          <div class="infoboard-win-content" :style="infoboardWinContentStyle">
+            <!-- 第一次连击「赢得」，第二次起「共赢得」 -->
+            <img
+              v-if="infoboardWinIsTotal"
+              class="infoboard-win-label"
+              :src="pgUi('totalwin-info')!"
+              alt="共赢得"
+              draggable="false"
+            />
+            <img
+              v-else
+              class="infoboard-win-label"
+              :src="pgUi('win-info')!"
+              alt="赢得"
+              draggable="false"
+            />
+            <!-- 金色精灵数字（来自 win-digits.png atlas） -->
+            <span class="infoboard-win-digits" aria-hidden="true">
+              <span
+                v-for="(ch, i) in infoboardWinChars"
+                :key="i"
+                class="win-digit-sprite"
+                :class="winDigitClass(ch)"
+                :style="winDigitStyle(ch)"
+              />
+            </span>
+          </div>
+        </template>
+      </div>
+
+      <!-- ④b 倍数条底框 main_top_c（木纹底，在 1024 栏下方） -->
+      <div
+        v-if="pgStep >= 4 && multBarFrameUrl && L.multBarFrame"
+        class="layer z-mult-bar"
+        :class="{ 'is-free-spin-mode': isInFreeSpinFeature, 'is-using-fs-assets': isInFreeSpinFeature && hasFreeSpinBgAsset }"
+        :style="pctLayerStyle(L.multBarFrame)"
+      >
+        <img class="layer-img layer-img--mult-bar" :src="multBarFrameUrl" alt="" />
+      </div>
+
+      <!-- ⑥a 激活光晕：完整 multiplier_glow，由木纹条 overflow 裁切（正版做法） -->
+      <div
+        v-if="pgStep >= 6 && activeMultGlowInBar && activeMultGlowClip && pgUi('mult-glow')"
+        class="layer z-mult-glow-mask"
+        :style="pctLayerStyle(activeMultGlowClip)"
+      >
+        <div class="mult-glow-inner" :style="pctLayerStyle(activeMultGlowInBar)">
+          <img class="mult-glow-img" :src="pgUi('mult-glow')!" alt="" />
+        </div>
+      </div>
+
+      <!-- ⑥b 倍数指示牌：未激活暗刻滤镜 + 激活金色 × -->
+      <template v-if="pgStep >= 6">
+        <template v-for="(slot, idx) in multSlots" :key="slot.activeKey">
+          <div
+            v-if="activeMultiplierIndex !== idx && pgUi(slot.activeKey)"
+            class="layer z-mult-slot z-mult-slot--inactive"
+            :style="pctLayerStyle(slot.darkBox)"
+          >
+            <img class="mult-slot-img mult-slot-img--inactive" :src="pgUi(slot.activeKey)!" alt="" />
+          </div>
+          <div
+            v-if="activeMultiplierIndex === idx && pgUi(slot.activeKey)"
+            class="layer z-mult-slot z-mult-slot--active"
+            :style="pctLayerStyle(slot.activeBox)"
+          >
+            <img
+              class="mult-slot-img mult-slot-img--active"
+              :class="{ 'is-pulsing': multPulseActive }"
+              :src="pgUi(slot.activeKey)!"
+              alt=""
+            />
+          </div>
+        </template>
+      </template>
+
+      <!-- ④a 1024 橙条 main_top_b（叠在木纹倍数底上方） -->
+      <div
+        v-if="pgStep >= 4 && topBarMainUrl && L.topBarMain"
+        class="layer z-top-bar-main"
+        :style="pctLayerStyle(L.topBarMain)"
+      >
+        <img class="layer-img" :src="topBarMainUrl" alt="" />
+      </div>
+
+      <!-- ⑤ 1024 路中奖组合 -->
+      <div
+        v-if="pgStep >= 5 && pgUi('top-title-1024') && L.title1024"
+        class="layer z-title1024-layer"
+        :style="pctLayerStyle(L.title1024)"
+      >
+        <img class="title-1024-img" :src="pgUi('top-title-1024')!" alt="" />
+      </div>
+
       <svg style="width:0;height:0;position:absolute;" aria-hidden="true" focusable="false">
         <defs>
           <filter id="carve-effect" color-interpolation-filters="sRGB">
@@ -62,9 +236,9 @@
         </defs>
       </svg>
 
-      <!-- ①b 麻将牌（在底图之上、顶栏 UI 之下） -->
-      <div class="layer-board game-board-area z-board" :style="boardStyle">
-        <div id="grid-container" class="grid-container">
+      <!-- ①b 麻将牌 -->
+      <div v-if="pgStep >= 7" class="layer-board game-board-area z-board" :style="boardStyle">
+        <div id="grid-container" class="grid-container" :class="{ 'is-shaking': boardShaking }">
 
           <div
             class="grid-col"
@@ -108,132 +282,65 @@
             :is-golden="selectedTile?.isGolden ?? false"
             :anchor="selectedTileAnchor"
             :asset-base="symbolAssetBase"
-            :bg-image="`${LG}/bg-base.png`"
+            :bg-image="activeBgUrl ?? ''"
           />
-        </div>
-      </div>
 
-      <!-- ② 倍数框 -->
-      <div
-        class="layer z-mult-bar"
-        :class="{ 'is-free-spin-mode': isInFreeSpinFeature, 'is-using-fs-assets': isInFreeSpinFeature && USE_FREE_SPIN_MULT_BAR_ASSET }"
-        :style="layerStyle(L.multBar.y, L.multBar.h)"
-      >
-        <img class="layer-img layer-img--mult-bar" :src="`${LG}/${multBarAsset}.png?v=10`" alt="" />
-      </div>
-
-      <!-- ③ 1024框 -->
-      <div class="layer z-title1024" :style="layerStyle(L.title1024.y, L.title1024.h)">
-        <img class="layer-img" :src="`${LG}/top-title-1024.png`" alt="" />
-      </div>
-
-      <!-- ④ 倍数：常规 + 当前档位高亮叠加（免费旋转用 ×2/×4/×6/×10 素材） -->
-      <div class="layer z-mult-values" :style="layerStyle(L.multValues.y, L.multValues.h)">
-        <div class="mult-values-stack" :class="{ 'is-free-spin-mode': isInFreeSpinFeature }">
-          <Transition name="mult-fade" mode="out-in">
-            <div :key="multValuesAssetBase" class="mult-values-pair">
-              <img class="mult-values-img" :src="`${LG}/${multValuesAssetBase}.png?v=9`" alt="" />
-              <img
-                class="mult-values-img mult-values-active"
-                :class="{ 'is-pulsing': multPulseActive }"
-                :src="`${LG}/${multValuesAssetBase}-active.png?v=9`"
-                alt=""
-                :style="activeMultClipStyle"
-              />
+          <Transition name="retrigger-banner">
+            <div
+              v-if="retriggerBannerCount > 0"
+              class="fs-retrigger-board-banner"
+              aria-live="polite"
+            >
+              <span class="fs-retrigger-board-banner__inner">
+                <span class="fs-retrigger-board-banner__plus">+</span>
+                <span class="fs-retrigger-board-banner__num">{{ retriggerBannerCount }}</span>
+                <span class="fs-retrigger-board-banner__label">次免费旋转</span>
+              </span>
             </div>
           </Transition>
         </div>
       </div>
 
-      <!-- ⑤ 底图2 -->
-      <div class="layer z-wood" :style="layerStyle(L.woodFooter.y, L.woodFooter.h)">
-        <img class="layer-img" :src="`${LG}/wood-top-panel.png`" alt="" />
-      </div>
-
-      <!-- ⑥ 下框 -->
-      <div class="layer z-bottom-frame" :style="layerStyle(L.bottomFrame.y, L.bottomFrame.h)">
-        <img class="layer-img" :src="`${LG}/bottom-frame-bar.png`" alt="" />
-      </div>
-
-      <!-- ⑦ 广告框 -->
-      <div
-        class="layer layer-copy z-message"
-        :class="{ 'is-free-spin-mode': isInFreeSpinFeature }"
-        :style="layerStyle(L.message.y, L.message.h)"
-      >
-        <img class="layer-img layer-img--ribbon" :src="`${LG}/message-ribbon.png`" alt="" />
-        <div ref="tickerBarRef" class="info-ticker-bar">
-          <div
-            ref="tickerItemRef"
-            class="neon-info-text"
-            :class="{
-              'neon-info-text--center': tickerMode === 'center',
-              'neon-info-text--scroll': tickerMode === 'scroll',
-            }"
-            :style="tickerItemStyle"
-            v-html="currentMessageHtml"
-            @animationend="onTickerAnimationEnd"
-          />
-        </div>
-      </div>
-
-      <!-- ⑧ 三格金额框（广告栏下方：余额 / 投注 / 奖金） -->
-      <div class="layer layer-hud z-hud" :style="layerStyle(L.statusHud.y, L.statusHud.h)">
+      <!-- ⑥ 三格金额框 -->
+      <div v-if="pgStep >= 9" class="layer layer-hud z-hud" :style="pctLayerStyle(L.statusHud)">
         <div class="layer-hud__values">
-          <div class="hud-panel clickable" @click="togglePopup('wallet')">
-            <span class="hud-icon-slot">
-              <img class="hud-icon-img" :src="`${LG}/icons/icon-wallet.png`" alt="" />
-            </span>
-            <span class="hud-value">¥{{ balance.toFixed(2) }}</span>
+          <!-- 余额面板 -->
+          <div class="hud-panel hud-panel--balance clickable" @click="togglePopup('wallet')">
+            <img class="hud-icon-img" :src="pgUi('icon-wallet-open')!" alt="" draggable="false" />
+            <span class="hud-value">¥{{ fmtAmt(balance) }}</span>
           </div>
+          <!-- 投注面板 -->
           <div
-            class="hud-panel clickable"
-            :class="{ 'is-disabled': !canAdjustBet, 'is-free-spin-mode': isInFreeSpinFeature }"
+            class="hud-panel hud-panel--bet clickable"
+            :class="{ 'is-disabled': !canAdjustBet }"
             @click="canAdjustBet && togglePopup('bet')"
           >
-            <span class="hud-icon-slot">
-              <img class="hud-icon-img" :src="`${LG}/icons/icon-bet.png`" alt="" />
-            </span>
-            <span class="hud-value-wrap">
-              <span v-if="isInFreeSpinFeature" class="hud-value-tag">锁定</span>
-              <span class="hud-value">¥{{ hudBetDisplay.toFixed(2) }}</span>
-            </span>
+            <img class="hud-icon-img" :src="pgUi('icon-bet')!" alt="" draggable="false" />
+            <span class="hud-value">¥{{ fmtAmt(hudBetDisplay) }}</span>
           </div>
-          <div
-            class="hud-panel clickable"
-            :class="{ 'is-free-spin-mode': isInFreeSpinFeature }"
-            @click="togglePopup('win')"
-          >
-            <span class="hud-icon-slot">
-              <img class="hud-icon-img" :src="`${LG}/icons/icon-win.png`" alt="" />
-            </span>
-            <span class="hud-value-wrap">
-              <span v-if="isInFreeSpinFeature" class="hud-value-tag">累计</span>
-              <span class="hud-value" :class="{ 'is-win': hudWinDisplay > 0 }">¥{{ hudWinDisplay.toFixed(2) }}</span>
-            </span>
+          <!-- 赢取面板 -->
+          <div class="hud-panel hud-panel--win clickable" @click="togglePopup('win')">
+            <img class="hud-icon-img" :src="pgUi('icon-win')!" alt="" draggable="false" />
+            <span class="hud-value" :class="{ 'is-win': hudWinDisplay > 0 }">¥{{ fmtAmt(hudWinDisplay) }}</span>
           </div>
         </div>
-      </div>
-
-      <!-- ⑨ 最底部色块 -->
-      <div class="layer z-bottom-control" :style="layerStyle(L.bottomControl.y, L.bottomControl.h)">
-        <img class="layer-img" :src="`${LG}/bottom-control-bg.png`" alt="" />
-      </div>
-
-      <!-- ⑨b 按钮边框 -->
-      <div class="layer z-btn-frame" :style="btnFrameStyle">
-        <img class="layer-img" :src="`${BTN}/btn-frame.png`" alt="" />
       </div>
 
       <!-- 免费旋转触发弹窗 -->
       <MahjongFreeSpinTriggerOverlay
         :visible="freeSpinTriggerVisible"
-        :scatter-count="freeSpinTriggerData?.scatterCount ?? 3"
         :spins-awarded="freeSpinTriggerData?.spinsAwarded ?? 12"
         :is-retrigger="freeSpinTriggerData?.isRetrigger ?? false"
-        :remaining-after="freeSpinsRemaining"
-        :sym-base="symbolAssetBase"
-        :panel-bg="`${LG_FS_PANEL}/fs-trigger-panel-bg.png?v=12`"
+        :canvas-height="gameRenderHeight"
+        :title-img="pgUi('fs-trigger-title') ?? ''"
+        :subtitle-img="pgUi('fs-trigger-subtitle') ?? ''"
+        :btn-start="pgUi('btn-start') ?? ''"
+        :btn-start-pressed="pgUi('btn-start-pressed') ?? ''"
+        :bg-gradient="pgUi('fs-trigger-bg-gradient') ?? ''"
+        :bg-rays="pgUi('fs-trigger-bg-rays') ?? ''"
+        :bg-tiles="pgUi('fs-trigger-bg-tiles') ?? ''"
+        :bg-coins="pgUi('fs-trigger-bg-coins') ?? ''"
+        :digits-atlas="pgUi('win-digits') ?? ''"
         :auto-dismiss-ms="isFsUiPreview ? 0 : 3200"
         @confirm="dismissFreeSpinTrigger"
       />
@@ -242,80 +349,247 @@
       <MahjongFreeSpinEndOverlay
         :visible="freeSpinEndVisible"
         :total-win="freeSpinEndSnapshot.totalWin"
-        :spins-played="freeSpinEndSnapshot.spinsPlayed"
-        :sym-base="symbolAssetBase"
-        :panel-bg="`${LG_FS_PANEL}/fs-end-panel-bg.png?v=17`"
+        :canvas-height="gameRenderHeight"
+        :canvas-width="gameRenderWidth"
+        :title-img="pgUi('fs-end-title') ?? ''"
+        :btn-collect="pgUi('fs-end-collect') ?? ''"
+        :btn-collect-pressed="pgUi('fs-end-collect-pressed') ?? ''"
+        :bg-total="pgUi('fs-end-bg-total') ?? ''"
+        :bg-glow-top="pgUi('fs-end-bg-glow-top') ?? ''"
+        :bg-glow-bottom="pgUi('fs-end-bg-glow-bottom') ?? ''"
+        :bg-flare="pgUi('fs-end-bg-flare') ?? ''"
+        :bg-fg="pgUi('fs-end-bg-fg') ?? ''"
+        :digits-atlas="pgUi('win-digits') ?? ''"
+        :digit-dot="pgUi('win-digit-dot') ?? ''"
+        :digit-comma="pgUi('win-digit-comma') ?? ''"
         :auto-dismiss-ms="isFsUiPreview ? 0 : 4800"
         @confirm="dismissFreeSpinEndSummary"
       />
 
-      <!-- 开发：免费旋转 UI 预览快捷键提示 -->
-      <div v-if="isDev" class="fs-dev-hint" aria-hidden="true">
-        Alt+1 触发 · Alt+2 再触发 · Alt+3 结束 · Esc 关
+      <!-- 开发：JSON 布局对照框（Alt+L 开关） -->
+      <div v-if="layoutDebug" class="layout-debug" aria-hidden="true">
+        <div
+          v-for="region in layoutDebugRegions"
+          :key="region.key"
+          class="layout-debug__box"
+          :class="`layout-debug__box--${region.key}`"
+          :style="pctLayerStyle(region.box)"
+        >
+          <span class="layout-debug__label">{{ region.label }}</span>
+        </div>
       </div>
 
-      <!-- 交互层：按钮 -->
-      <div class="btn-interactive-layer z-buttons">
+      <!-- 交互层：按钮（坐标来自 Cocos dump worldPct） -->
+      <div v-if="pgStep >= 10" class="btn-interactive-layer z-buttons">
         <Transition name="slide-left-page">
-          <div class="bottom-action-bar" v-if="!showMenuPage" :style="btnBarStyle">
-            <button class="action-btn small-btn turbo-btn" :class="{ 'is-active': isTurbo }" @click="toggleTurbo"></button>
+          <div class="bottom-action-bar" v-if="!showMenuPage">
+            <!-- 正版分层：深色圆底 + 琥珀色前景图标（worldPct 来自 Cocos dump） -->
+            <img
+              v-for="layer in bottomBtnCircles"
+              :key="layer.key"
+              class="pg-btn-circle"
+              :class="{ 'is-visible': pressedBtn === layer.key }"
+              :style="pctLayerStyle(layer.box)"
+              :src="pgUi('btn-circle')!"
+              alt=""
+              draggable="false"
+            />
+            <template v-if="isTurbo">
+              <div
+                class="turbo-fx turbo-fx--glow"
+                :style="turboFxStyle(turboFxVisuals.glow, 'turbo-fx-glow')"
+                aria-hidden="true"
+              />
+            </template>
+            <img
+              class="pg-btn-label"
+              :class="{ 'is-active': isTurbo }"
+              :style="pctLayerStyle(bottomBtnVisuals.turbo)"
+              :src="pgUi(isTurbo ? 'label-turbo-on' : 'label-turbo-off-ring')!"
+              alt=""
+              draggable="false"
+            />
+            <img
+              class="pg-btn-tint turbo-center-icon"
+              :class="{ 'is-active': isTurbo, 'is-flashing': isTurbo }"
+              :style="pctLayerStyle(bottomBtnVisuals.turbo)"
+              :src="pgUi(isTurbo ? 'btn-turbo-on' : 'btn-turbo')!"
+              alt=""
+              draggable="false"
+            />
+            <img
+              class="pg-btn-tint"
+              :style="pctLayerStyle(bottomBtnVisuals.minus)"
+              :src="pgUi('btn-minus')!"
+              alt=""
+              draggable="false"
+            />
+            <img
+              class="pg-btn-tint"
+              :style="pctLayerStyle(bottomBtnVisuals.plus)"
+              :src="pgUi('btn-plus')!"
+              alt=""
+              draggable="false"
+            />
+            <img
+              class="pg-btn-label"
+              :class="{ 'is-active': autoSpinCount > 0 }"
+              :style="pctLayerStyle(bottomBtnVisuals.auto)"
+              :src="pgUi('label-auto-text')!"
+              alt=""
+              draggable="false"
+            />
+            <img
+              class="pg-btn-tint"
+              :class="{ 'is-active': autoSpinCount > 0 }"
+              :style="pctLayerStyle(bottomBtnVisuals.auto)"
+              :src="pgUi('btn-auto-center')!"
+              alt=""
+              draggable="false"
+            />
+            <img
+              class="pg-btn-tint"
+              :style="pctLayerStyle(bottomBtnVisuals.menu)"
+              :src="pgUi('btn-menu')!"
+              alt=""
+              draggable="false"
+            />
+
             <button
-              class="action-btn small-btn minus-btn"
-              :class="{ 'is-disabled': !canAdjustBet }"
-              :disabled="!canAdjustBet"
-              @click="decreaseBet"
-            ></button>
-            <MahjongSpinButton
-              :is-accelerating="isSpinning || isResolving"
-              :is-turbo="isTurbo"
-              :free-spins-remaining="freeSpinsRemaining"
-              :is-free-spin-mode="isFreeSpinMode"
-              :count-bump-token="spinCountBumpToken"
-              :retrigger-flash="spinRetriggerFlash"
-              :disabled="isSpinControlDisabled"
-              @click="handleSpinClick()"
+              class="action-btn action-btn--hit action-btn--turbo"
+              :class="{ 'is-active': isTurbo }"
+              :style="pctLayerStyle(bottomBtnHits.turbo)"
+              @pointerdown="setPressedBtn('turbo')"
+              @pointerup="clearPressedBtn"
+              @pointerleave="clearPressedBtn"
+              @pointercancel="clearPressedBtn"
+              @click="toggleTurbo"
             />
             <button
-              class="action-btn small-btn plus-btn"
+              class="action-btn action-btn--hit action-btn--minus"
               :class="{ 'is-disabled': !canAdjustBet }"
               :disabled="!canAdjustBet"
-              @click="increaseBet"
-            ></button>
+              :style="pctLayerStyle(bottomBtnHits.minus)"
+              @pointerdown="setPressedBtn('minus')"
+              @pointerup="clearPressedBtn"
+              @pointerleave="clearPressedBtn"
+              @pointercancel="clearPressedBtn"
+              @click="decreaseBet"
+            />
             <button
-              class="action-btn small-btn auto-btn"
+              class="action-btn action-btn--hit action-btn--spin-hit"
+              :class="{ 'is-disabled': isSpinControlDisabled }"
+              :disabled="isSpinControlDisabled"
+              :style="pctLayerStyle(bottomBtnHits.spin)"
+              aria-label="旋转"
+              @click="handleSpinClick()"
+            />
+            <!-- 玉石盘 spin_base（pg-cocos-dump worldPct，与箭头分层） -->
+            <img
+              v-if="pgUi('btn-spin-frame')"
+              class="spin-disc-layer"
+              :class="{ 'is-free-spin': isFreeSpinMode }"
+              :style="pctLayerStyle(spinDiscVisual)"
+              :src="pgUi('btn-spin-frame')!"
+              alt=""
+              draggable="false"
+            />
+            <div
+              class="action-btn--spin-wrap"
+              :class="{ 'is-disabled': isSpinControlDisabled }"
+              :style="pctLayerStyle(spinArrowVisual)"
+            >
+              <MahjongSpinButton
+                :is-accelerating="isSpinning || isResolving"
+                :is-turbo="isTurbo"
+                :is-free-spin-mode="isFreeSpinMode"
+                :free-spins-remaining="freeSpinsRemaining"
+                :retrigger-flash="spinRetriggerFlash"
+                :disabled="isSpinControlDisabled"
+              />
+            </div>
+            <div
+              v-if="isFreeSpinMode && freeSpinsRemaining > 0"
+              class="spin-count-layer"
+              :class="{ 'is-count-bump': spinCountBumpActive }"
+              :style="pctLayerStyle(spinCountVisual)"
+              aria-hidden="true"
+            >
+              <span
+                v-for="(ch, i) in spinCountChars"
+                :key="`${spinCountBumpToken}-${i}-${ch}`"
+                class="spin-count-digit"
+                :style="spinCountDigitStyle(ch)"
+              />
+            </div>
+            <button
+              class="action-btn action-btn--hit action-btn--plus"
+              :class="{ 'is-disabled': !canAdjustBet }"
+              :disabled="!canAdjustBet"
+              :style="pctLayerStyle(bottomBtnHits.plus)"
+              @pointerdown="setPressedBtn('plus')"
+              @pointerup="clearPressedBtn"
+              @pointerleave="clearPressedBtn"
+              @pointercancel="clearPressedBtn"
+              @click="increaseBet"
+            />
+            <button
+              class="action-btn action-btn--hit action-btn--auto"
               :class="{ 'is-active': autoSpinCount > 0, 'is-disabled': !canUseAutoSpin && autoSpinCount === 0 }"
               :disabled="!canUseAutoSpin && autoSpinCount === 0"
+              :style="pctLayerStyle(bottomBtnHits.auto)"
+              @pointerdown="setPressedBtn('auto')"
+              @pointerup="clearPressedBtn"
+              @pointerleave="clearPressedBtn"
+              @pointercancel="clearPressedBtn"
               @click="handleAutoBtnClick"
             >
               <div v-if="autoSpinCount > 0" class="auto-count-badge">{{ autoSpinCount }}</div>
             </button>
+            <button
+              class="action-btn action-btn--hit action-btn--menu"
+              :style="pctLayerStyle(bottomBtnHits.menu)"
+              aria-label="菜单"
+              @pointerdown="setPressedBtn('menu')"
+              @pointerup="clearPressedBtn"
+              @pointerleave="clearPressedBtn"
+              @pointercancel="clearPressedBtn"
+              @click="showMenuPage = true"
+            />
           </div>
         </Transition>
 
         <Transition name="slide-right-page">
-          <div class="bottom-action-menu-page" v-if="showMenuPage" :style="btnBarStyle">
-            <button class="action-btn menu-page-btn exit-btn" @click="router.back()"></button>
-            <button
-              class="action-btn menu-page-btn sound-btn"
-              :class="soundEnabled ? 'is-on' : 'is-off'"
-              @click="toggleSound"
-            ></button>
-            <button class="action-btn menu-page-btn paytable-btn" @click="openInfoSheet('pay')"></button>
-            <button class="action-btn menu-page-btn rules-btn" @click="openInfoSheet('rules')"></button>
-            <button class="action-btn menu-page-btn history-btn" @click="showHistoryModal = true"></button>
-            <button class="action-btn menu-page-btn close-menu-btn" @click="showMenuPage = false"></button>
+          <div class="bottom-action-menu-page" v-if="showMenuPage">
+            <template v-for="item in menuPageLayers" :key="item.key">
+              <img
+                class="pg-btn-circle"
+                :class="{ 'is-visible': pressedMenuBtn === item.key }"
+                :style="pctLayerStyle(item.circle)"
+                :src="pgUi('btn-circle')!"
+                alt=""
+                draggable="false"
+              />
+              <img
+                class="pg-btn-tint menu-page-icon"
+                :style="pctLayerStyle(item.icon)"
+                :src="pgUi(item.iconKey)!"
+                alt=""
+                draggable="false"
+              />
+              <span class="menu-page-label" :style="pctLayerStyle(item.label)">{{ item.labelText }}</span>
+              <button
+                class="menu-page-hit"
+                :style="pctLayerStyle(item.hit)"
+                @pointerdown="setPressedMenuBtn(item.key)"
+                @pointerup="clearPressedMenuBtn"
+                @pointerleave="clearPressedMenuBtn"
+                @pointercancel="clearPressedMenuBtn"
+                @click="item.onClick()"
+              />
+            </template>
           </div>
         </Transition>
-
-        <button
-          v-if="!showMenuPage"
-          class="menu-hamburger"
-          :style="menuBtnStyle"
-          aria-label="菜单"
-          @click="showMenuPage = true"
-        >
-          <img :src="`${ASSET}/buttons/icon-menu.png`" alt="" class="menu-hamburger__icon" />
-        </button>
       </div>
 
       <MahjongInfoSheet
@@ -499,7 +773,7 @@
             </div>
 
             <div class="wallet-balance-pill">
-              <img class="wallet-pill-icon" :src="`${LG}/icons/icon-wallet.png`" alt="" />
+              <img v-if="pgUi('icon-wallet')" class="wallet-pill-icon" :src="pgUi('icon-wallet')!" alt="" />
               <span class="wallet-pill-label">可用余额</span>
               <span class="wallet-pill-value">¥{{ balance.toFixed(2) }}</span>
             </div>
@@ -634,7 +908,7 @@
         </div>
       </Transition>
 
-      <!-- Big / Mega / Super Mega Win 庆祝（PG 式分级，规则仍为 MW1） -->
+      <!-- Big / Mega / Super Mega Win 庆祝 -->
       <Transition name="big-win">
         <div
           v-if="bigWinVisible"
@@ -642,9 +916,17 @@
           :class="`tier-${bigWinTier}`"
           aria-live="polite"
         >
-          <div class="big-win-rays" aria-hidden="true" />
-          <div class="big-win-sparkles" aria-hidden="true" />
-          <div class="big-win-label">{{ bigWinLabel }}</div>
+          <img
+            v-if="pgBigWinImage(bigWinTier)"
+            class="big-win-banner"
+            :src="pgBigWinImage(bigWinTier)!"
+            alt=""
+          />
+          <template v-else>
+            <div class="big-win-rays" aria-hidden="true" />
+            <div class="big-win-sparkles" aria-hidden="true" />
+            <div class="big-win-label">{{ bigWinLabel }}</div>
+          </template>
           <div class="big-win-amount">¥{{ bigWinAmount.toFixed(2) }}</div>
         </div>
       </Transition>
@@ -662,6 +944,8 @@ import MahjongInfoSheet from '../components/MahjongInfoSheet.vue'
 import MahjongFreeSpinTriggerOverlay from '../components/MahjongFreeSpinTriggerOverlay.vue'
 import MahjongFreeSpinEndOverlay from '../components/MahjongFreeSpinEndOverlay.vue'
 import MahjongSpinButton from '../components/MahjongSpinButton.vue'
+import MahjongCover from '../components/MahjongCover.vue'
+import { MAHJONG_PG_VISUAL_STEP } from '../games/mahjong/pgVisualStep'
 import { useMahjongSound } from '../composables/useMahjongSound'
 import {
   BASE_BET,
@@ -686,120 +970,361 @@ import {
   getScatterCells,
   isPaySymbol,
 } from '../games/mahjong/mahjongWays1'
+import cocosLayout from '../games/mahjong/cocosLayout.json'
+import { hasPgUi, pgBigWinImage, pgUi, pgUiMode } from '../games/mahjong/pgAssets'
+import { digitSpriteStyle } from '../games/mahjong/digitAtlas'
+
+type PctBox = {
+  topPct: number
+  heightPct: number
+  leftPct: number
+  widthPct: number
+}
 
 const router = useRouter()
 const mahjongSound = useMahjongSound()
-const LG = '/images/games/mahjong/lingguang'
-const BTN = `${LG}/buttons`
-const ASSET = '/images/games/mahjong/classic'
-const symbolAssetBase = `${ASSET}/symbols`
+const symbolAssetBase = '/images/games/mahjong/pg/symbols'
 const isDev = import.meta.env.DEV
 
-/** 放入 PS 导出图后改为 true，见 lingguang/ASSETS_PENDING.txt */
-const USE_FREE_SPIN_BG_ASSET = true
-const USE_FREE_SPIN_MULT_BAR_ASSET = true
-const LG_FS_PANEL = '/images/games/mahjong/lingguang'
-
-/** 画布设计稿 720×1280 — Y 坐标按 PS 稿像素值 */
-const CANVAS_W = 720
-const CANVAS_H = 1280
-
-const L = {
-  title1024: { y: 0, h: 143 },
-  multBar: { y: 69, h: 134 },
-  multValues: { y: 109, h: 82 },
-  board: { y: 234, h: 592, left: 7.5, width: 85 },
-  bottomFrame: { y: 850, h: 129 },
-  message: { y: 902, h: 96 },
-  woodFooter: { y: 952, h: 170 },
-  bottomControl: { y: CANVAS_H - 177, h: 177 },
-  /** 广告栏下方三格金额框 */
-  statusHud: { y: 1020, h: 58 },
-}
-
-/** 按钮区：边框 596×120，水平居中，Y=1137 */
-const BTN_FRAME = { x: 62, y: 1137, w: 596, h: 120 }
-
-function layerStyle(y: number, h: number) {
-  return {
-    top: `${(y / CANVAS_H) * 100}%`,
-    height: `${(h / CANVAS_H) * 100}%`,
-  }
-}
-
-function boxStyle(x: number, y: number, w: number, h: number) {
-  return {
-    top: `${(y / CANVAS_H) * 100}%`,
-    left: `${(x / CANVAS_W) * 100}%`,
-    width: `${(w / CANVAS_W) * 100}%`,
-    height: `${(h / CANVAS_H) * 100}%`,
-  }
-}
-
-const btnFrameStyle = computed(() => boxStyle(BTN_FRAME.x, BTN_FRAME.y, BTN_FRAME.w, BTN_FRAME.h))
-const btnBarStyle = computed(() => btnFrameStyle.value)
-/** 汉堡按钮：按钮边框右缘与页面右缘之间水平居中，垂直与边框居中 */
-const menuBtnStyle = computed(() => {
-  const frameRight = BTN_FRAME.x + BTN_FRAME.w
-  const centerX = (frameRight + CANVAS_W) / 2
-  const centerY = BTN_FRAME.y + BTN_FRAME.h / 2
-  return {
-    left: `${(centerX / CANVAS_W) * 100}%`,
-    top: `${(centerY / CANVAS_H) * 100}%`,
-  }
+/** 逐层复刻：URL ?step=3 可临时预览，否则读 pgVisualStep.ts */
+const pgStep = computed(() => {
+  const q = Number(router.currentRoute.value.query.step)
+  if (Number.isFinite(q) && q >= 1 && q <= 10) return Math.floor(q)
+  return MAHJONG_PG_VISUAL_STEP
 })
 
-/** 6 行牌区：中间 4 行对齐 L.board(234×592)，上下各 1 行缓冲 */
-const boardStyle = computed(() => {
-  const rowH = (L.board.h - 3 * (VISIBLE_ROWS - 1)) / VISIBLE_ROWS
-  const extend = rowH + 3
+const showPgCover = ref(false)
+function onPgCoverStart() {
+  showPgCover.value = false
+}
+
+const btnBg = (key: string) => {
+  const url = pgUi(key)
+  if (!url) return undefined
   return {
-    top: `${((L.board.y - extend) / CANVAS_H) * 100}%`,
-    left: `${L.board.left}%`,
-    width: `${L.board.width}%`,
-    height: `${((L.board.h + extend * 2) / CANVAS_H) * 100}%`,
+    backgroundImage: `url(${url})`,
+    backgroundSize: 'contain',
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'center',
   }
+}
+
+/** 正版 dump 设计稿 — 百分比坐标见 cocosLayout.json */
+const CANVAS_W = cocosLayout.design[0]
+const CANVAS_H = cocosLayout.design[1]
+
+const canvasBoxStyle = computed(() => ({
+  aspectRatio: `${CANVAS_W} / ${CANVAS_H}`,
+  width: `min(100vw, 100vh * ${CANVAS_W / CANVAS_H})`,
+  height: `min(100vh, 100vw * ${CANVAS_H / CANVAS_W})`,
+}))
+const L = cocosLayout.L as Record<string, PctBox>
+
+/** 顶部两侧铜钱装饰（Cocos main_top_a） */
+const topCoinsBarUrl = computed(() =>
+  pgUi('top-coins-bar') ?? pgUi('wood-top-panel') ?? pgUi('wood-side-strip'),
+)
+
+const topBarMainUrl = computed(() =>
+  pgUi('top-bar-main') ?? pgUi('top-bar-orange'),
+)
+
+const multBarFrameUrl = computed(() =>
+  isInFreeSpinFeature.value
+    ? (pgUi('multiplier-bar-bg-free') ?? pgUi('multiplier-bar-bg'))
+    : (pgUi('multiplier-bar-bg') ?? pgUi('mult-bar-frame')),
+)
+
+type MultSlotLayout = {
+  darkKey: string
+  activeKey: string
+  darkBox: PctBox
+  activeBox: PctBox
+  glowBox: PctBox
+}
+
+/** 正版 multiplier_glow：完整 117×55 贴图 scale×5，worldPct 来自 Cocos dump */
+function glowBoxForActive(activeBox: PctBox): PctBox {
+  const cx = activeBox.leftPct + activeBox.widthPct / 2
+  const w = 54.167
+  const h = 14.323
+  const top = 0.328
+  return {
+    leftPct: cx - w / 2,
+    topPct: top,
+    widthPct: w,
+    heightPct: h,
+  }
+}
+
+function glowBoxInFrame(glow: PctBox, frame: PctBox): PctBox {
+  return {
+    leftPct: ((glow.leftPct - frame.leftPct) / frame.widthPct) * 100,
+    topPct: ((glow.topPct - frame.topPct) / frame.heightPct) * 100,
+    widthPct: (glow.widthPct / frame.widthPct) * 100,
+    heightPct: (glow.heightPct / frame.heightPct) * 100,
+  }
+}
+
+/** 正版只露出木条底边一条光带（非整条木纹高度） */
+function glowClipFrame(frame: PctBox): PctBox {
+  const stripH = frame.heightPct * 0.24
+  return {
+    leftPct: frame.leftPct,
+    widthPct: frame.widthPct,
+    topPct: frame.topPct + frame.heightPct - stripH,
+    heightPct: stripH,
+  }
+}
+
+const MULT_SLOTS_NORMAL: MultSlotLayout[] = [
+  {
+    darkKey: 'mult-x1-dark', activeKey: 'mult-x1',
+    darkBox: { leftPct: 16.898, topPct: 9.266, widthPct: 10.593, heightPct: 4.692 },
+    activeBox: { leftPct: 15.177, topPct: 8.052, widthPct: 14.035, heightPct: 6.48 },
+    glowBox: { leftPct: 0, topPct: 0, widthPct: 0, heightPct: 0 },
+  },
+  {
+    darkKey: 'mult-x2-dark', activeKey: 'mult-x2',
+    darkBox: { leftPct: 34.442, topPct: 9.266, widthPct: 12.579, heightPct: 4.692 },
+    activeBox: { leftPct: 33.052, topPct: 7.926, widthPct: 15.756, heightPct: 6.629 },
+    glowBox: { leftPct: 0, topPct: 0, widthPct: 0, heightPct: 0 },
+  },
+  {
+    darkKey: 'mult-x3-dark', activeKey: 'mult-x3',
+    darkBox: { leftPct: 53.112, topPct: 9.192, widthPct: 12.314, heightPct: 4.767 },
+    activeBox: { leftPct: 51.192, topPct: 7.926, widthPct: 16.154, heightPct: 6.703 },
+    glowBox: { leftPct: 0, topPct: 0, widthPct: 0, heightPct: 0 },
+  },
+  {
+    darkKey: 'mult-x5-dark', activeKey: 'mult-x5',
+    darkBox: { leftPct: 71.715, topPct: 9.117, widthPct: 12.181, heightPct: 4.841 },
+    activeBox: { leftPct: 69.861, topPct: 7.814, widthPct: 15.889, heightPct: 6.703 },
+    glowBox: { leftPct: 0, topPct: 0, widthPct: 0, heightPct: 0 },
+  },
+]
+
+const MULT_SLOTS_FREE: MultSlotLayout[] = [
+  {
+    darkKey: 'mult-x2-dark', activeKey: 'mult-x2',
+    darkBox: { leftPct: 16.22, topPct: 9.345, widthPct: 11.95, heightPct: 4.458 },
+    activeBox: { leftPct: 15.422, topPct: 8.283, widthPct: 14.181, heightPct: 5.966 },
+    glowBox: { leftPct: 0, topPct: 0, widthPct: 0, heightPct: 0 },
+  },
+  {
+    darkKey: 'mult-x4-dark', activeKey: 'mult-x4',
+    darkBox: { leftPct: 34.757, topPct: 9.203, widthPct: 11.95, heightPct: 4.599 },
+    activeBox: { leftPct: 33.343, topPct: 8.142, widthPct: 14.777, heightPct: 6.167 },
+    glowBox: { leftPct: 0, topPct: 0, widthPct: 0, heightPct: 0 },
+  },
+  {
+    darkKey: 'mult-x6-dark', activeKey: 'mult-x6',
+    darkBox: { leftPct: 53.419, topPct: 9.274, widthPct: 11.698, heightPct: 4.528 },
+    activeBox: { leftPct: 52.059, topPct: 8.209, widthPct: 14.419, heightPct: 6.1 },
+    glowBox: { leftPct: 0, topPct: 0, widthPct: 0, heightPct: 0 },
+  },
+  {
+    darkKey: 'mult-x10-dark', activeKey: 'mult-x10',
+    darkBox: { leftPct: 69.629, topPct: 9.203, widthPct: 16.352, heightPct: 4.599 },
+    activeBox: { leftPct: 68.153, topPct: 8.231, widthPct: 19.305, heightPct: 6.033 },
+    glowBox: { leftPct: 0, topPct: 0, widthPct: 0, heightPct: 0 },
+  },
+]
+
+const multSlots = computed(() =>
+  (isInFreeSpinFeature.value ? MULT_SLOTS_FREE : MULT_SLOTS_NORMAL).map((slot) => ({
+    ...slot,
+    glowBox: glowBoxForActive(slot.activeBox),
+  })),
+)
+const spinFrame = cocosLayout.spinFrame as PctBox
+/** 玉石盘 spin_base（pg-cocos-dump，scale 1.5 后 worldPct） */
+const spinDiscVisual = {
+  leftPct: 37.083,
+  topPct: 82.969,
+  widthPct: 25.833,
+  heightPct: 15.234,
+} satisfies PctBox
+/** 金色双箭头 arrow（pg-cocos-dump，略缩小并保持中心） */
+const SPIN_ARROW_RAW = {
+  leftPct: 40.651,
+  topPct: 84.079,
+  widthPct: 18.512,
+  heightPct: 10.28,
+} satisfies PctBox
+const SPIN_ARROW_SCALE = 0.88
+const spinArrowVisual = {
+  leftPct: SPIN_ARROW_RAW.leftPct + (SPIN_ARROW_RAW.widthPct * (1 - SPIN_ARROW_SCALE)) / 2,
+  topPct: SPIN_ARROW_RAW.topPct + (SPIN_ARROW_RAW.heightPct * (1 - SPIN_ARROW_SCALE)) / 2,
+  widthPct: SPIN_ARROW_RAW.widthPct * SPIN_ARROW_SCALE,
+  heightPct: SPIN_ARROW_RAW.heightPct * SPIN_ARROW_SCALE,
+} satisfies PctBox
+/** 免费旋转剩余次数（Cocos number_display worldPct） */
+const spinCountVisual = {
+  leftPct: 43.519,
+  topPct: 85.275,
+  widthPct: 12.963,
+  heightPct: 7.576,
+} satisfies PctBox
+const liveNodes = (cocosLayout as { liveNodes?: Record<string, PctBox> }).liveNodes
+const btnBar = cocosLayout.btnBar as PctBox
+
+/** 底部按钮：Cocos dump worldPct（1080×1920） */
+const bottomBtnHits = {
+  turbo: { leftPct: 3.889, topPct: 83.906, widthPct: 16.667, heightPct: 9.375 },
+  minus: { leftPct: 19.167, topPct: 83.438, widthPct: 16.667, heightPct: 10.313 },
+  spin: { leftPct: 37.083, topPct: 82.969, widthPct: 25.833, heightPct: 15.234 },
+  plus: { leftPct: 64.167, topPct: 83.438, widthPct: 16.667, heightPct: 10.313 },
+  auto: { leftPct: 79.444, topPct: 83.906, widthPct: 16.667, heightPct: 9.375 },
+  menu: { leftPct: 92.11, topPct: 83.906, widthPct: 18.076, heightPct: 9.375 },
+} satisfies Record<string, PctBox>
+
+const bottomBtnCircles = [
+  { key: 'turbo', box: { leftPct: 3.889, topPct: 83.906, widthPct: 16.667, heightPct: 9.375 } },
+  { key: 'minus', box: { leftPct: 19.167, topPct: 83.906, widthPct: 16.667, heightPct: 9.375 } },
+  { key: 'plus', box: { leftPct: 64.167, topPct: 83.906, widthPct: 16.667, heightPct: 9.375 } },
+  { key: 'auto', box: { leftPct: 79.444, topPct: 83.906, widthPct: 16.667, heightPct: 9.375 } },
+  { key: 'menu', box: { leftPct: 93.519, topPct: 83.906, widthPct: 16.667, heightPct: 9.375 } },
+] as const
+
+const bottomBtnVisuals = {
+  turbo: { leftPct: 8.056, topPct: 86.25, widthPct: 8.333, heightPct: 4.688 },
+  minus: { leftPct: 22.5, topPct: 85.781, widthPct: 10, heightPct: 5.625 },
+  plus: { leftPct: 67.5, topPct: 85.781, widthPct: 10, heightPct: 5.625 },
+  auto: { leftPct: 83.611, topPct: 86.25, widthPct: 8.333, heightPct: 4.688 },
+  menu: { leftPct: 94.151, topPct: 85.772, widthPct: 9.662, heightPct: 5.435 },
+} satisfies Record<string, PctBox>
+
+/** 极速开启光晕（Cocos dump worldPct） */
+const turboFxVisuals = {
+  glow: { leftPct: 9.907, topPct: 87.292, widthPct: 4.63, heightPct: 2.604 },
+} satisfies Record<string, PctBox>
+
+function turboFxStyle(box: PctBox, sheetKey: string) {
+  const url = pgUi(sheetKey)
+  return {
+    ...pctLayerStyle(box),
+    ...(url ? { backgroundImage: `url(${url})` } : {}),
+  }
+}
+
+/** 菜单第二页：与主按钮行同高（替换底栏时沿用 83.9%–86% 纵坐标） */
+const MENU_ROW = { circleTop: 83.906, circleH: 9.375, iconTop: 85.781, iconH: 5.625, labelTop: 90.989, labelH: 4.583 }
+const menuPageLayers = computed(() => [
+  {
+    key: 'sound',
+    hit: { leftPct: 4.056, topPct: MENU_ROW.circleTop, widthPct: 16.667, heightPct: MENU_ROW.circleH },
+    circle: { leftPct: 4.056, topPct: MENU_ROW.circleTop, widthPct: 16.667, heightPct: MENU_ROW.circleH },
+    icon: { leftPct: 7.389, topPct: MENU_ROW.iconTop, widthPct: 10, heightPct: MENU_ROW.iconH },
+    label: { leftPct: 4.519, topPct: MENU_ROW.labelTop, widthPct: 15.741, heightPct: MENU_ROW.labelH },
+    iconKey: soundEnabled.value ? 'btn-sound-on' : 'btn-sound-off',
+    labelText: '声音',
+    onClick: toggleSound,
+  },
+  {
+    key: 'paytable',
+    hit: { leftPct: 22.861, topPct: MENU_ROW.circleTop, widthPct: 16.667, heightPct: MENU_ROW.circleH },
+    circle: { leftPct: 22.861, topPct: MENU_ROW.circleTop, widthPct: 16.667, heightPct: MENU_ROW.circleH },
+    icon: { leftPct: 26.194, topPct: MENU_ROW.iconTop, widthPct: 10, heightPct: MENU_ROW.iconH },
+    label: { leftPct: 23.324, topPct: MENU_ROW.labelTop, widthPct: 15.741, heightPct: MENU_ROW.labelH },
+    iconKey: 'btn-paytable',
+    labelText: '赔付表',
+    onClick: () => openInfoSheet('pay'),
+  },
+  {
+    key: 'rules',
+    hit: { leftPct: 41.667, topPct: MENU_ROW.circleTop, widthPct: 16.667, heightPct: MENU_ROW.circleH },
+    circle: { leftPct: 41.667, topPct: MENU_ROW.circleTop, widthPct: 16.667, heightPct: MENU_ROW.circleH },
+    icon: { leftPct: 45, topPct: MENU_ROW.iconTop, widthPct: 10, heightPct: MENU_ROW.iconH },
+    label: { leftPct: 42.13, topPct: MENU_ROW.labelTop, widthPct: 15.741, heightPct: MENU_ROW.labelH },
+    iconKey: 'btn-rules',
+    labelText: '规则',
+    onClick: () => openInfoSheet('rules'),
+  },
+  {
+    key: 'history',
+    hit: { leftPct: 60.472, topPct: MENU_ROW.circleTop, widthPct: 16.667, heightPct: MENU_ROW.circleH },
+    circle: { leftPct: 60.472, topPct: MENU_ROW.circleTop, widthPct: 16.667, heightPct: MENU_ROW.circleH },
+    icon: { leftPct: 63.806, topPct: MENU_ROW.iconTop, widthPct: 10, heightPct: MENU_ROW.iconH },
+    label: { leftPct: 60.935, topPct: MENU_ROW.labelTop, widthPct: 15.741, heightPct: MENU_ROW.labelH },
+    iconKey: 'btn-history',
+    labelText: '历史',
+    onClick: () => { showHistoryModal.value = true },
+  },
+  {
+    key: 'close',
+    hit: { leftPct: 78.352, topPct: MENU_ROW.circleTop, widthPct: 18.519, heightPct: MENU_ROW.circleH },
+    circle: { leftPct: 78.352, topPct: MENU_ROW.circleTop, widthPct: 18.519, heightPct: MENU_ROW.circleH },
+    icon: { leftPct: 82.611, topPct: MENU_ROW.iconTop, widthPct: 10, heightPct: MENU_ROW.iconH },
+    label: { leftPct: 78.352, topPct: MENU_ROW.labelTop, widthPct: 18.519, heightPct: MENU_ROW.labelH },
+    iconKey: 'btn-back',
+    labelText: '关闭',
+    onClick: () => { showMenuPage.value = false },
+  },
+])
+
+const bgImage = (cocosLayout as { bgImage?: PctBox }).bgImage ?? {
+  topPct: 0,
+  leftPct: 0,
+  widthPct: 100,
+  heightPct: 100,
+}
+const playReels = (cocosLayout as { playReels?: PctBox }).playReels ?? L.board
+
+const layoutDebug = ref(false)
+
+const layoutDebugRegions = computed(() => {
+  const items: { key: string; label: string; box: PctBox }[] = [
+    { key: 'bg', label: '底图 bg-base', box: bgImage },
+    { key: 'woodTop', label: '钱币底图 main_top_a', box: L.woodTop },
+    { key: 'topBarMain', label: '1024橙条 main_top_b', box: L.topBarMain },
+    { key: 'multBarFrame', label: '倍数底框 main_top_c', box: L.multBarFrame },
+    { key: 'title1024', label: '1024标题', box: L.title1024 },
+    { key: 'reelFrame', label: '牌框 reel_a', box: L.reelFrame },
+    { key: 'board', label: '牌区 reel_a', box: L.board },
+    { key: 'playReels', label: '转轴 dark_reel', box: playReels },
+    { key: 'message', label: '广告条 message', box: L.message },
+    { key: 'bottomWood', label: '底栏木框', box: L.bottomWood },
+    { key: 'statusHud', label: '三格金额', box: L.statusHud },
+    { key: 'spinFrame', label: '旋转钮框(live)', box: spinFrame },
+    { key: 'spinDisc', label: '玉石盘 spin_base', box: spinDiscVisual },
+    { key: 'spinArrow', label: '旋转箭头', box: spinArrowVisual },
+    { key: 'btnBar', label: '底栏按钮', box: btnBar },
+  ]
+  return items.filter((i) => i.box)
 })
+
+const bgImageStyle = computed(() => pctLayerStyle(bgImage))
+
+function pctLayerStyle(box: PctBox) {
+  return {
+    top: `${box.topPct}%`,
+    height: `${box.heightPct}%`,
+    left: `${box.leftPct}%`,
+    width: `${box.widthPct}%`,
+  }
+}
+
+function layerStyle(box: Pick<PctBox, 'topPct' | 'heightPct'>) {
+  return {
+    top: `${box.topPct}%`,
+    height: `${box.heightPct}%`,
+  }
+}
+
+function boxStyle(box: PctBox) {
+  return pctLayerStyle(box)
+}
+
+const btnBarStyle = computed(() => boxStyle(btnBar))
+
+/** 牌区：正版 dark_reel 区域（与符号网格一致） */
+const boardStyle = computed(() => pctLayerStyle(playReels))
 
 const isVisibleRow = (row: number) =>
   (VISIBLE_ROW_INDICES as readonly number[]).includes(row)
 
-/** 倍数图内各档位裁切边界（569×82 素材，按像素内容分析） */
-const MULT_CLIP_BOUNDS = [
-  { left: 0, right: 80.0 },
-  { left: 26.4, right: 53.1 },
-  { left: 52.4, right: 27.2 },
-  { left: 79.3, right: 0 },
-] as const
-
-/** 免费倍数高亮层裁切（multiplier-values-free-active.png，高亮区略宽） */
-const MULT_CLIP_BOUNDS_FREE_ACTIVE = [
-  { left: 0, right: 79.4 },
-  { left: 25.1, right: 55.9 },
-  { left: 49.6, right: 30.1 },
-  { left: 74.0, right: 0 },
-] as const
-
-const multValuesAssetBase = computed(() =>
-  isInFreeSpinFeature.value ? 'multiplier-values-free' : 'multiplier-values',
-)
-
-const bgAsset = computed(() =>
-  isInFreeSpinFeature.value && USE_FREE_SPIN_BG_ASSET ? 'bg-base-free' : 'bg-base',
-)
-
-const multBarAsset = computed(() =>
-  isInFreeSpinFeature.value && USE_FREE_SPIN_MULT_BAR_ASSET
-    ? 'multiplier-bar-bg-free'
-    : 'multiplier-bar-bg',
-)
-
-const activeMultClipStyle = computed(() => {
-  const ladder = isInFreeSpinFeature.value ? MULT_CLIP_BOUNDS_FREE_ACTIVE : MULT_CLIP_BOUNDS
-  const bounds = ladder[activeMultiplierIndex.value]
-  return { clipPath: `inset(0 ${bounds.right}% 0 ${bounds.left}%)` }
-})
-
+/** 倍数档位仅驱动逻辑；高亮已烘焙在 bg-base 内，不再叠图层 */
 // 中奖高亮与级联动画状态
 const explodingCells = ref<Set<string>>(new Set())
 const winningCells = ref<Set<string>>(new Set())
@@ -886,6 +1411,24 @@ const autoSpinOptions = [10, 30, 50, 80, 1000]
 
 // 菜单页状态
 const showMenuPage = ref(false)
+const pressedBtn = ref<string | null>(null)
+const pressedMenuBtn = ref<string | null>(null)
+
+function setPressedBtn(key: string) {
+  pressedBtn.value = key
+}
+
+function clearPressedBtn() {
+  pressedBtn.value = null
+}
+
+function setPressedMenuBtn(key: string) {
+  pressedMenuBtn.value = key
+}
+
+function clearPressedMenuBtn() {
+  pressedMenuBtn.value = null
+}
 
 const soundEnabled = ref(localStorage.getItem('sound_off') !== '1')
 
@@ -967,7 +1510,75 @@ let freeSpinTriggerResolve: (() => void) | null = null
 let freeSpinEndResolve: (() => void) | null = null
 let freeSpinChainTimer: ReturnType<typeof setTimeout> | null = null
 const spinCountBumpToken = ref(0)
+const spinCountBumpActive = ref(false)
 const spinRetriggerFlash = ref(0)
+
+watch(spinCountBumpToken, () => {
+  if (!isFreeSpinMode.value) return
+  spinCountBumpActive.value = false
+  requestAnimationFrame(() => {
+    spinCountBumpActive.value = true
+    setTimeout(() => {
+      spinCountBumpActive.value = false
+    }, 620)
+  })
+})
+
+const spinCountChars = computed(() => String(Math.max(0, freeSpinsRemaining.value)).split(''))
+
+const viewportSize = ref({
+  w: typeof window !== 'undefined' ? window.innerWidth : CANVAS_W,
+  h: typeof window !== 'undefined' ? window.innerHeight : CANVAS_H,
+})
+
+/** 画布实际渲染高度（与 canvasBoxStyle 一致） */
+const gameRenderHeight = computed(() => {
+  const { w, h } = viewportSize.value
+  return Math.min(h, w * (CANVAS_H / CANVAS_W))
+})
+
+const gameRenderWidth = computed(() => {
+  const { w, h } = viewportSize.value
+  return Math.min(w, h * (CANVAS_W / CANVAS_H))
+})
+
+/** Cocos numberSprite heightPct 3.239 → 像素高度 */
+const spinCountDigitPx = computed(() =>
+  Math.max(16, Math.round(gameRenderHeight.value * 3.239 / 100)),
+)
+
+function spinCountDigitStyle(digit: string): Record<string, string> {
+  const base = digitSpriteStyle(digit, spinCountDigitPx.value, pgUi('win-digits'))
+  if (!Object.keys(base).length) return {}
+  return {
+    ...base,
+    filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.55))',
+  }
+}
+const retriggerBannerCount = ref(0)
+const boardShaking = ref(false)
+let retriggerBannerTimer: ReturnType<typeof setTimeout> | null = null
+
+const triggerBoardShake = () => {
+  boardShaking.value = true
+  setTimeout(() => {
+    boardShaking.value = false
+  }, isTurbo.value ? 220 : 380)
+}
+
+const showRetriggerBanner = (count: number) => {
+  if (count <= 0) return
+  if (retriggerBannerTimer) {
+    clearTimeout(retriggerBannerTimer)
+    retriggerBannerTimer = null
+  }
+  retriggerBannerCount.value = count
+  retriggerBannerTimer = setTimeout(() => {
+    retriggerBannerCount.value = 0
+    retriggerBannerTimer = null
+  }, 2800)
+}
+
 /** 开发预览：快捷键弹出免费旋转 UI，不影响真实对局数据 */
 const isFsUiPreview = ref(false)
 
@@ -1037,6 +1648,9 @@ const openFsUiPreview = (mode: 'trigger' | 'retrigger' | 'end') => {
       spinsAwarded: 16,
       isRetrigger: true,
     }
+    scatterCelebratingCells.value = new Set(['0-2', '1-3', '2-1', '3-4', '4-2'])
+    showRetriggerBanner(16)
+    triggerBoardShake()
   } else {
     enterFreeSpinFeature()
     freeSpinsRemaining.value = 0
@@ -1047,6 +1661,25 @@ const openFsUiPreview = (mode: 'trigger' | 'retrigger' | 'end') => {
     }
   }
   freeSpinTriggerVisible.value = true
+}
+
+/** 开发：预览级联消除火焰 + 粒子（Alt+4） */
+const previewCascadeFx = async () => {
+  if (!import.meta.env.DEV) return
+  if (isSpinning.value || isResolving.value) return
+  const demoKeys = ['0-2', '1-2', '2-2', '3-2', '4-2', '1-3', '2-3', '3-3']
+  await showWinHighlight(
+    demoKeys.map((k) => {
+      const [col, row] = k.split('-').map(Number)
+      return { col: col!, row: row! }
+    }),
+    0,
+  )
+  explodingCells.value = new Set(demoKeys)
+  triggerBoardShake()
+  await sleep(isTurbo.value ? 200 : 380)
+  explodingCells.value.clear()
+  winningCells.value.clear()
 }
 
 const onFsPreviewKeydown = (event: KeyboardEvent) => {
@@ -1067,6 +1700,12 @@ const onFsPreviewKeydown = (event: KeyboardEvent) => {
   } else if (event.key === '3') {
     event.preventDefault()
     openFsUiPreview('end')
+  } else if (event.key === '4') {
+    event.preventDefault()
+    previewCascadeFx()
+  } else if (event.key === 'l' || event.key === 'L') {
+    event.preventDefault()
+    layoutDebug.value = !layoutDebug.value
   }
 }
 
@@ -1094,6 +1733,10 @@ const isInFreeSpinFeature = computed(
       freeSpinTriggerVisible.value ||
       freeSpinEndVisible.value),
 )
+
+const hasFreeSpinBgAsset = computed(() => hasPgUi('multiplier-bar-bg-free'))
+
+const activeBgUrl = computed(() => null)
 
 /** 免费局由系统自动连转，按钮仅展示状态 */
 const isFreeSpinAutoPlaying = computed(
@@ -1131,12 +1774,129 @@ const hudBetDisplay = computed(() =>
     : betAmount.value,
 )
 
+/** 格式化金额：千位分隔符 + 两位小数（如原版 ¥100,000.00） */
+function fmtAmt(n: number): string {
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 /** 免费局 HUD 奖金：已完成转累计 + 当前转进行中的赢分 */
 const hudWinDisplay = computed(() =>
   isInFreeSpinFeature.value
     ? freeSpinSessionWin.value + winAmount.value
     : winAmount.value,
 )
+
+/**
+ * 信息栏框三档（对照 Cocos dump）：
+ *   0 = 普通旋转 → normal_frontBoard (infoboard_a) 金框
+ *       · win=0  → ticker 滚动（message/info2 active）
+ *       · win>0  → 第1次连击「赢得 XX」，第2次起「共赢得 XX」
+ *   1 = 免费旋转模式 → bonus_frontBoard (infoboard_b) 绿框
+ *       · win>0  → 同上（连击标签逻辑一致）
+ *   2 = 大赢（win ≥ 50×bet）→ medium_winboard (infoboard_c) 紫框
+ *       · 覆盖在底框之上，标签随连击次数切换
+ */
+/** 将赢钱金额拆为字符数组（用于精灵数字渲染） */
+const infoboardWinChars = computed(() => {
+  const s = hudWinDisplay.value.toLocaleString('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+  return s.split('')
+})
+
+/** 连击第 2 次起显示「共赢得」（单次旋转内） */
+const infoboardWinIsTotal = ref(false)
+
+/**
+ * Cocos worldPct（相对整屏）：win_info 5.208% / numberSprite 4.156%，垂直中线对齐。
+ */
+const INFOBOARD_LABEL_H_PCT = 5.208
+const INFOBOARD_DIGIT_H_PCT = 4.156
+const INFOBOARD_WIN_SCALE = 0.9
+
+const infoboardWinMetrics = computed(() => {
+  const scale = INFOBOARD_WIN_SCALE
+  const labelPx = Math.max(16, Math.round(gameRenderHeight.value * INFOBOARD_LABEL_H_PCT / 100 * scale))
+  const digitPx = Math.max(14, Math.round(gameRenderHeight.value * INFOBOARD_DIGIT_H_PCT / 100 * scale))
+  return { labelPx, digitPx }
+})
+
+const infoboardWinContentStyle = computed(() => ({
+  '--win-label-h': `${infoboardWinMetrics.value.labelPx}px`,
+  '--win-digit-h': `${infoboardWinMetrics.value.digitPx}px`,
+}))
+
+function winDigitClass(ch: string): string {
+  if (ch === '.') return 'win-digit-dot'
+  if (ch === ',') return 'win-digit-comma'
+  return `win-digit-${ch}`
+}
+
+function winDigitStyle(digit: string): Record<string, string> {
+  return digitSpriteStyle(
+    digit,
+    infoboardWinMetrics.value.digitPx,
+    pgUi('win-digits'),
+    pgUi('win-digit-dot'),
+    pgUi('win-digit-comma'),
+  )
+}
+
+const infoBoardStage = computed<0 | 1 | 2>(() => {
+  // 大赢阈值：≥ 50 倍下注 → 紫框
+  const win = hudWinDisplay.value
+  const bet = hudBetDisplay.value
+  if (win > 0 && bet > 0 && win >= bet * 50) return 2
+  // 免费旋转模式 → 绿框
+  if (isFreeSpinMode.value) return 1
+  // 普通旋转 → 金框（win=0 ticker，win>0 赢钱）
+  return 0
+})
+
+/** 普通模式 3 条轮播（正版 atlas PNG，含百搭/胡图标） */
+const AD_MSGS = [
+  { key: 'info2-msg1', imgW: 434, imgH: 62 },  // 赢得高达1024路！
+  { key: 'info2-msg2', imgW: 724, imgH: 84 },  // 获得镀金符号，有机会赢得百搭
+  { key: 'info2-msg3', imgW: 928, imgH: 74 },  // 3个或更多胡奖励12次或更多免费旋转
+] as const
+/** 免费旋转模式单条 */
+const FS_MSG = { key: 'info2-msg4', imgW: 936, imgH: 72 } // 在免费旋转中，赢得高达10倍奖金倍数！
+
+const currentAdMsgUrl = computed(() => {
+  const key = isFreeSpinMode.value ? FS_MSG.key : AD_MSGS[adMsgIdx.value].key
+  return pgUi(key)
+})
+
+const adMsgIdx = ref(0)
+const adMsgAnimKey = ref(0)
+const adMsgContainerRef = ref<HTMLElement | null>(null)
+const adMsgIsFit = ref(true)
+const adMsgScrollDur = ref('8s')
+
+function refreshAdMsgState() {
+  const el = adMsgContainerRef.value
+  const containerW = el?.clientWidth ?? 411
+  const containerH = el?.clientHeight ?? 38
+  const msg = isFreeSpinMode.value ? FS_MSG : AD_MSGS[adMsgIdx.value]
+  const displayW = (msg.imgW / msg.imgH) * containerH
+  adMsgIsFit.value = displayW <= containerW
+  adMsgScrollDur.value = `${(displayW / 70).toFixed(1)}s`
+}
+
+function onAdMsgAnimEnd() {
+  if (!isFreeSpinMode.value) {
+    adMsgIdx.value = (adMsgIdx.value + 1) % AD_MSGS.length
+  }
+  adMsgAnimKey.value++
+  nextTick(refreshAdMsgState)
+}
+
+watch(isFreeSpinMode, () => {
+  if (!isFreeSpinMode.value) adMsgIdx.value = 0
+  adMsgAnimKey.value++
+  nextTick(refreshAdMsgState)
+})
 
 const effectiveSpinBet = computed(() =>
   isActiveFreeSpinSpin.value && freeSpinBetAmount.value > 0
@@ -1146,11 +1906,12 @@ const effectiveSpinBet = computed(() =>
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
-/** PG 式中奖高亮：金框脉冲，无闪电连线 */
+/** PG 式中奖高亮：火焰脉冲 → 消除 */
 const showWinHighlight = async (winCells: GridPos[], cascadeStep = 0) => {
   if (!winCells.length) return
   mahjongSound.playWin(cascadeStep)
   winningCells.value = new Set(winCells.map(({ col, row }) => `${col}-${row}`))
+  triggerBoardShake()
   const timings = isTurbo.value ? CASCADE_ANIM.turbo : CASCADE_ANIM.normal
   await sleep(timings.win)
 }
@@ -1188,6 +1949,10 @@ const showFreeSpinTrigger = (scatterCount: number): Promise<void> => {
 
   const cells = getScatterCells(gridData.value)
   scatterCelebratingCells.value = new Set(cells.map(({ col, row }) => `${col}-${row}`))
+  if (isRetrigger) {
+    showRetriggerBanner(spinsAwarded)
+    triggerBoardShake()
+  }
   freeSpinTriggerData.value = {
     scatterCount,
     spinsAwarded,
@@ -1299,6 +2064,7 @@ const finishRound = () => {
 /** 官方级联：中奖 → 结算 → 镀金转百搭 → 消除下落 → 连击倍数递增 */
 const runCascadeResolution = async () => {
   isResolving.value = true
+  infoboardWinIsTotal.value = false
   let cascadeStep = 0
   let totalScatter = 0
 
@@ -1314,6 +2080,8 @@ const runCascadeResolution = async () => {
     totalScatter = Math.max(totalScatter, scatterCount)
 
     if (totalWin <= 0 || winCells.length === 0) break
+
+    infoboardWinIsTotal.value = cascadeStep >= 1
 
     winAmount.value += totalWin
     balance.value += totalWin
@@ -1342,6 +2110,7 @@ const runCascadeResolution = async () => {
     }
 
     explodingCells.value = new Set(toRemove.map(({ col, row }) => `${col}-${row}`))
+    triggerBoardShake()
     await sleep(timings.dissolve)
 
     explodingCells.value.clear()
@@ -1836,27 +2605,52 @@ function onTickerResize() {
   runTickerForCurrentMessage()
 }
 
+const syncViewportSize = () => {
+  viewportSize.value = { w: window.innerWidth, h: window.innerHeight }
+}
+
 onUnmounted(() => {
   clearFreeSpinChainTimer()
   clearTickerTimers()
+  if (retriggerBannerTimer) {
+    clearTimeout(retriggerBannerTimer)
+    retriggerBannerTimer = null
+  }
   window.removeEventListener('keydown', onFsPreviewKeydown)
-  window.removeEventListener('resize', onTickerResize)
+  window.removeEventListener('resize', refreshAdMsgState)
+  window.removeEventListener('resize', syncViewportSize)
 })
 
 onMounted(() => {
   mahjongSound.preload()
-  setupTickerMessage()
-  window.addEventListener('resize', onTickerResize)
+  syncViewportSize()
+  nextTick(refreshAdMsgState)
+  window.addEventListener('resize', refreshAdMsgState)
+  window.addEventListener('resize', syncViewportSize)
   if (import.meta.env.DEV) {
     window.addEventListener('keydown', onFsPreviewKeydown)
     console.info(
-      '[麻将 DEV] 免费旋转 UI 预览：Alt+1 首次触发 | Alt+2 再触发 | Alt+3 结束总结 | Esc 关闭',
+      '[麻将 DEV] Alt+1 触发 | Alt+2 再触发 | Alt+3 结束 | Alt+4 消除预览 | Alt+L 布局对照框 | Esc 关闭',
     )
   }
 })
 
 // 当前激活的乘数 (索引: 0->X1, 1->X2, 2->X3, 3->X5)
 const activeMultiplierIndex = ref(0)
+
+const activeMultGlowInBar = computed(() => {
+  const frame = L.multBarFrame ?? L.multBar
+  if (!frame) return null
+  const idx = activeMultiplierIndex.value
+  const slots = multSlots.value
+  if (idx < 0 || idx >= slots.length) return null
+  return glowBoxInFrame(slots[idx].glowBox, glowClipFrame(frame))
+})
+
+const activeMultGlowClip = computed(() => {
+  const frame = L.multBarFrame ?? L.multBar
+  return frame ? glowClipFrame(frame) : null
+})
 
 watch(activeMultiplierIndex, () => {
   if (!isResolving.value && !isSpinning.value) return
@@ -1886,6 +2680,7 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
     balance.value -= betAmount.value
   }
   winAmount.value = 0
+  infoboardWinIsTotal.value = false
   activeMultiplierIndex.value = 0
   winningCells.value.clear()
   explodingCells.value.clear()
@@ -1934,18 +2729,35 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   inset: 0;
   z-index: 100;
   overflow: hidden;
-  background-color: #1a1008;
+  background-color: #120a08;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* 锁定 720×1280 设计稿比例，等比缩放适配视口，避免拉宽/拉高时牌面变形 */
+.mahjong-game-page.is-free-spin-bg {
+  background-color: #1a0806;
+}
+
+.layer-img--coins-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  object-position: center bottom;
+  pointer-events: none;
+}
+
+.layer-img--mult-bar {
+  object-fit: fill;
+  object-position: center center;
+}
+
+/* 画布比例由 canvasBoxStyle 绑定正版 design */
 .game-container {
   position: relative;
-  aspect-ratio: 720 / 1280;
-  width: min(100vw, 100vh * 720 / 1280);
-  height: min(100vh, 100vw * 1280 / 720);
   overflow: hidden;
   color: #fff;
   font-family: 'Segoe UI', system-ui, sans-serif;
@@ -1964,9 +2776,13 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
 }
 
 .layer-base .layer-img--bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   transition: filter 0.45s ease;
   object-fit: cover;
-  object-position: center center;
+  object-position: center top;
 }
 
 .layer-base.is-free-spin-mode .layer-img--bg {
@@ -2024,39 +2840,243 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   pointer-events: none;
 }
 
-/* PS 叠层：底图 → 牌面 → 顶栏 UI → 底栏 */
+/* 图层顺序：底图→reel_a绿毡底→牌面→reel_a木框→底木→倍数栏 */
 .z-bg { z-index: 1; }
-.z-board { z-index: 2; }
-.z-mult-bar { z-index: 3; }
-.z-title1024 { z-index: 4; }
-.z-mult-values { z-index: 5; }
-.z-wood { z-index: 6; }
-.z-bottom-frame { z-index: 7; }
-.z-message { z-index: 8; }
-.z-bottom-control { z-index: 9; }
-.z-btn-frame { z-index: 10; }
-.z-hud { z-index: 11; }
-.z-buttons { z-index: 12; }
-
-.fs-dev-hint {
-  position: absolute;
-  left: 50%;
-  bottom: 2px;
-  transform: translateX(-50%);
-  z-index: 40;
-  padding: 3px 10px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.55);
-  color: rgba(255, 230, 180, 0.75);
-  font-size: 10px;
-  letter-spacing: 0.3px;
+.z-wood-top { z-index: 2; pointer-events: none; background: #2e1810; overflow: hidden; }
+.z-top-bar-main { z-index: 11; pointer-events: none; }
+/* z-reel-green：reel_a 整图，z=3，在牌面下方；木框四边在牌区外侧自然可见 */
+.z-reel-green { z-index: 3; pointer-events: none; }
+.z-board { z-index: 4; }
+.z-wood { z-index: 7; }
+/* main_bottom_b：橙色弧形分隔条，盖在木纹上方 */
+.z-bottom-bar { z-index: 8; pointer-events: none; }
+/* footer_darken：按钮区半透明暗层（Cocos opacity=100/255） */
+.z-footer-darken {
+  z-index: 12;
   pointer-events: none;
+  background: #000;
+  opacity: 0.392;
+}
+/* infoboard_a：深红金边框，套在 HUD 三格外层 */
+.z-infoboard { z-index: 9; pointer-events: none; }
+/* 广告滚动文字层：定位由 pctLayerStyle 负责，这里只负责裁切 */
+.z-infoboard-text {
+  z-index: 10;
+  pointer-events: none;
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+}
+.z-infoboard-text.is-win-display {
+  overflow: visible;
+}
+/* stage 1/2 赢钱：Cocos win_info + numberSprite 同高区中线对齐 */
+.infoboard-win-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 0 4%;
+}
+.infoboard-win-label {
+  height: var(--win-label-h);
+  width: auto;
+  flex-shrink: 0;
+  object-fit: contain;
+  object-position: center center;
+  filter: drop-shadow(0 1px 2px rgba(255, 160, 0, 0.45));
+}
+.infoboard-win-digits {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: flex-end;
+  min-height: var(--win-digit-h);
+  height: auto;
+  flex-shrink: 0;
+  gap: 0;
+  overflow: visible;
+}
+/* 每个精灵数字 span */
+.win-digit-sprite {
+  display: inline-block;
+  flex-shrink: 0;
+  line-height: 0;
+}
+.win-digit-sprite.win-digit-comma {
+  position: relative;
+  top: 1px;
+}
+
+/* ── 广告消息逐条展示（正版 PNG 文案） ─────────────────────────────────── */
+.ad-msg-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ad-msg-img.ad-msg-center {
+  height: 100%;
+  width: auto;
+  flex-shrink: 0;
+  animation: ad-msg-hold 3.5s linear forwards;
+}
+@keyframes ad-msg-hold {
+  from, to { opacity: 1; }
+}
+
+.ad-msg-img.ad-msg-scroll {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform-origin: left center;
+  height: 100%;
+  width: auto;
+  animation: ad-msg-scroll-out var(--scroll-dur, 8s) linear forwards;
+}
+@keyframes ad-msg-scroll-out {
+  from { transform: translateY(-50%) translateX(0); }
+  to   { transform: translateY(-50%) translateX(-100%); }
+}
+
+/* reel 顶部暖光晕 —— 模拟正版 reel_glow 火焰粒子向下渐隐的光 */
+.z-reel-glow {
+  z-index: 6;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 200, 60, 0.28) 0%,
+    rgba(255, 160, 30, 0.18) 25%,
+    rgba(255, 120, 10, 0.08) 60%,
+    transparent 100%
+  );
+  border-radius: 4px 4px 0 0;
+  animation: reel-glow-flicker 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes reel-glow-flicker {
+  0%   { opacity: 0.6; }
+  20%  { opacity: 0.9; }
+  45%  { opacity: 0.7; }
+  60%  { opacity: 1; }
+  80%  { opacity: 0.75; }
+  100% { opacity: 0.85; }
+}
+.z-mult-bar { z-index: 6; }
+.z-title1024-layer {
+  z-index: 12;
+  pointer-events: none;
+}
+
+.title-1024-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* 倍数：木纹底(6) → 光晕(7) → 暗刻(8) → 金色(10) → 1024栏(11) → 1024字(12) */
+.z-mult-slot--inactive { z-index: 8; pointer-events: none; }
+.z-mult-slot--active { z-index: 10; pointer-events: none; }
+
+.mult-slot-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* 未激活：金色贴图压暗成木面刻痕 */
+.mult-slot-img--inactive {
+  filter: sepia(0.9) saturate(1.3) hue-rotate(-16deg) brightness(0.34) contrast(1.18);
+  opacity: 0.92;
+}
+
+/* 激活：亮金色（光晕在木条层 z-7，数字在其上） */
+.mult-slot-img--active {
+  filter: none;
+  opacity: 1;
+}
+
+.mult-slot-img--active.is-pulsing {
+  animation: mult-pulse 0.45s ease-out infinite alternate;
+}
+
+.z-mult-glow-mask {
+  z-index: 7;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.mult-glow-inner {
+  position: absolute;
+  pointer-events: none;
+}
+
+.mult-glow-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  object-position: center bottom;
+  mix-blend-mode: screen;
+  opacity: 0.95;
+  pointer-events: none;
+  user-select: none;
+}
+.z-bottom-frame { z-index: 11; }
+.z-message { z-index: 12; }
+.z-bottom-control { z-index: 13; }
+.z-btn-frame { z-index: 14; }
+.z-hud { z-index: 15; }
+.z-buttons { z-index: 16; }
+
+/* 开发：JSON 区域对照框，不用口述哪里歪了 */
+.layout-debug {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
+}
+
+.layout-debug__box {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px dashed rgba(255, 80, 80, 0.85);
+  background: rgba(255, 60, 60, 0.08);
+}
+
+.layout-debug__box--bg { border-color: rgba(120, 200, 255, 0.9); background: rgba(80, 160, 255, 0.1); }
+.layout-debug__box--board { border-color: rgba(80, 255, 120, 0.9); background: rgba(60, 220, 100, 0.1); }
+.layout-debug__box--message { border-color: rgba(255, 220, 80, 0.9); background: rgba(255, 200, 60, 0.1); }
+.layout-debug__box--statusHud { border-color: rgba(255, 140, 255, 0.9); background: rgba(220, 100, 255, 0.1); }
+.layout-debug__box--spinFrame { border-color: rgba(255, 100, 100, 0.95); background: rgba(255, 60, 60, 0.12); }
+.layout-debug__box--btnBar { border-color: rgba(100, 180, 255, 0.9); background: rgba(80, 140, 255, 0.1); }
+
+.layout-debug__label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 1px 4px;
+  font-size: 10px;
+  line-height: 1.3;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.72);
   white-space: nowrap;
 }
 
-.z-mult-bar,
-.z-title1024,
-.z-mult-values {
+.z-mult-bar {
   overflow: hidden;
 }
 
@@ -2069,52 +3089,6 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   user-select: none;
 }
 
-.layer-img--mult-values {
-  width: 76.7%;
-  height: 100%;
-  margin: 0 auto;
-  display: block;
-  object-fit: fill;
-}
-
-.mult-values-stack {
-  position: relative;
-  width: 76.7%;
-  height: 100%;
-  margin: 0 auto;
-}
-
-.mult-values-pair {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.mult-values-stack .mult-values-img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
-}
-
-.mult-values-stack.is-free-spin-mode .mult-values-img:not(.mult-values-active) {
-  filter: saturate(1.03) brightness(1.02);
-}
-
-.is-using-fs-assets .mult-values-stack.is-free-spin-mode .mult-values-img:not(.mult-values-active) {
-  filter: none;
-}
-
-.mult-fade-enter-active,
-.mult-fade-leave-active {
-  transition: opacity 0.32s ease;
-}
-
-.mult-fade-enter-from,
-.mult-fade-leave-to {
-  opacity: 0;
-}
-
 .z-mult-bar.is-free-spin-mode .layer-img {
   filter: saturate(1.04) brightness(1.02);
   transition: filter 0.35s ease;
@@ -2122,16 +3096,6 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
 
 .z-mult-bar.is-free-spin-mode.is-using-fs-assets .layer-img {
   filter: none;
-}
-
-.layer-img--mult-bar {
-  object-fit: fill;
-}
-
-.mult-values-active {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
 }
 
 .layer-img--ribbon {
@@ -2146,9 +3110,11 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
 .layer-base {
   position: absolute;
   inset: 0;
+  overflow: hidden;
+  background: #120a08;
 }
 
-/* 麻将区 */
+/* 麻将区：不裁切，依靠 z-index 层级遮盖缓冲行（倍数条 z=6-10，底木 z=7 均高于 z-board=4） */
 .layer-board {
   position: absolute;
   overflow: visible;
@@ -2159,99 +3125,133 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   pointer-events: auto;
 }
 
+/* ── HUD 三格金额栏（精确对照 Cocos GameInfo 布局）────────────────────────── */
+/* GameInfo 覆盖整个容器，子面板用绝对坐标（%）精确定位
+ * 数据来源: Cocos dump GameInfo top=77.66% h=4.38%，设计尺寸 1080×1920
+ * 三面板: bg_round_solid 深色圆角背景 + 图标 + 数值文字
+ */
 .layer-hud__values {
   position: absolute;
   inset: 0;
-  left: 7.5%;
-  width: 85%;
-  display: flex;
-  justify-content: space-between;
-  align-items: stretch;
-  gap: 3.2%;
-  box-sizing: border-box;
   pointer-events: none;
 }
 
+/* 每个面板：与原版一致的深暖棕（拾色 #594017 × 0.82 alpha） */
 .hud-panel {
-  flex: 1;
-  min-width: 0;
+  position: absolute;
+  top: 0;
   height: 100%;
   display: flex;
-  justify-content: flex-start;
+  flex-direction: row;
   align-items: center;
-  padding: 0 8px 0 10px;
+  padding: 0 3% 0 1.5%;
+  gap: 2%;
   box-sizing: border-box;
-  border-radius: 8px;
-  background: linear-gradient(180deg, rgba(72, 48, 18, 0.94) 0%, rgba(38, 24, 8, 0.9) 100%);
-  border: 1px solid rgba(255, 210, 120, 0.5);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 230, 160, 0.28),
-    0 2px 6px rgba(0, 0, 0, 0.35);
-  transition: transform 0.2s ease-out, filter 0.2s ease-out;
+  background: rgba(50, 25, 8, 0.82);
+  border-radius: 7px;
+  overflow: hidden;
+  transition: filter 0.15s ease-out;
   pointer-events: auto;
 }
 
-.hud-panel.clickable {
-  cursor: pointer;
-}
+/* 三面板精确左/宽定位（来自 Cocos worldPct，已是绝对 %，容器 left=0 width=100%） */
+.hud-panel--balance { left: 1.11%; width: 32.22%; }
+.hud-panel--bet     { left: 33.89%; width: 32.22%; }
+.hud-panel--win     { left: 66.67%; width: 32.22%; }
 
-.hud-panel.clickable:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.12);
-  border-color: rgba(255, 220, 140, 0.65);
-}
-
-.hud-panel.clickable:active {
-  transform: translateY(1px) scale(0.98);
-  filter: brightness(0.94);
-}
+.hud-panel.clickable { cursor: pointer; }
+.hud-panel.clickable:hover  { filter: brightness(1.14); }
+.hud-panel.clickable:active { filter: brightness(0.92); transform: scale(0.98); }
 
 .hud-panel.is-disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: not-allowed;
   pointer-events: none;
 }
 
-.hud-panel.is-disabled:hover {
-  transform: none;
-  filter: none;
-}
-
 .hud-panel.is-free-spin-mode {
-  border-color: rgba(255, 215, 0, 0.62);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 230, 160, 0.32),
-    0 0 10px rgba(255, 200, 60, 0.18);
+  background: rgba(50, 25, 8, 0.82);
 }
 
 .hud-value-wrap {
   flex: 1;
   min-width: 0;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  margin-left: 6px;
-  gap: 1px;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 .hud-value-tag {
-  font-size: clamp(7px, 1.5vh, 9px);
+  font-size: clamp(7px, 1.3vh, 9px);
   line-height: 1;
-  color: rgba(255, 215, 120, 0.88);
-  letter-spacing: 0.6px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+  color: rgba(80, 220, 240, 0.85);
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.hud-label {
+  font-size: clamp(8px, 1.5vh, 11px);
+  line-height: 1.1;
+  color: rgba(255, 230, 180, 0.82);
+  letter-spacing: 0.8px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
 }
 
 .layer-copy {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: linear-gradient(180deg, #5c1010 0%, #380808 100%);
+  border: 1.5px solid rgba(190, 130, 30, 0.6);
+  border-radius: 3px;
+  overflow: visible;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 200, 80, 0.18),
+    0 2px 6px rgba(0, 0, 0, 0.4);
 }
+
+/* 广告栏两侧铜钱中国结装饰 */
+.ribbon-knot {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: clamp(28px, 7.5%, 44px);
+  aspect-ratio: 1;
+  z-index: 2;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 36%, #ffe580 0%, #d4a030 45%, #9a6800 100%);
+  box-shadow:
+    0 0 8px rgba(220, 160, 40, 0.75),
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    inset 0 1px 2px rgba(255, 240, 160, 0.45);
+  flex-shrink: 0;
+}
+.ribbon-knot::before {
+  content: '';
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #8b5e00 0%, #5a3c00 100%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+.ribbon-knot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    linear-gradient(0deg, rgba(180, 100, 20, 0.4) 1px, transparent 1px) center/40% 40%,
+    linear-gradient(90deg, rgba(180, 100, 20, 0.4) 1px, transparent 1px) center/40% 40%;
+  background-repeat: no-repeat;
+}
+.ribbon-knot--left  { left: 0.8%; }
+.ribbon-knot--right { right: 0.8%; }
 
 .layer-copy .info-ticker-bar {
   position: absolute;
-  inset: 10% 17% 8%;
+  inset: 0 9%;
   overflow: hidden;
   container-type: inline-size;
   --ticker-fade-edge: 10%;
@@ -2287,12 +3287,111 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
 
 .grid-container {
   display: flex;
-  gap: 3px;
+  gap: 0;
   width: 100%;
   height: 100%;
   position: relative;
   z-index: 2;
-  top: 0;
+  overflow: visible;
+  /*
+   * 正版 Cocos dump（所有值单位：占整屏 canvas %）：
+   *   slot_item 高度   = 13.063 %
+   *   slot_item 行距   = 11.803 % （中心间距，tile 略微重叠）
+   *   6 行总高         = 5×11.803 + 13.063 = 72.078 %
+   *   dark_reel 高度   = 51.282 %
+   * → 4 行完全覆盖 dark_reel：4×13.063 = 52.25 ≈ 51.28 ✓
+   */
+  --pg-tile-pct: 13.063;
+  --pg-pitch-pct: 11.803;
+  --pg-strip-pct: 72.078;
+  --pg-board-pct: 51.139;
+  /* 初始偏移 = board顶 - row0顶 = 16.2 - 6.148 = 10.052% (canvas) */
+  --pg-scroll-top-pct: 10.052;
+  /*
+   * CSS flex 列中 margin-bottom 的 % 解析为宽度而非高度！
+   * 需要把 height-based 重叠量(1.26% canvas-h) 换算成 col-width 百分比：
+   *   overlap_w% = (tile_h% - pitch_h%) / col_w% × (canvas_H/canvas_W)
+   *              = 1.26 / 18.889 × (1031/579) × 100 = 11.882
+   */
+  --pg-overlap-w: 11.882;
+}
+
+.grid-container.is-shaking {
+  animation: board-shake 0.36s ease-out;
+}
+
+@keyframes board-shake {
+  0%, 100% { transform: translate(0, 0); }
+  12% { transform: translate(-4px, 2px); }
+  28% { transform: translate(4px, -3px); }
+  44% { transform: translate(-3px, -2px); }
+  60% { transform: translate(3px, 2px); }
+  76% { transform: translate(-2px, 1px); }
+}
+
+/* 再触发免费局牌面横幅 */
+.fs-retrigger-board-banner {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  z-index: 30;
+  pointer-events: none;
+}
+
+.fs-retrigger-board-banner__inner {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 10px 22px 12px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 120, 40, 0.96) 0%, rgba(200, 40, 20, 0.94) 100%);
+  border: 2px solid rgba(255, 230, 140, 0.95);
+  box-shadow:
+    0 0 24px rgba(255, 120, 30, 0.85),
+    0 4px 12px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 240, 180, 0.5);
+  font-family: 'Arial Black', 'ZCOOL QingKe HuangYou', sans-serif;
+  color: #fff8dc;
+  text-shadow: 0 2px 6px rgba(100, 20, 0, 0.75);
+  white-space: nowrap;
+  animation: retrigger-banner-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.fs-retrigger-board-banner__plus {
+  font-size: clamp(18px, 4.5vw, 28px);
+  font-weight: 900;
+  color: #ffe680;
+}
+
+.fs-retrigger-board-banner__num {
+  font-size: clamp(22px, 5.5vw, 34px);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: #fff5a0;
+}
+
+.fs-retrigger-board-banner__label {
+  font-size: clamp(12px, 3vw, 16px);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.retrigger-banner-enter-active,
+.retrigger-banner-leave-active {
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.retrigger-banner-enter-from,
+.retrigger-banner-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.7);
+}
+
+@keyframes retrigger-banner-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .grid-col {
@@ -2303,26 +3402,41 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   overflow: visible;
 }
 
-.grid-col.is-spinning-col {
-  overflow: hidden;
-}
-
-/* 内部滚动容器 */
+/*
+ * 内部滚动条 — 按正版 Cocos 尺寸：
+ *   col-inner 总高 = strip / board = 72.078 / 51.282 = 140.56% of board
+ *   每格高度 = tile / strip = 13.063 / 72.078 = 18.124% of col-inner
+ *   行距     = pitch/ strip = 11.803 / 72.078 = 16.375% of col-inner
+ *   tile 之间重叠 = tile - pitch = 1.26% of canvas → 1.748% of col-inner
+ *   初始偏移  = -1 × pitch of col-inner = -16.375%（隐藏顶部缓冲行）
+ */
 .col-inner {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 0;
   width: 100%;
-  height: 100%;
+  flex-shrink: 0;
+  height: calc(100% * var(--pg-strip-pct) / var(--pg-board-pct));
+  transform: translateY(calc(-100% * var(--pg-scroll-top-pct) / var(--pg-strip-pct)));
 }
 
 .col-inner > :deep(.mahjong-tile) {
-  flex: 0 0 calc((100% - 15px) / 6);
+  flex: 0 0 calc(100% * var(--pg-tile-pct) / var(--pg-strip-pct));
   min-height: 0;
+  /* 宽度多出 0.911% 让相邻牌边框微重叠 */
+  width: calc(100% * 19.8 / 18.889);
+  /* 行重叠：用宽度相对值 -11.882%（= 13px 的正确换算），消除行间绿缝 */
+  margin-bottom: calc(-1% * var(--pg-overlap-w));
+}
+
+.col-inner > :deep(.mahjong-tile:last-child) {
+  margin-bottom: 0;
 }
 
 .col-inner.is-spinning > :deep(.mahjong-tile) {
-  flex: 0 0 calc((100% - 15px) / 6);
+  flex: 0 0 calc(100% * var(--pg-tile-pct) / var(--pg-strip-pct));
+  width: calc(100% * 19.8 / 18.889);
+  margin-bottom: calc(-1% * var(--pg-overlap-w));
 }
 
 /* PG 式逐列停轮：每列独立时长，左→右依次到位 */
@@ -2338,27 +3452,24 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   --reel-bounce-ms: 90ms;
 }
 
+/* rest = -pitch/strip × 100% = -16.375% of col-inner */
 @keyframes slot-spin {
-  0% { transform: translateY(calc(-600% - 15px)); }
-  92% { transform: translateY(2px); }
-  100% { transform: translateY(0); }
+  0%   { transform: translateY(-300%); }
+  92%  { transform: translateY(calc(-100% * var(--pg-scroll-top-pct) / var(--pg-strip-pct) + 3px)); }
+  100% { transform: translateY(calc(-100% * var(--pg-scroll-top-pct) / var(--pg-strip-pct))); }
 }
 
 @keyframes reel-settle {
-  0% { transform: translateY(0); }
-  45% { transform: translateY(5px); }
-  100% { transform: translateY(0); }
+  0%   { transform: translateY(calc(-100% * var(--pg-scroll-top-pct) / var(--pg-strip-pct))); }
+  45%  { transform: translateY(calc(-100% * var(--pg-scroll-top-pct) / var(--pg-strip-pct) + 6px)); }
+  100% { transform: translateY(calc(-100% * var(--pg-scroll-top-pct) / var(--pg-strip-pct))); }
 }
 
 /* 倍数条档位切换脉冲 */
-.mult-values-active.is-pulsing {
-  animation: mult-pulse 0.45s ease-out;
-}
-
 @keyframes mult-pulse {
-  0% { filter: brightness(1) drop-shadow(0 0 0 transparent); transform: scale(1); }
-  35% { filter: brightness(1.35) drop-shadow(0 0 12px rgba(255, 220, 90, 0.85)); transform: scale(1.04); }
-  100% { filter: brightness(1) drop-shadow(0 0 0 transparent); transform: scale(1); }
+  0% { filter: brightness(1); transform: scale(1); }
+  35% { filter: brightness(1.22); transform: scale(1.02); }
+  100% { filter: brightness(1); transform: scale(1); }
 }
 
 /* Big / Mega / Super Mega Win 全屏庆祝 */
@@ -2372,6 +3483,15 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   justify-content: center;
   pointer-events: none;
   background: radial-gradient(circle at 50% 45%, rgba(255, 200, 60, 0.22) 0%, rgba(0, 0, 0, 0.72) 68%);
+}
+
+.big-win-banner {
+  position: relative;
+  width: min(88%, 620px);
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.55));
+  animation: big-win-label-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 .big-win-rays {
@@ -2479,48 +3599,79 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   justify-content: center;
 }
 
+.hud-icon-wrap {
+  flex: 0 0 22%;
+  height: 66%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 3px;
+}
+
+/* 图标：Cocos 节点高度=2.50%vh（57% 面板高）；正方形，宽=高自动 */
 .hud-icon-img {
-  width: 100%;
-  height: 100%;
+  flex-shrink: 0;
+  width: auto;
+  height: 57%;
   object-fit: contain;
-  object-position: center;
   pointer-events: none;
   user-select: none;
-  transition: transform 0.2s ease-out;
+  transition: transform 0.15s ease-out;
+  filter: invert(65%) sepia(55%) saturate(420%) hue-rotate(340deg) brightness(1.05) contrast(0.9);
 }
 
 .hud-panel.clickable:hover .hud-icon-img {
-  transform: scale(1.06);
+  transform: scale(1.08);
+}
+
+.btn-layer-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.btn-layer-img--label {
+  z-index: 2;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+}
+
+.btn-layer-img--icon {
+  z-index: 1;
+  width: 58%;
+  height: 58%;
+  margin: auto;
+  inset: 0;
 }
 
 /* 屏幕上的金额文字 */
+/* 金额数值：右对齐（图标在左，数字靠右），flex:1 填满剩余宽度 */
 .hud-value {
   flex: 1;
   min-width: 0;
-  width: 100%;
-  font-family: 'Arial Black', sans-serif;
-  font-size: clamp(9px, 2.2vh, 13px);
+  font-family: Arial, sans-serif;
+  font-size: clamp(11px, 3.0vh, 24px);
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
-  color: #fff5dc;
-  margin-left: 0;
+  color: #50DCF0;
   text-align: right;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
   letter-spacing: 0.2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.0;
   transition: color 0.2s;
-}
-
-.hud-panel > .hud-value {
-  margin-left: 6px;
 }
 
 .hud-value.is-win {
   color: #ffe066;
   text-shadow:
-    0 0 6px rgba(255, 200, 60, 0.45),
-    0 1px 2px rgba(0, 0, 0, 0.85);
+    0 0 8px rgba(255, 210, 60, 0.6),
+    0 1px 3px rgba(0, 0, 0, 0.9);
 }
 
 /* 弹窗遮罩 */
@@ -3454,7 +4605,7 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   width: max-content;
   max-width: none;
   font-family: 'Ma Shan Zheng', 'ZCOOL QingKe HuangYou', cursive;
-  font-size: clamp(24px, 6.8vw, 38px);
+  font-size: clamp(14px, 3.6vw, 22px);
   font-weight: 400;
   letter-spacing: 2px;
   white-space: nowrap;
@@ -3508,16 +4659,13 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
 }
 
 .neon-info-text :deep(.ticker-body) {
-  color: #fff4c8;
-  -webkit-text-stroke: 1.4px rgba(88, 42, 4, 0.82);
+  color: #ffffff;
+  -webkit-text-stroke: 1px rgba(60, 20, 0, 0.6);
   paint-order: stroke fill;
   text-shadow:
-    0 2px 0 #7a4210,
-    0 3px 0 #5c3008,
-    0 4px 0 #3a1c04,
-    0 6px 10px rgba(0, 0, 0, 0.5),
-    0 0 18px rgba(255, 210, 90, 0.5),
-    0 0 36px rgba(255, 150, 30, 0.28);
+    0 1px 0 rgba(80, 30, 0, 0.8),
+    0 2px 4px rgba(0, 0, 0, 0.6),
+    0 0 12px rgba(255, 200, 80, 0.25);
 }
 
 .neon-info-text :deep(.ticker-hl) {
@@ -3586,29 +4734,258 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   }
 }
 
-/* 底部按钮区 */
+/* 底部按钮区：Cocos worldPct 绝对定位 + 分层渲染 */
 .btn-interactive-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 12;
 }
 
-.bottom-action-bar,
+.bottom-action-bar {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pg-btn-circle,
+.pg-btn-tint,
+.pg-btn-label {
+  position: absolute;
+  object-fit: contain;
+  pointer-events: none;
+  display: block;
+}
+
+.pg-btn-circle {
+  opacity: 0;
+  transition: opacity 0.07s ease-out;
+}
+
+.pg-btn-circle.is-visible {
+  opacity: 0.72;
+  filter: brightness(2.8) contrast(0.85);
+}
+
+.pg-btn-tint {
+  filter: brightness(0) saturate(100%) invert(68%) sepia(38%) saturate(640%)
+    hue-rotate(349deg) brightness(96%) contrast(93%);
+}
+
+.pg-btn-tint.is-active {
+  filter: brightness(0) saturate(100%) invert(78%) sepia(45%) saturate(820%)
+    hue-rotate(352deg) brightness(108%) contrast(96%)
+    drop-shadow(0 0 6px rgba(255, 190, 80, 0.45));
+}
+
+.pg-btn-label {
+  filter: brightness(0) saturate(100%) invert(68%) sepia(38%) saturate(640%)
+    hue-rotate(349deg) brightness(96%) contrast(93%);
+}
+
+.pg-btn-label.is-active {
+  filter: brightness(0) saturate(100%) invert(78%) sepia(45%) saturate(820%)
+    hue-rotate(352deg) brightness(108%) contrast(96%)
+    drop-shadow(0 0 6px rgba(255, 190, 80, 0.45));
+}
+
+.pg-btn-label.is-precomposed {
+  filter: none;
+}
+
+.pg-btn-label.is-precomposed.is-active {
+  filter: drop-shadow(0 0 6px rgba(255, 190, 80, 0.45));
+}
+
+.turbo-fx {
+  position: absolute;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  image-rendering: auto;
+}
+
+.turbo-fx--glow {
+  z-index: 0;
+  mix-blend-mode: screen;
+  animation: turbo-glow-pulse 1.85s ease-in-out infinite;
+}
+
+.turbo-center-icon.is-flashing {
+  animation: turbo-center-flash 1.85s linear infinite;
+}
+
+@keyframes turbo-glow-pulse {
+  0%,
+  15% {
+    opacity: 0.55;
+  }
+  20% {
+    opacity: 0.15;
+  }
+  25%,
+  35% {
+    opacity: 0.55;
+  }
+  30% {
+    opacity: 0.25;
+  }
+  60%,
+  65% {
+    opacity: 0.25;
+  }
+  80%,
+  100% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes turbo-center-flash {
+  0%,
+  10.8% {
+    filter: brightness(0) saturate(100%) invert(78%) sepia(45%) saturate(820%)
+      hue-rotate(352deg) brightness(108%) contrast(96%);
+  }
+  11%,
+  48.6% {
+    filter: brightness(0) saturate(100%) invert(78%) sepia(45%) saturate(820%)
+      hue-rotate(352deg) brightness(138%) contrast(96%)
+      drop-shadow(0 0 8px rgba(255, 190, 80, 0.65));
+  }
+  49%,
+  100% {
+    filter: brightness(0) saturate(100%) invert(78%) sepia(45%) saturate(820%)
+      hue-rotate(352deg) brightness(108%) contrast(96%);
+  }
+}
+
+.bottom-action-bar .action-btn--hit,
+.bottom-action-bar .action-btn--spin-wrap,
+.bottom-action-bar .action-btn--spin-hit {
+  position: absolute;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-action-bar .action-btn--hit {
+  transition: transform 0.1s, filter 0.1s;
+}
+
+.bottom-action-bar .action-btn--spin-wrap {
+  display: block;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.bottom-action-bar .action-btn--spin-hit {
+  z-index: 2;
+}
+
+.bottom-action-bar .action-btn--spin-wrap.is-disabled + .action-btn--spin-hit,
+.bottom-action-bar .action-btn--spin-hit.is-disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.bottom-action-bar .action-btn--spin-wrap.is-disabled {
+  opacity: 0.88;
+}
+
+.spin-disc-layer {
+  position: absolute;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 2;
+  display: block;
+}
+
+.spin-disc-layer.is-free-spin {
+  filter: drop-shadow(0 0 8px rgba(255, 210, 60, 0.35));
+}
+
+.spin-count-layer {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.spin-count-digit {
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.spin-count-layer.is-count-bump {
+  animation: spin-count-bump 0.62s cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+
+@keyframes spin-count-bump {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.22);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.bottom-action-bar :deep(.spin-btn) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  pointer-events: none;
+}
+
+.bottom-action-bar .action-btn--hit:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.bottom-action-bar .action-btn--hit.is-disabled,
+.bottom-action-bar .action-btn--hit:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.action-btn--auto {
+  position: relative;
+}
+
+.action-btn--auto .auto-count-badge {
+  position: absolute;
+  right: 8%;
+  top: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: rgba(180, 120, 80, 0.92);
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  pointer-events: none;
+}
+
 .bottom-action-menu-page {
   position: absolute;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 3.2%;
-  box-sizing: border-box;
-  pointer-events: auto;
+  inset: 0;
+  pointer-events: none;
   overflow: visible;
-}
-
-.bottom-action-menu-page {
-  gap: 2%;
-  padding: 0 1%;
 }
 
 .action-btn {
@@ -3651,15 +5028,12 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
 .turbo-btn,
 .auto-btn {
   aspect-ratio: 76 / 77;
+  position: relative;
 }
 
 .minus-btn,
 .plus-btn {
   aspect-ratio: 1;
-}
-
-.turbo-btn {
-  background-image: url('/images/games/mahjong/lingguang/buttons/btn-turbo.png');
 }
 
 .turbo-btn.is-active {
@@ -3671,19 +5045,6 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   transform: scale(0.95);
 }
 
-.minus-btn {
-  background-image: url('/images/games/mahjong/lingguang/buttons/btn-minus.png');
-}
-
-.plus-btn {
-  background-image: url('/images/games/mahjong/lingguang/buttons/btn-plus.png');
-}
-
-.auto-btn {
-  background-image: url('/images/games/mahjong/lingguang/buttons/btn-auto.png');
-}
-
-/* 汉堡菜单：CSS 三横线，居中对齐在按钮边框右缘与页面右缘之间 */
 .menu-hamburger {
   position: absolute;
   width: 5.6%;
@@ -3715,31 +5076,43 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   filter: brightness(1.15);
 }
 
-.menu-page-btn {
-  width: 12.75%;
-  height: 64%;
-  aspect-ratio: 76 / 77;
-  mix-blend-mode: normal;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-color: transparent;
+.menu-page-circle {
+  pointer-events: none;
+}
+
+.menu-page-icon {
+  pointer-events: none;
+}
+
+.menu-page-label {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(9px, 2.2vh, 16px);
+  line-height: 1.1;
+  color: rgb(180, 120, 80);
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+  text-align: center;
+}
+
+.menu-page-hit {
+  position: absolute;
+  padding: 0;
   border: none;
+  background: transparent;
   cursor: pointer;
-  transition: transform 0.2s, filter 0.2s;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s, filter 0.15s;
 }
 
-.menu-page-btn:active {
+.menu-page-hit:active {
   transform: scale(0.95);
+  filter: brightness(1.08);
 }
-
-.exit-btn { background-image: url('/images/games/mahjong/lingguang/buttons/btn-exit.png'); }
-.sound-btn.is-on { background-image: url('/images/games/mahjong/lingguang/buttons/btn-sound-on.png'); }
-.sound-btn.is-off { background-image: url('/images/games/mahjong/lingguang/buttons/btn-sound-off.png'); }
-.paytable-btn { background-image: url('/images/games/mahjong/lingguang/buttons/btn-paytable.png'); }
-.rules-btn { background-image: url('/images/games/mahjong/lingguang/buttons/btn-rules.png'); }
-.history-btn { background-image: url('/images/games/mahjong/lingguang/buttons/btn-history.png'); }
-.close-menu-btn { background-image: url('/images/games/mahjong/lingguang/buttons/btn-back.png'); }
 
 /* 页面左右推拉切换动画 */
 .slide-left-page-enter-active,

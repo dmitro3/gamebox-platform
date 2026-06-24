@@ -2,60 +2,130 @@
   <Transition name="fs-trigger">
     <div
       v-if="visible"
-      class="fs-trigger-mask"
+      class="fs-trigger-scene"
       role="dialog"
       aria-modal="true"
-      :aria-label="titleText"
+      aria-label="赢得免费旋转"
       @click="emit('confirm')"
     >
-      <div class="fs-trigger-panel" @click.stop>
-        <img v-if="panelBg" class="fs-trigger-panel-bg" :src="panelBg" alt="" />
-        <div v-if="!panelBg" class="fs-trigger-rays" aria-hidden="true" />
+      <img
+        v-if="bgGradient"
+        class="fs-trigger-layer fs-trigger-layer--gradient"
+        :src="bgGradient"
+        alt=""
+        draggable="false"
+      />
+      <img
+        v-if="bgRays"
+        class="fs-trigger-layer fs-trigger-layer--fx fs-trigger-layer--rays"
+        :src="bgRays"
+        alt=""
+        draggable="false"
+      />
+      <img
+        v-if="bgTiles"
+        class="fs-trigger-layer fs-trigger-layer--fx fs-trigger-layer--tiles"
+        :src="bgTiles"
+        alt=""
+        draggable="false"
+      />
+      <img
+        v-if="bgCoins"
+        class="fs-trigger-layer fs-trigger-layer--fx fs-trigger-layer--coins"
+        :src="bgCoins"
+        alt=""
+        draggable="false"
+      />
 
-        <div class="fs-trigger-body">
-          <img :src="`${symBase}/hu.png`" class="fs-trigger-hu" alt="" />
-          <h2 class="fs-trigger-title">{{ titleText }}</h2>
-          <p class="fs-trigger-sub">{{ scatterCount }} 个「胡」符号</p>
-          <div class="fs-trigger-count">
-            <span class="fs-trigger-count__plus" v-if="isRetrigger">+</span>
-            <span class="fs-trigger-count__num">{{ spinsAwarded }}</span>
-            <span class="fs-trigger-count__label">次免费旋转</span>
-          </div>
-          <p v-if="isRetrigger && remainingAfter >= 0" class="fs-trigger-sub fs-trigger-sub--total">
-            继续后剩余 {{ totalAfterAward }} 次
-          </p>
-          <p v-if="!isRetrigger" class="fs-trigger-note">连击倍数 ×2 → ×4 → ×6 → ×10</p>
-          <button type="button" class="fs-trigger-btn" @click="emit('confirm')">
-            {{ isRetrigger ? '继续' : '开始' }}
-          </button>
-          <p class="fs-trigger-hint">点击任意处继续</p>
+      <div class="fs-trigger-ui" @click.stop>
+        <img
+          v-if="titleImg"
+          class="fs-trigger-title"
+          :src="titleImg"
+          alt="赢得免费旋转"
+          draggable="false"
+        />
+
+        <div class="fs-trigger-digits" :aria-label="`${spinsAwarded} 次免费旋转`">
+          <span v-if="isRetrigger" class="fs-trigger-digits__plus">+</span>
+          <span
+            v-for="(digit, index) in digitChars"
+            :key="`${digit}-${index}`"
+            class="fs-trigger-digits__cell"
+            :style="digitStyle(digit)"
+          />
         </div>
+
+        <img
+          v-if="subtitleImg"
+          class="fs-trigger-subtitle"
+          :src="subtitleImg"
+          alt="获得的奖金乘数将翻倍"
+          draggable="false"
+        />
+
+        <button
+          type="button"
+          class="fs-trigger-start"
+          @click="emit('confirm')"
+          @pointerdown="btnPressed = true"
+          @pointerup="btnPressed = false"
+          @pointerleave="btnPressed = false"
+          @pointercancel="btnPressed = false"
+        >
+          <img
+            class="fs-trigger-start__text"
+            :src="btnPressed && btnStartPressed ? btnStartPressed : btnStart"
+            alt="开始"
+            draggable="false"
+          />
+        </button>
       </div>
     </div>
   </Transition>
 </template>
 
 <script setup lang="ts">
-import { computed, watch, onUnmounted } from 'vue'
+import { computed, ref, watch, onUnmounted } from 'vue'
+import { digitSpriteStyle } from '../games/mahjong/digitAtlas'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
-  scatterCount: { type: Number, default: 3 },
   spinsAwarded: { type: Number, default: 12 },
   isRetrigger: { type: Boolean, default: false },
-  remainingAfter: { type: Number, default: 0 },
-  symBase: { type: String, default: '/images/games/mahjong/classic/symbols' },
-  panelBg: { type: String, default: '' },
+  /** 画布渲染高度（px），用于换算 Cocos number_display 字号 */
+  canvasHeight: { type: Number, default: 640 },
+  titleImg: { type: String, default: '' },
+  subtitleImg: { type: String, default: '' },
+  btnStart: { type: String, default: '' },
+  btnStartPressed: { type: String, default: '' },
+  bgGradient: { type: String, default: '' },
+  bgRays: { type: String, default: '' },
+  bgTiles: { type: String, default: '' },
+  bgCoins: { type: String, default: '' },
+  digitsAtlas: { type: String, default: '' },
   autoDismissMs: { type: Number, default: 3200 },
 })
 
 const emit = defineEmits<{ confirm: [] }>()
 
-const titleText = computed(() =>
-  props.isRetrigger ? '免费旋转再触发！' : '恭喜获得免费旋转！',
+const btnPressed = ref(false)
+
+const digitChars = computed(() => String(Math.max(0, props.spinsAwarded)).split(''))
+
+/** Cocos number_display heightPct ≈ 14.792 */
+const digitHeightPx = computed(() =>
+  Math.max(28, Math.round(props.canvasHeight * 0.14792)),
 )
 
-const totalAfterAward = computed(() => props.remainingAfter + props.spinsAwarded)
+function digitStyle(digit: string): Record<string, string> {
+  const base = digitSpriteStyle(digit, digitHeightPx.value, props.digitsAtlas)
+  if (!Object.keys(base).length) return {}
+  return {
+    ...base,
+    filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45))',
+  }
+}
 
 const effectiveAutoDismissMs = computed(() =>
   props.isRetrigger ? Math.min(props.autoDismissMs, 2600) : props.autoDismissMs,
@@ -74,6 +144,7 @@ watch(
   () => props.visible,
   (show) => {
     clearAutoTimer()
+    btnPressed.value = false
     if (show && effectiveAutoDismissMs.value > 0) {
       autoTimer = setTimeout(() => emit('confirm'), effectiveAutoDismissMs.value)
     }
@@ -85,257 +156,133 @@ onUnmounted(clearAutoTimer)
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+QingKe+HuangYou&display=swap');
-
-.fs-trigger-mask {
+.fs-trigger-scene {
   position: absolute;
   inset: 0;
   z-index: 30;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(8, 2, 2, 0.72);
-  backdrop-filter: blur(3px);
-  cursor: pointer;
-}
-
-.fs-trigger-panel {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  width: 88%;
-  max-width: 440px;
-  padding: 0;
-  border-radius: 16px;
-  font-family: 'ZCOOL QingKe HuangYou', 'Ma Shan Zheng', cursive;
-  background: linear-gradient(180deg, #8b1a1a 0%, #4a0a0a 55%, #2a0505 100%);
-  border: 3px solid #ffd700;
-  box-shadow:
-    0 0 40px rgba(255, 215, 0, 0.35),
-    0 12px 32px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 240, 200, 0.15);
-  cursor: default;
-  animation: fs-panel-pop 0.45s cubic-bezier(0.34, 1.4, 0.64, 1) both;
   overflow: hidden;
+  cursor: pointer;
+  background: #120404;
+  animation: fs-scene-in 0.35s ease-out both;
 }
 
-.fs-trigger-panel:has(.fs-trigger-panel-bg) {
-  width: 88%;
-  max-width: 440px;
-  aspect-ratio: 420 / 520;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
-}
-
-.fs-trigger-body {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  padding: 10% 9% 9%;
-  box-sizing: border-box;
-}
-
-.fs-trigger-panel:not(:has(.fs-trigger-panel-bg)) .fs-trigger-body {
-  padding: 28px 22px 24px;
-}
-
-.fs-trigger-panel-bg {
+.fs-trigger-layer {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  pointer-events: none;
+  user-select: none;
+}
+
+.fs-trigger-layer--gradient {
   object-fit: cover;
   object-position: center center;
-  pointer-events: none;
   z-index: 0;
 }
 
-.fs-trigger-panel:has(.fs-trigger-panel-bg) > :not(.fs-trigger-panel-bg):not(.fs-trigger-rays) {
-  position: relative;
+.fs-trigger-layer--fx {
+  object-fit: cover;
+  object-position: center center;
   z-index: 1;
 }
 
-.fs-trigger-panel:has(.fs-trigger-panel-bg) .fs-trigger-hu {
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+.fs-trigger-layer--rays {
+  mix-blend-mode: screen;
+  opacity: 0.92;
+  animation: fs-rays-pulse 2.4s ease-in-out infinite alternate;
 }
 
-.fs-trigger-panel:has(.fs-trigger-panel-bg) .fs-trigger-count__num {
-  animation: fs-count-glow 1.2s ease-in-out infinite alternate;
-  text-shadow:
-    0 3px 0 rgba(80, 35, 4, 0.9),
-    0 0 18px rgba(255, 215, 0, 0.75),
-    0 0 36px rgba(255, 140, 20, 0.45);
+.fs-trigger-layer--tiles {
+  object-position: center 58%;
+  opacity: 0.98;
 }
 
-.fs-trigger-rays {
+.fs-trigger-layer--coins {
+  object-position: center 40%;
+  opacity: 0.88;
+  animation: fs-coins-drift 3.6s ease-in-out infinite alternate;
+}
+
+.fs-trigger-ui {
   position: absolute;
-  inset: -20%;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    rgba(255, 215, 0, 0.08) 30deg,
-    transparent 60deg,
-    rgba(255, 215, 0, 0.06) 90deg,
-    transparent 120deg,
-    rgba(255, 215, 0, 0.08) 150deg,
-    transparent 180deg,
-    rgba(255, 215, 0, 0.06) 210deg,
-    transparent 240deg,
-    rgba(255, 215, 0, 0.08) 270deg,
-    transparent 300deg,
-    rgba(255, 215, 0, 0.06) 330deg,
-    transparent 360deg
-  );
-  animation: fs-rays-spin 8s linear infinite;
+  inset: 0;
+  z-index: 2;
   pointer-events: none;
-  z-index: 0;
-}
-
-.fs-trigger-hu {
-  width: 92px;
-  height: 92px;
-  object-fit: contain;
-  filter: drop-shadow(0 0 16px rgba(255, 200, 60, 0.85));
-  animation: fs-hu-bounce 0.9s ease-in-out infinite alternate;
-  margin: 0 0 14px;
 }
 
 .fs-trigger-title {
-  margin: 0 0 10px;
-  font-family: 'Ma Shan Zheng', 'ZCOOL QingKe HuangYou', cursive;
-  font-size: 38px;
-  font-weight: 400;
-  letter-spacing: 3px;
-  line-height: 1.2;
-  text-align: center;
-  white-space: nowrap;
-  background: linear-gradient(180deg, #fffff8 0%, #ffef70 28%, #ffb818 58%, #e87000 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  -webkit-text-stroke: 1.6px rgba(100, 38, 4, 0.78);
-  paint-order: stroke fill;
-  filter:
-    drop-shadow(0 2px 0 rgba(80, 35, 4, 0.92))
-    drop-shadow(0 0 14px rgba(255, 210, 60, 0.82))
-    drop-shadow(0 0 26px rgba(255, 130, 20, 0.42));
+  position: absolute;
+  left: 50%;
+  top: 14.26%;
+  width: min(85.8%, 662px);
+  transform: translateX(-50%);
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+  animation: fs-title-pop 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) both;
 }
 
-.fs-trigger-sub {
-  margin: 0 0 20px;
-  font-family: 'ZCOOL QingKe HuangYou', 'Ma Shan Zheng', cursive;
-  font-size: 19px;
-  font-weight: 400;
-  letter-spacing: 2px;
-  color: #ffe8b8;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
-}
-
-.fs-trigger-sub--total {
-  margin: 0 0 16px;
-  color: #fff0c0;
-  font-size: 20px;
-  letter-spacing: 2px;
-  text-shadow:
-    0 1px 0 rgba(80, 35, 4, 0.7),
-    0 0 12px rgba(255, 200, 60, 0.45);
-}
-
-.fs-trigger-count {
+.fs-trigger-digits {
+  position: absolute;
+  left: 50%;
+  top: 30.6%;
+  transform: translateX(-50%);
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: 6px 10px;
-  margin: 0 0 18px;
-  line-height: 1;
+  gap: 0.04em;
+  height: 14.8%;
+  min-height: 48px;
+  animation: fs-digits-pop 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) 0.08s both;
 }
 
-.fs-trigger-count__plus {
+.fs-trigger-digits__plus {
   font-family: 'ZCOOL QingKe HuangYou', 'Ma Shan Zheng', cursive;
-  font-size: 50px;
-  font-weight: 400;
-  color: #ffd84a;
-  text-shadow:
-    0 2px 0 rgba(80, 35, 4, 0.85),
-    0 0 16px rgba(255, 200, 60, 0.75);
-}
-
-.fs-trigger-count__num {
-  font-family: 'ZCOOL QingKe HuangYou', 'Ma Shan Zheng', cursive;
-  font-size: 76px;
-  font-weight: 400;
+  font-size: clamp(36px, 9vw, 72px);
   line-height: 1;
-  letter-spacing: 2px;
-  color: #fff;
+  color: #fff6c8;
   text-shadow:
     0 3px 0 rgba(80, 35, 4, 0.9),
-    0 0 18px rgba(255, 215, 0, 0.75),
-    0 0 36px rgba(255, 140, 20, 0.45);
-  animation: fs-count-glow 1.2s ease-in-out infinite alternate;
+    0 0 18px rgba(255, 215, 0, 0.75);
+  margin-right: 0.08em;
 }
 
-.fs-trigger-count__label {
-  font-family: 'Ma Shan Zheng', 'ZCOOL QingKe HuangYou', cursive;
-  font-size: 28px;
-  font-weight: 400;
-  letter-spacing: 3px;
-  color: #ffd84a;
-  text-shadow:
-    0 2px 0 rgba(80, 35, 4, 0.75),
-    0 0 10px rgba(255, 200, 60, 0.5);
+.fs-trigger-digits__cell {
+  flex-shrink: 0;
 }
 
-.fs-trigger-note {
-  margin: 0 0 20px;
-  font-family: 'ZCOOL QingKe HuangYou', 'Ma Shan Zheng', cursive;
-  font-size: 17px;
-  font-weight: 400;
-  letter-spacing: 1px;
-  color: rgba(255, 220, 180, 0.78);
-  text-align: center;
+.fs-trigger-subtitle {
+  position: absolute;
+  left: 50%;
+  top: 60.2%;
+  width: min(88.6%, 669px);
+  transform: translateX(-50%);
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+  animation: fs-subtitle-in 0.45s ease-out 0.15s both;
 }
 
-.fs-trigger-btn {
-  min-width: 168px;
-  padding: 14px 38px;
-  margin-top: 2px;
-  border: 2px solid #ffd700;
-  border-radius: 26px;
-  background: linear-gradient(180deg, #c62828 0%, #7b1010 100%);
-  color: #fff8ec;
-  font-family: 'ZCOOL QingKe HuangYou', 'Ma Shan Zheng', cursive;
-  font-size: 26px;
-  font-weight: 400;
-  letter-spacing: 8px;
-  text-indent: 8px;
+.fs-trigger-start {
+  position: absolute;
+  left: 50%;
+  top: 77.3%;
+  transform: translateX(-50%);
+  width: min(21%, 168px);
+  padding: 0;
+  border: none;
+  background: transparent;
   cursor: pointer;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
-  box-shadow:
-    0 4px 14px rgba(0, 0, 0, 0.4),
-    0 0 16px rgba(255, 180, 40, 0.25);
-  transition: transform 0.12s, filter 0.12s;
+  pointer-events: auto;
+  animation: fs-start-in 0.45s ease-out 0.22s both;
 }
 
-.fs-trigger-btn:active {
-  transform: scale(0.96);
-  filter: brightness(1.1);
-}
-
-.fs-trigger-hint {
-  margin: 16px 0 0;
-  font-family: 'ZCOOL QingKe HuangYou', 'Ma Shan Zheng', cursive;
-  font-size: 14px;
-  font-weight: 400;
-  letter-spacing: 1px;
-  color: rgba(255, 220, 190, 0.5);
+.fs-trigger-start__text {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.45));
+  pointer-events: none;
 }
 
 .fs-trigger-enter-active,
@@ -343,48 +290,43 @@ onUnmounted(clearAutoTimer)
   transition: opacity 0.35s ease;
 }
 
-.fs-trigger-enter-active .fs-trigger-panel,
-.fs-trigger-leave-active .fs-trigger-panel {
-  transition: transform 0.35s ease, opacity 0.35s ease;
-}
-
 .fs-trigger-enter-from,
 .fs-trigger-leave-to {
   opacity: 0;
 }
 
-.fs-trigger-enter-from .fs-trigger-panel,
-.fs-trigger-leave-to .fs-trigger-panel {
-  transform: scale(0.85);
-  opacity: 0;
+@keyframes fs-scene-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-@keyframes fs-panel-pop {
-  0% { transform: scale(0.7); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+@keyframes fs-title-pop {
+  0% { opacity: 0; transform: translateX(-50%) scale(0.72); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1); }
 }
 
-@keyframes fs-rays-spin {
-  to { transform: rotate(360deg); }
+@keyframes fs-digits-pop {
+  0% { opacity: 0; transform: translateX(-50%) scale(0.5); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1); }
 }
 
-@keyframes fs-hu-bounce {
-  0% { transform: scale(1) translateY(0); }
-  100% { transform: scale(1.08) translateY(-4px); }
+@keyframes fs-subtitle-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
-@keyframes fs-count-glow {
-  0% {
-    text-shadow:
-      0 3px 0 rgba(80, 35, 4, 0.9),
-      0 0 14px rgba(255, 215, 0, 0.55),
-      0 0 28px rgba(255, 140, 20, 0.35);
-  }
-  100% {
-    text-shadow:
-      0 3px 0 rgba(80, 35, 4, 0.9),
-      0 0 24px rgba(255, 215, 0, 0.95),
-      0 0 48px rgba(255, 140, 20, 0.55);
-  }
+@keyframes fs-start-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes fs-rays-pulse {
+  0% { opacity: 0.78; transform: scale(1); }
+  100% { opacity: 1; transform: scale(1.03); }
+}
+
+@keyframes fs-coins-drift {
+  0% { transform: translateY(0); opacity: 0.82; }
+  100% { transform: translateY(-2%); opacity: 0.95; }
 }
 </style>

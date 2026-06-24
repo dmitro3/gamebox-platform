@@ -17,7 +17,7 @@ export interface GridPos {
 
 export const COLS = 5
 export const VISIBLE_ROWS = 4
-/** 上下各 1 行缓冲，共 6 行（中间 4 行参与中奖） */
+/** 上下各 1 行缓冲，共 6 行数据（中间 4 行可见） */
 export const BUFFER_ROWS_ABOVE = 1
 export const BUFFER_ROWS_BELOW = 1
 export const TOTAL_ROWS = VISIBLE_ROWS + BUFFER_ROWS_ABOVE + BUFFER_ROWS_BELOW

@@ -1,16 +1,31 @@
 <template>
   <div class="mahjong-cover" v-if="visible">
-    <!-- 真正的竖屏背景图（用户自定义） -->
-    <img src="/images/games/mahjong/lingguang/bg-base.png" class="cover-bg" alt="麻将胡了" />
-    
-    <!-- UI 交互层 -->
-    <div class="ui-layer">
-      <!-- 真实的 HTML/CSS 开始按钮 -->
-      <button class="start-btn" @click="handleStart">
-        <span class="btn-text">开始</span>
-      </button>
+    <!-- PG 正版加载动画 -->
+    <div v-if="loading" class="pg-loader" aria-hidden="true">
+      <div class="pg-loader__dots">
+        <span class="pg-loader__dot" />
+        <span class="pg-loader__dot" />
+        <span class="pg-loader__dot" />
+      </div>
+    </div>
 
-      <!-- 底部版权与认证信息 -->
+    <img v-else-if="coverBgUrl" :src="coverBgUrl" class="cover-bg" alt="麻将胡了" />
+
+    <div v-if="!loading" class="ui-layer">
+      <button
+        v-if="startBtnUrl"
+        type="button"
+        class="start-btn"
+        :style="startBtnStyle"
+        aria-label="开始"
+        @click="handleStart"
+        @mousedown="startPressed = true"
+        @mouseup="startPressed = false"
+        @mouseleave="startPressed = false"
+        @touchstart.passive="startPressed = true"
+        @touchend="startPressed = false"
+      />
+
       <div class="footer-container">
         <div class="footer-top">
           <div class="pg-brand">
@@ -44,6 +59,9 @@
 </template>
 
 <script setup>
+import { computed, onMounted, ref } from 'vue'
+import { pgUi } from '../games/mahjong/pgAssets'
+
 const props = defineProps({
   visible: {
     type: Boolean,
@@ -52,6 +70,33 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['start']);
+
+const loading = ref(true)
+const startPressed = ref(false)
+
+const coverBgUrl = computed(() => pgUi('cover'))
+const startBtnUrl = computed(() =>
+  startPressed.value
+    ? (pgUi('btn-start-pressed') ?? pgUi('btn-start'))
+    : pgUi('btn-start'),
+)
+
+const startBtnStyle = computed(() => {
+  const url = startBtnUrl.value
+  if (!url) return undefined
+  return {
+    backgroundImage: `url(${url})`,
+    backgroundSize: 'contain',
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'center',
+  }
+})
+
+onMounted(() => {
+  setTimeout(() => {
+    loading.value = false
+  }, 900)
+})
 
 const handleStart = () => {
   emit('start');
@@ -66,19 +111,51 @@ const handleStart = () => {
   width: 100vw;
   height: 100vh;
   z-index: 9998;
-  background-color: #1a0000;
+  background-color: #000;
   overflow: hidden;
   font-family: 'PingFang SC', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
-/* 背景图：真正的竖屏图，完美贴合屏幕四边 */
+.pg-loader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+.pg-loader__dots {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 40px;
+  height: 10px;
+}
+
+.pg-loader__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #30a2d0;
+  animation: pg-dot-bounce 0.25s ease-out infinite alternate;
+}
+
+.pg-loader__dot:nth-child(1) { animation-delay: 0s; }
+.pg-loader__dot:nth-child(2) { animation-delay: -0.075s; }
+.pg-loader__dot:nth-child(3) { animation-delay: -0.15s; }
+
+@keyframes pg-dot-bounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-15px); }
+}
+
 .cover-bg {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  /* 关键修改：使用 fill 强制拉伸，确保无论屏幕比例如何，上下左右都绝对贴合边缘，不留黑边也不裁切内容 */
   object-fit: fill;
   animation: coverScaleIn 0.8s ease-out forwards;
 }
@@ -88,7 +165,6 @@ const handleStart = () => {
   to { transform: scale(1); opacity: 1; }
 }
 
-/* UI 交互层：悬浮在背景图之上 */
 .ui-layer {
   position: absolute;
   top: 0;
@@ -100,73 +176,38 @@ const handleStart = () => {
   justify-content: flex-end;
   align-items: center;
   padding-bottom: 20px;
-  pointer-events: none; /* 让层本身不阻挡点击 */
+  pointer-events: none;
 }
 
-/* ================= AI 生成的真实 3D 按钮 ================= */
 .start-btn {
   pointer-events: auto;
-  margin-bottom: 45px;
-  width: 260px; /* 调整为更协调的黄金比例尺寸 */
-  height: 95px;
-  background-image: url('/images/games/start-btn-ai.png');
-  background-size: 100% 100%;
-  background-position: center;
-  background-repeat: no-repeat;
+  margin-bottom: 52px;
+  width: min(260px, 52vw);
+  height: min(68px, 11vw);
   background-color: transparent;
   border: none;
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   cursor: pointer;
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  /* 优化呼吸发光效果，加入轻微的缩放，更具生命力 */
+  transition: transform 0.12s ease, filter 0.12s ease;
   animation: btnBreathe 2.5s infinite alternate ease-in-out;
 }
 
 @keyframes btnBreathe {
-  from { 
-    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)) brightness(1); 
-    transform: scale(1); 
+  from {
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)) brightness(1);
+    transform: scale(1);
   }
-  to { 
-    filter: drop-shadow(0 8px 25px rgba(255, 204, 0, 0.7)) brightness(1.08); 
-    transform: scale(1.03); 
+  to {
+    filter: drop-shadow(0 8px 25px rgba(255, 204, 0, 0.7)) brightness(1.08);
+    transform: scale(1.03);
   }
 }
 
-.btn-text {
-  font-size: 26px; /* 字体小一号 */
-  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  font-weight: bold;
-  color: #ffffff;
-  letter-spacing: 12px;
-  margin-left: 12px; /* 补偿字间距带来的偏移 */
-  position: relative;
-  z-index: 2;
-  
-  /* 恢复干净、清爽的高级质感，去掉夸张的 3D 厚度 */
-  text-shadow: 
-    0 2px 4px rgba(0, 0, 0, 0.6),
-    0 4px 10px rgba(100, 0, 0, 0.8);
-  transition: all 0.1s;
-}
-
-/* 按下时的真实物理反馈 */
 .start-btn:active {
-  transform: translateY(4px) scale(0.96); /* 按钮被按下去并稍微缩小 */
-  animation: none; /* 按下时停止呼吸 */
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)) brightness(0.9);
+  transform: translateY(3px) scale(0.96);
+  animation: none;
+  filter: brightness(0.92);
 }
 
-/* 文字在按下时也要有对应的下压厚度变化 */
-.start-btn:active .btn-text {
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-  transform: translateY(2px);
-}
-
-/* ================= 底部信息 ================= */
 .footer-container {
   pointer-events: auto;
   width: 100%;
