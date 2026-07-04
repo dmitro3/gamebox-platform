@@ -3,6 +3,16 @@
   <MahjongCover v-if="showPgCover" @start="onPgCoverStart" />
 
   <div v-show="!showPgCover" class="mahjong-game-page" :class="{ 'is-free-spin-bg': isInFreeSpinFeature }">
+    <!-- 全屏铺底：专属封面2（与开始界面一致，宽屏两侧红金延伸） -->
+    <img
+      v-if="pageBgUrl"
+      class="page-bg-fill"
+      :src="pageBgUrl"
+      alt=""
+      aria-hidden="true"
+      draggable="false"
+    />
+
     <!-- 游戏画布（尺寸来自正版 dump cocosLayout.design） -->
     <div
       class="game-container"
@@ -12,8 +22,14 @@
 
       <!-- PG 正版叠层：底图 → 顶栏 → 牌面 → 信息带 → 底栏按钮 -->
 
-      <!-- ① 主界面底：正版为暗色纯色底（非红云纹 bg-base） -->
-      <div class="layer layer-base z-bg" :style="pctLayerStyle(bgImage)"></div>
+      <!-- ① 主界面画布内：暗色纯色底；全屏红金延伸由 page-bg-fill 承担 -->
+      <div
+        class="layer layer-base z-bg"
+        :class="{ 'is-free-spin-mode': isInFreeSpinFeature, 'is-using-fs-assets': isInFreeSpinFeature && hasFreeSpinBgAsset }"
+        :style="pctLayerStyle(bgImage)"
+      >
+        <div v-if="isInFreeSpinFeature && !hasFreeSpinBgAsset" class="free-spin-bg-glow" aria-hidden="true" />
+      </div>
 
       <!-- ①c 顶部元宝装饰条 main_top_a（中间木纹靠 z-wood-top 底色，两侧铜钱） -->
       <div
@@ -55,10 +71,10 @@
            stage 2 = 大赢（medium_winboard = infoboard_c 紫框，覆盖在底框之上）
            三档的尺寸/坐标统一用 L.infoboard，紫框用 L.infoboardWin -->
       <div
-        v-if="pgStep >= 3"
+        v-if="pgStep >= 3 && (L.infoboard || L.infoboardWin)"
         class="layer z-infoboard"
         :class="`infoboard-stage-${infoBoardStage}`"
-        :style="pctLayerStyle(infoBoardStage === 2 ? L.infoboardWin : L.infoboard)"
+        :style="pctLayerStyle(infoBoardStage === 2 ? (L.infoboardWin ?? L.infoboard!) : L.infoboard!)"
       >
         <img v-if="infoBoardStage === 2" class="layer-img" :src="pgUi('infoboard-c')!" alt="" />
         <img v-else-if="infoBoardStage === 1" class="layer-img" :src="pgUi('infoboard-b')!" alt="" />
@@ -146,15 +162,15 @@
         </div>
       </div>
 
-      <!-- ⑥b 倍数指示牌：未激活暗刻滤镜 + 激活金色 × -->
+      <!-- ⑥b 倍数指示牌：未激活暗刻贴图（import__0b tex0）+ 激活金色 ×（mult atlas） -->
       <template v-if="pgStep >= 6">
         <template v-for="(slot, idx) in multSlots" :key="slot.activeKey">
           <div
-            v-if="activeMultiplierIndex !== idx && pgUi(slot.activeKey)"
+            v-if="activeMultiplierIndex !== idx && multInactiveUrl(slot)"
             class="layer z-mult-slot z-mult-slot--inactive"
             :style="pctLayerStyle(slot.darkBox)"
           >
-            <img class="mult-slot-img mult-slot-img--inactive" :src="pgUi(slot.activeKey)!" alt="" />
+            <img class="mult-slot-img mult-slot-img--inactive" :src="multInactiveUrl(slot)!" alt="" />
           </div>
           <div
             v-if="activeMultiplierIndex === idx && pgUi(slot.activeKey)"
@@ -382,7 +398,7 @@
       <!-- 交互层：按钮（坐标来自 Cocos dump worldPct） -->
       <div v-if="pgStep >= 10" class="btn-interactive-layer z-buttons">
         <Transition name="slide-left-page">
-          <div class="bottom-action-bar" v-if="!showMenuPage">
+          <div class="bottom-action-bar" v-if="!showMenuPage && !showFsBottomPanel">
             <!-- 正版分层：深色圆底 + 琥珀色前景图标（worldPct 来自 Cocos dump） -->
             <img
               v-for="layer in bottomBtnCircles"
@@ -476,52 +492,64 @@
               @pointercancel="clearPressedBtn"
               @click="decreaseBet"
             />
+            <!-- 正版旋转钮：pgSpinLayout normal_spin_holder 子节点相对定位 -->
+            <div
+              class="spin-button-stack"
+              :class="{ 'is-disabled': isSpinControlDisabled }"
+              :style="pctLayerStyle(spinHolderBox)"
+            >
+              <img
+                v-if="!showCenterSpinCount && pgUi('btn-spin-frame')"
+                class="spin-stack-img spin-stack-disc"
+                :class="{ 'is-free-spin': isFreeSpinMode }"
+                :style="relPctStyle(pgSpin.disc)"
+                :src="pgUi('btn-spin-frame')!"
+                alt=""
+                draggable="false"
+              />
+              <template v-else-if="showCenterSpinCount && pgUi('btn-spin-count')">
+                <img
+                  class="spin-stack-img spin-stack-disc--count"
+                  :style="relPctStyle(pgSpin.countDisc)"
+                  :src="pgUi('btn-spin-count')!"
+                  alt=""
+                  draggable="false"
+                />
+                <div
+                  class="spin-stack-digits"
+                  :class="{ 'is-count-bump': spinCountBumpActive }"
+                  :style="relPctStyle(pgSpin.countDigits)"
+                  aria-hidden="true"
+                >
+                  <span
+                    v-for="(ch, i) in spinCountChars"
+                    :key="`${spinCountBumpToken}-${i}-${ch}`"
+                    class="spin-count-digit"
+                    :style="spinCountDigitStyle(ch)"
+                  />
+                </div>
+              </template>
+              <div
+                class="spin-stack-arrow"
+                :style="relPctStyle(pgSpin.arrow)"
+              >
+                <MahjongSpinButton
+                  :is-accelerating="isSpinning || isResolving"
+                  :is-turbo="isTurbo"
+                  :show-arrows="!showCenterSpinCount"
+                  :retrigger-flash="spinRetriggerFlash"
+                  :disabled="isSpinControlDisabled"
+                />
+              </div>
+            </div>
             <button
               class="action-btn action-btn--hit action-btn--spin-hit"
               :class="{ 'is-disabled': isSpinControlDisabled }"
               :disabled="isSpinControlDisabled"
-              :style="pctLayerStyle(bottomBtnHits.spin)"
+              :style="pctLayerStyle(pgSpin.hit)"
               aria-label="旋转"
               @click="handleSpinClick()"
             />
-            <!-- 玉石盘 spin_base（pg-cocos-dump worldPct，与箭头分层） -->
-            <img
-              v-if="pgUi('btn-spin-frame')"
-              class="spin-disc-layer"
-              :class="{ 'is-free-spin': isFreeSpinMode }"
-              :style="pctLayerStyle(spinDiscVisual)"
-              :src="pgUi('btn-spin-frame')!"
-              alt=""
-              draggable="false"
-            />
-            <div
-              class="action-btn--spin-wrap"
-              :class="{ 'is-disabled': isSpinControlDisabled }"
-              :style="pctLayerStyle(spinArrowVisual)"
-            >
-              <MahjongSpinButton
-                :is-accelerating="isSpinning || isResolving"
-                :is-turbo="isTurbo"
-                :is-free-spin-mode="isFreeSpinMode"
-                :free-spins-remaining="freeSpinsRemaining"
-                :retrigger-flash="spinRetriggerFlash"
-                :disabled="isSpinControlDisabled"
-              />
-            </div>
-            <div
-              v-if="isFreeSpinMode && freeSpinsRemaining > 0"
-              class="spin-count-layer"
-              :class="{ 'is-count-bump': spinCountBumpActive }"
-              :style="pctLayerStyle(spinCountVisual)"
-              aria-hidden="true"
-            >
-              <span
-                v-for="(ch, i) in spinCountChars"
-                :key="`${spinCountBumpToken}-${i}-${ch}`"
-                class="spin-count-digit"
-                :style="spinCountDigitStyle(ch)"
-              />
-            </div>
             <button
               class="action-btn action-btn--hit action-btn--plus"
               :class="{ 'is-disabled': !canAdjustBet }"
@@ -544,7 +572,7 @@
               @pointercancel="clearPressedBtn"
               @click="handleAutoBtnClick"
             >
-              <div v-if="autoSpinCount > 0" class="auto-count-badge">{{ autoSpinCount }}</div>
+              <div v-if="autoSpinCount > 0 && !showCenterSpinCount" class="auto-count-badge">{{ autoSpinCount }}</div>
             </button>
             <button
               class="action-btn action-btn--hit action-btn--menu"
@@ -558,6 +586,58 @@
             />
           </div>
         </Transition>
+
+        <!-- 免费旋转底栏：正版替换全部底栏按钮 -->
+        <div
+          v-if="showFsBottomPanel"
+          class="fs-bottom-panel"
+          :style="pctLayerStyle(fsBottomLayout.panel)"
+        >
+          <img
+            v-if="isLastFreeSpinLabel && pgUi('fs-last-spin-label')"
+            class="fs-bottom-last"
+            :src="pgUi('fs-last-spin-label')!"
+            alt="最后免费旋转"
+            draggable="false"
+          />
+          <div v-else class="fs-bottom-remaining">
+            <div class="fs-bottom-remaining__label">
+              <img
+                v-if="pgUi('fs-remaining-label-top')"
+                class="fs-remaining-line fs-remaining-line--top"
+                :src="pgUi('fs-remaining-label-top')!"
+                alt=""
+                draggable="false"
+              />
+              <img
+                v-if="pgUi('fs-remaining-label-bottom')"
+                class="fs-remaining-line fs-remaining-line--bottom"
+                :src="pgUi('fs-remaining-label-bottom')!"
+                alt=""
+                draggable="false"
+              />
+            </div>
+            <img
+              v-if="pgUi('fs-remaining-colon')"
+              class="fs-remaining-colon"
+              :src="pgUi('fs-remaining-colon')!"
+              alt=""
+              draggable="false"
+            />
+            <div
+              class="fs-bottom-remaining__digits"
+              :class="{ 'is-count-bump': fsCountBumpActive }"
+              aria-hidden="true"
+            >
+              <span
+                v-for="(ch, i) in fsCountChars"
+                :key="`${fsCountBumpToken}-${i}-${ch}`"
+                class="fs-count-digit"
+                :style="fsCountDigitStyle(ch)"
+              />
+            </div>
+          </div>
+        </div>
 
         <Transition name="slide-right-page">
           <div class="bottom-action-menu-page" v-if="showMenuPage">
@@ -960,6 +1040,7 @@ import {
   type MahjongSymbolId,
   createEmptyGrid,
   evaluateWins,
+  getWinAnnounceSymbol,
   rollColumn,
   rollTile,
   applyGoldenToWild,
@@ -971,6 +1052,7 @@ import {
   isPaySymbol,
 } from '../games/mahjong/mahjongWays1'
 import cocosLayout from '../games/mahjong/cocosLayout.json'
+import pgSpinLayout from '../games/mahjong/pgSpinLayout.json'
 import { hasPgUi, pgBigWinImage, pgUi, pgUiMode } from '../games/mahjong/pgAssets'
 import { digitSpriteStyle } from '../games/mahjong/digitAtlas'
 
@@ -996,6 +1078,7 @@ const pgStep = computed(() => {
 const showPgCover = ref(false)
 function onPgCoverStart() {
   showPgCover.value = false
+  void mahjongSound.startMainBgm()
 }
 
 const btnBg = (key: string) => {
@@ -1137,43 +1220,29 @@ const multSlots = computed(() =>
     glowBox: glowBoxForActive(slot.activeBox),
   })),
 )
+
+/** 正版暗刻 ×：优先 mult-xN-dark，无资源时不硬叠 CSS 压暗 */
+function multInactiveUrl(slot: MultSlotLayout): string | null {
+  return pgUi(slot.darkKey) ?? pgUi(slot.activeKey)
+}
 const spinFrame = cocosLayout.spinFrame as PctBox
-/** 玉石盘 spin_base（pg-cocos-dump，scale 1.5 后 worldPct） */
-const spinDiscVisual = {
-  leftPct: 37.083,
-  topPct: 82.969,
-  widthPct: 25.833,
-  heightPct: 15.234,
-} satisfies PctBox
-/** 金色双箭头 arrow（pg-cocos-dump，略缩小并保持中心） */
-const SPIN_ARROW_RAW = {
-  leftPct: 40.651,
-  topPct: 84.079,
-  widthPct: 18.512,
-  heightPct: 10.28,
-} satisfies PctBox
-const SPIN_ARROW_SCALE = 0.88
-const spinArrowVisual = {
-  leftPct: SPIN_ARROW_RAW.leftPct + (SPIN_ARROW_RAW.widthPct * (1 - SPIN_ARROW_SCALE)) / 2,
-  topPct: SPIN_ARROW_RAW.topPct + (SPIN_ARROW_RAW.heightPct * (1 - SPIN_ARROW_SCALE)) / 2,
-  widthPct: SPIN_ARROW_RAW.widthPct * SPIN_ARROW_SCALE,
-  heightPct: SPIN_ARROW_RAW.heightPct * SPIN_ARROW_SCALE,
-} satisfies PctBox
-/** 免费旋转剩余次数（Cocos number_display worldPct） */
-const spinCountVisual = {
-  leftPct: 43.519,
-  topPct: 85.275,
-  widthPct: 12.963,
-  heightPct: 7.576,
-} satisfies PctBox
+/** 正版旋转钮（pg-cocos-dump normal_spin_holder，1080×1920） */
+const pgSpin = pgSpinLayout as {
+  holder: PctBox
+  countHolder: PctBox
+  hit: PctBox
+  disc: PctBox
+  arrow: PctBox
+  countDisc: PctBox
+  countDigits: PctBox
+}
 const liveNodes = (cocosLayout as { liveNodes?: Record<string, PctBox> }).liveNodes
 const btnBar = cocosLayout.btnBar as PctBox
 
-/** 底部按钮：Cocos dump worldPct（1080×1920） */
 const bottomBtnHits = {
   turbo: { leftPct: 3.889, topPct: 83.906, widthPct: 16.667, heightPct: 9.375 },
   minus: { leftPct: 19.167, topPct: 83.438, widthPct: 16.667, heightPct: 10.313 },
-  spin: { leftPct: 37.083, topPct: 82.969, widthPct: 25.833, heightPct: 15.234 },
+  spin: pgSpin.hit,
   plus: { leftPct: 64.167, topPct: 83.438, widthPct: 16.667, heightPct: 10.313 },
   auto: { leftPct: 79.444, topPct: 83.906, widthPct: 16.667, heightPct: 9.375 },
   menu: { leftPct: 92.11, topPct: 83.906, widthPct: 18.076, heightPct: 9.375 },
@@ -1208,7 +1277,7 @@ function turboFxStyle(box: PctBox, sheetKey: string) {
   }
 }
 
-/** 菜单第二页：与主按钮行同高（替换底栏时沿用 83.9%–86% 纵坐标） */
+/** 菜单第二页：与主按钮行同高 */
 const MENU_ROW = { circleTop: 83.906, circleH: 9.375, iconTop: 85.781, iconH: 5.625, labelTop: 90.989, labelH: 4.583 }
 const menuPageLayers = computed(() => [
   {
@@ -1287,8 +1356,8 @@ const layoutDebugRegions = computed(() => {
     { key: 'bottomWood', label: '底栏木框', box: L.bottomWood },
     { key: 'statusHud', label: '三格金额', box: L.statusHud },
     { key: 'spinFrame', label: '旋转钮框(live)', box: spinFrame },
-    { key: 'spinDisc', label: '玉石盘 spin_base', box: spinDiscVisual },
-    { key: 'spinArrow', label: '旋转箭头', box: spinArrowVisual },
+    { key: 'spinHolder', label: '旋转钮 holder', box: pgSpin.holder },
+    { key: 'spinHit', label: '旋转热区', box: pgSpin.hit },
     { key: 'btnBar', label: '底栏按钮', box: btnBar },
   ]
   return items.filter((i) => i.box)
@@ -1296,12 +1365,23 @@ const layoutDebugRegions = computed(() => {
 
 const bgImageStyle = computed(() => pctLayerStyle(bgImage))
 
-function pctLayerStyle(box: PctBox) {
+function pctLayerStyle(box: PctBox | undefined) {
+  if (!box) return { display: 'none' }
   return {
     top: `${box.topPct}%`,
     height: `${box.heightPct}%`,
     left: `${box.leftPct}%`,
     width: `${box.widthPct}%`,
+  }
+}
+
+/** spin-button-stack 内子层：相对父盒 0~100% */
+function relPctStyle(box: PctBox) {
+  return {
+    left: `${box.leftPct}%`,
+    top: `${box.topPct}%`,
+    width: `${box.widthPct}%`,
+    height: `${box.heightPct}%`,
   }
 }
 
@@ -1345,6 +1425,9 @@ const REEL_STOP_DELAYS = {
 
 const REEL_BOUNCE_MS = { normal: 160, turbo: 90 } as const
 
+/** 正版 slot_scroller 每列约 30 格，滚动段用 blur 符号条带 */
+const REEL_BLUR_TILE_COUNT = 20
+
 const columnSpinning = ref<boolean[]>(Array(COLS).fill(false))
 const columnReelBounce = ref<boolean[]>(Array(COLS).fill(false))
 const multPulseActive = ref(false)
@@ -1366,7 +1449,10 @@ const bigWinLabel = computed(() => {
 
 const columnSpinStyle = (colIndex: number) => {
   const delays = isTurbo.value ? REEL_STOP_DELAYS.turbo : REEL_STOP_DELAYS.normal
-  return { '--reel-duration': `${delays[colIndex]}ms` }
+  return {
+    '--reel-duration': `${delays[colIndex]}ms`,
+    '--pg-blur-count': String(REEL_BLUR_TILE_COUNT),
+  }
 }
 
 const onReelSpinEnd = (colIndex: number) => {
@@ -1374,7 +1460,7 @@ const onReelSpinEnd = (colIndex: number) => {
   columnSpinning.value[colIndex] = false
   columnReelBounce.value[colIndex] = true
   gridData.value[colIndex] = spinningCols.value[colIndex]
-    .slice(0, TOTAL_ROWS)
+    .slice(-TOTAL_ROWS)
     .map((t) => ({ ...t }))
   mahjongSound.playReelStop(colIndex, isTurbo.value)
   const bounceMs = isTurbo.value ? REEL_BOUNCE_MS.turbo : REEL_BOUNCE_MS.normal
@@ -1439,6 +1525,7 @@ const toggleSound = () => {
   } else {
     localStorage.setItem('sound_off', '1')
   }
+  mahjongSound.syncSoundEnabled()
 }
 
 const startAutoSpin = () => {
@@ -1513,8 +1600,66 @@ const spinCountBumpToken = ref(0)
 const spinCountBumpActive = ref(false)
 const spinRetriggerFlash = ref(0)
 
-watch(spinCountBumpToken, () => {
-  if (!isFreeSpinMode.value) return
+/** 中间旋转钮计数：仅自动旋转（免费旋转走底栏替换面板） */
+const centerSpinCount = computed(() => {
+  if (autoSpinCount.value > 0) return autoSpinCount.value
+  return 0
+})
+
+const showCenterSpinCount = computed(() => centerSpinCount.value > 0)
+
+/** 免费旋转进行中：正版底栏替换（隐藏 turbo/±/旋转/自动/菜单） */
+const showFsBottomPanel = computed(
+  () =>
+    isFreeSpinMode.value &&
+    freeSpinsRemaining.value > 0 &&
+    !freeSpinTriggerVisible.value &&
+    !freeSpinEndVisible.value,
+)
+
+const isLastFreeSpinLabel = computed(() => freeSpinsRemaining.value === 1)
+
+/** 正版 free_spins/zh 图集裁切，底栏居中区 */
+const fsBottomLayout = {
+  panel: { leftPct: 6, topPct: 74.2, widthPct: 88, heightPct: 9.2 },
+} as const
+
+const fsCountChars = computed(() => String(freeSpinsRemaining.value).split(''))
+const fsCountBumpToken = ref(0)
+const fsCountBumpActive = ref(false)
+
+watch(freeSpinsRemaining, (next, prev) => {
+  if (!showFsBottomPanel.value || next <= 1 || next === prev) return
+  fsCountBumpToken.value++
+  fsCountBumpActive.value = false
+  requestAnimationFrame(() => {
+    fsCountBumpActive.value = true
+    setTimeout(() => {
+      fsCountBumpActive.value = false
+    }, 620)
+  })
+})
+
+const fsCountDigitPx = computed(() =>
+  Math.max(22, Math.round(gameRenderHeight.value * 5.6 / 100)),
+)
+
+function fsCountDigitStyle(digit: string): Record<string, string> {
+  const atlas = pgUi('spin-count-digits') ?? pgUi('win-digits')
+  const base = digitSpriteStyle(digit, fsCountDigitPx.value, atlas)
+  if (!Object.keys(base).length) return {}
+  return {
+    ...base,
+    filter: 'drop-shadow(0 2px 5px rgba(0, 0, 0, 0.6))',
+  }
+}
+
+const spinHolderBox = computed(() =>
+  showCenterSpinCount.value ? pgSpin.countHolder : pgSpin.holder,
+)
+
+function triggerSpinCountBump() {
+  spinCountBumpToken.value++
   spinCountBumpActive.value = false
   requestAnimationFrame(() => {
     spinCountBumpActive.value = true
@@ -1522,9 +1667,13 @@ watch(spinCountBumpToken, () => {
       spinCountBumpActive.value = false
     }, 620)
   })
+}
+
+watch(centerSpinCount, (next, prev) => {
+  if (next > 0 && next !== prev) triggerSpinCountBump()
 })
 
-const spinCountChars = computed(() => String(Math.max(0, freeSpinsRemaining.value)).split(''))
+const spinCountChars = computed(() => String(centerSpinCount.value).split(''))
 
 const viewportSize = ref({
   w: typeof window !== 'undefined' ? window.innerWidth : CANVAS_W,
@@ -1548,7 +1697,8 @@ const spinCountDigitPx = computed(() =>
 )
 
 function spinCountDigitStyle(digit: string): Record<string, string> {
-  const base = digitSpriteStyle(digit, spinCountDigitPx.value, pgUi('win-digits'))
+  const atlas = pgUi('spin-count-digits') ?? pgUi('win-digits')
+  const base = digitSpriteStyle(digit, spinCountDigitPx.value, atlas)
   if (!Object.keys(base).length) return {}
   return {
     ...base,
@@ -1736,7 +1886,11 @@ const isInFreeSpinFeature = computed(
 
 const hasFreeSpinBgAsset = computed(() => hasPgUi('multiplier-bar-bg-free'))
 
-const activeBgUrl = computed(() => null)
+/** 全屏视口底图：专属封面2（#background-img / launch.jpg 同源） */
+const pageBgUrl = computed(() => pgUi('cover-bottom-bg'))
+/** 符号说明弹层仍用画布内 bg-base */
+const symbolInfoBgUrl = computed(() => pgUi('bg-base'))
+const activeBgUrl = computed(() => symbolInfoBgUrl.value)
 
 /** 免费局由系统自动连转，按钮仅展示状态 */
 const isFreeSpinAutoPlaying = computed(
@@ -1909,7 +2063,11 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 /** PG 式中奖高亮：火焰脉冲 → 消除 */
 const showWinHighlight = async (winCells: GridPos[], cascadeStep = 0) => {
   if (!winCells.length) return
-  mahjongSound.playWin(cascadeStep)
+  mahjongSound.playWin(
+    cascadeStep,
+    getWinAnnounceSymbol(gridData.value),
+    isActiveFreeSpinSpin.value,
+  )
   winningCells.value = new Set(winCells.map(({ col, row }) => `${col}-${row}`))
   triggerBoardShake()
   const timings = isTurbo.value ? CASCADE_ANIM.turbo : CASCADE_ANIM.normal
@@ -1988,7 +2146,6 @@ const dismissFreeSpinTrigger = () => {
   if (data) {
     const wasRetrigger = data.isRetrigger
     const added = addFreeSpinsFromTrigger(data.scatterCount)
-    spinCountBumpToken.value++
     if (wasRetrigger && added > 0) {
       spinRetriggerFlash.value = added
       setTimeout(() => {
@@ -2610,6 +2767,7 @@ const syncViewportSize = () => {
 }
 
 onUnmounted(() => {
+  mahjongSound.stopAll()
   clearFreeSpinChainTimer()
   clearTickerTimers()
   if (retriggerBannerTimer) {
@@ -2623,6 +2781,7 @@ onUnmounted(() => {
 
 onMounted(() => {
   mahjongSound.preload()
+  void mahjongSound.startMainBgm()
   syncViewportSize()
   nextTick(refreshAdMsgState)
   window.addEventListener('resize', refreshAdMsgState)
@@ -2688,12 +2847,12 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   tileDropMotions.value.clear()
   currentRecordId.value = 'TXN' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0')
 
-  const blurTileCount = 20
-
   spinningCols.value = Array.from({ length: COLS }, (_, colIndex) => {
+    const currentTiles = gridData.value[colIndex].map((t) => ({ ...t }))
     const finalTiles = rollColumn(colIndex)
-    const blurTiles = Array.from({ length: blurTileCount }, () => rollTile(colIndex))
-    return [...finalTiles, ...blurTiles]
+    const blurTiles = Array.from({ length: REEL_BLUR_TILE_COUNT }, () => rollTile(colIndex))
+    // 正版 slot_scroller：当前 6 行 → blur 条带 → 新结果，从静止位向下滚入
+    return [...currentTiles, ...blurTiles, ...finalTiles]
   })
 
   columnSpinning.value = Array(COLS).fill(true)
@@ -2708,14 +2867,10 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   setTimeout(async () => {
     for (let col = 0; col < COLS; col++) {
       if (columnSpinning.value[col]) {
-        gridData.value[col] = spinningCols.value[col]
-          .slice(0, TOTAL_ROWS)
-          .map((t) => ({ ...t }))
+        onReelSpinEnd(col)
       }
     }
     isSpinning.value = false
-    columnSpinning.value = Array(COLS).fill(false)
-    columnReelBounce.value = Array(COLS).fill(false)
     await runCascadeResolution()
   }, totalSpinMs)
 }
@@ -2733,6 +2888,17 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.page-bg-fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .mahjong-game-page.is-free-spin-bg {
@@ -2758,6 +2924,7 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
 /* 画布比例由 canvasBoxStyle 绑定正版 design */
 .game-container {
   position: relative;
+  z-index: 1;
   overflow: hidden;
   color: #fff;
   font-family: 'Segoe UI', system-ui, sans-serif;
@@ -2842,7 +3009,7 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
 
 /* 图层顺序：底图→reel_a绿毡底→牌面→reel_a木框→底木→倍数栏 */
 .z-bg { z-index: 1; }
-.z-wood-top { z-index: 2; pointer-events: none; background: #2e1810; overflow: hidden; }
+.z-wood-top { z-index: 2; pointer-events: none; background: #6d3f1c; overflow: hidden; }
 .z-top-bar-main { z-index: 11; pointer-events: none; }
 /* z-reel-green：reel_a 整图，z=3，在牌面下方；木框四边在牌区外侧自然可见 */
 .z-reel-green { z-index: 3; pointer-events: none; }
@@ -2997,10 +3164,11 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   user-select: none;
 }
 
-/* 未激活：金色贴图压暗成木面刻痕 */
+/* 未激活：正版暗刻贴图（mult-xN-dark） */
 .mult-slot-img--inactive {
-  filter: sepia(0.9) saturate(1.3) hue-rotate(-16deg) brightness(0.34) contrast(1.18);
-  opacity: 0.92;
+  filter: contrast(1.08) saturate(1.05);
+  opacity: 1;
+  image-rendering: -webkit-optimize-contrast;
 }
 
 /* 激活：亮金色（光晕在木条层 z-7，数字在其上） */
@@ -3078,6 +3246,8 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
 
 .z-mult-bar {
   overflow: hidden;
+  /* main_top_c 底缘半透明，正版叠在木色底上而非 #120a08 */
+  background: linear-gradient(180deg, #a86130 0%, #8a4e22 55%, #7a4518 100%);
 }
 
 .layer-img {
@@ -3125,11 +3295,7 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   pointer-events: auto;
 }
 
-/* ── HUD 三格金额栏（精确对照 Cocos GameInfo 布局）────────────────────────── */
-/* GameInfo 覆盖整个容器，子面板用绝对坐标（%）精确定位
- * 数据来源: Cocos dump GameInfo top=77.66% h=4.38%，设计尺寸 1080×1920
- * 三面板: bg_round_solid 深色圆角背景 + 图标 + 数值文字
- */
+/* ⑥ 三格金额栏（正版 live GameInfo 72.69% / 3.59%）────────────────────────── */
 .layer-hud__values {
   position: absolute;
   inset: 0;
@@ -3307,6 +3473,8 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   --pg-board-pct: 51.139;
   /* 初始偏移 = board顶 - row0顶 = 16.2 - 6.148 = 10.052% (canvas) */
   --pg-scroll-top-pct: 10.052;
+  --pg-blur-count: 20;
+  --pg-total-rows: 6;
   /*
    * CSS flex 列中 margin-bottom 的 % 解析为宽度而非高度！
    * 需要把 height-based 重叠量(1.26% canvas-h) 换算成 col-width 百分比：
@@ -3314,6 +3482,13 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
    *              = 1.26 / 18.889 × (1031/579) × 100 = 11.882
    */
   --pg-overlap-w: 11.882;
+  /* 静止 6 行 / 滚动 [blur×N + final×6] 位移（正版 slot_scroller 公式） */
+  --pg-reel-rest-y: calc(-100% * var(--pg-scroll-top-pct) / var(--pg-strip-pct));
+  --pg-reel-spin-end-y: calc(
+    -100% * (
+      (var(--pg-blur-count) + var(--pg-total-rows)) * var(--pg-pitch-pct) + var(--pg-scroll-top-pct)
+    ) / var(--pg-strip-pct)
+  );
 }
 
 .grid-container.is-shaking {
@@ -3399,7 +3574,8 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  overflow: visible;
+  /* 正版 slot_mask：裁切 dark_reel 可见区，滚动时符号不溢出绿毡框 */
+  overflow: hidden;
 }
 
 /*
@@ -3417,7 +3593,8 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   width: 100%;
   flex-shrink: 0;
   height: calc(100% * var(--pg-strip-pct) / var(--pg-board-pct));
-  transform: translateY(calc(-100% * var(--pg-scroll-top-pct) / var(--pg-strip-pct)));
+  will-change: transform;
+  transform: translateY(var(--pg-reel-rest-y));
 }
 
 .col-inner > :deep(.mahjong-tile) {
@@ -3439,6 +3616,11 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   margin-bottom: calc(-1% * var(--pg-overlap-w));
 }
 
+/* 滚动段：近似正版 symbol_*_blur（快速运动模糊感） */
+.col-inner.is-spinning > :deep(.mahjong-tile .symbol-img) {
+  filter: brightness(1.08) saturate(0.82) blur(0.6px);
+}
+
 /* PG 式逐列停轮：每列独立时长，左→右依次到位 */
 .col-inner.is-spinning {
   animation: slot-spin var(--reel-duration, 900ms) cubic-bezier(0.12, 0.82, 0.28, 1) forwards;
@@ -3452,17 +3634,19 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   --reel-bounce-ms: 90ms;
 }
 
-/* rest = -pitch/strip × 100% = -16.375% of col-inner */
+/*
+ * 滚动条带 [当前6 + blur×N + 新结果6]：从 rest-y 滚到 spin-end-y，停轮后切 6 行对齐
+ */
 @keyframes slot-spin {
-  0%   { transform: translateY(-300%); }
-  92%  { transform: translateY(calc(-100% * var(--pg-scroll-top-pct) / var(--pg-strip-pct) + 3px)); }
-  100% { transform: translateY(calc(-100% * var(--pg-scroll-top-pct) / var(--pg-strip-pct))); }
+  0%   { transform: translateY(var(--pg-reel-rest-y)); }
+  88%  { transform: translateY(calc(var(--pg-reel-spin-end-y) + 4px)); }
+  100% { transform: translateY(var(--pg-reel-spin-end-y)); }
 }
 
 @keyframes reel-settle {
-  0%   { transform: translateY(calc(-100% * var(--pg-scroll-top-pct) / var(--pg-strip-pct))); }
-  45%  { transform: translateY(calc(-100% * var(--pg-scroll-top-pct) / var(--pg-strip-pct) + 6px)); }
-  100% { transform: translateY(calc(-100% * var(--pg-scroll-top-pct) / var(--pg-strip-pct))); }
+  0%   { transform: translateY(var(--pg-reel-rest-y)); }
+  45%  { transform: translateY(calc(var(--pg-reel-rest-y) + 6px)); }
+  100% { transform: translateY(var(--pg-reel-rest-y)); }
 }
 
 /* 倍数条档位切换脉冲 */
@@ -4860,7 +5044,6 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
 }
 
 .bottom-action-bar .action-btn--hit,
-.bottom-action-bar .action-btn--spin-wrap,
 .bottom-action-bar .action-btn--spin-hit {
   position: absolute;
   padding: 0;
@@ -4876,48 +5059,53 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   transition: transform 0.1s, filter 0.1s;
 }
 
-.bottom-action-bar .action-btn--spin-wrap {
-  display: block;
-  overflow: visible;
-  pointer-events: none;
-  z-index: 3;
-}
-
 .bottom-action-bar .action-btn--spin-hit {
   z-index: 2;
 }
 
-.bottom-action-bar .action-btn--spin-wrap.is-disabled + .action-btn--spin-hit,
 .bottom-action-bar .action-btn--spin-hit.is-disabled {
   cursor: not-allowed;
   pointer-events: none;
 }
 
-.bottom-action-bar .action-btn--spin-wrap.is-disabled {
+.spin-button-stack {
+  position: absolute;
+  pointer-events: none;
+  z-index: 3;
+  overflow: visible;
+}
+
+.spin-button-stack.is-disabled {
   opacity: 0.88;
 }
 
-.spin-disc-layer {
+.spin-stack-img,
+.spin-stack-arrow,
+.spin-stack-digits {
   position: absolute;
-  object-fit: contain;
   pointer-events: none;
-  z-index: 2;
+}
+
+.spin-stack-img {
+  object-fit: fill;
   display: block;
 }
 
-.spin-disc-layer.is-free-spin {
+.spin-stack-disc.is-free-spin {
   filter: drop-shadow(0 0 8px rgba(255, 210, 60, 0.35));
 }
 
-.spin-count-layer {
-  position: absolute;
-  z-index: 4;
+.spin-stack-arrow {
+  overflow: visible;
+  z-index: 2;
+}
+
+.spin-stack-digits {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0;
-  pointer-events: none;
-  box-sizing: border-box;
+  z-index: 3;
 }
 
 .spin-count-digit {
@@ -4925,7 +5113,87 @@ const handleSpinClick = (opts?: { fromFreeSpinChain?: boolean }) => {
   flex-shrink: 0;
 }
 
-.spin-count-layer.is-count-bump {
+.spin-stack-digits.is-count-bump {
+  animation: spin-count-bump 0.62s cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+
+/* 免费旋转底栏（正版 remaining_free_spin_holder / bonus_free_spin_holder） */
+.fs-bottom-panel {
+  position: absolute;
+  pointer-events: none;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.fs-bottom-last {
+  width: 72%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.fs-bottom-remaining {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.fs-bottom-remaining__label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 0;
+  margin-right: 1.2%;
+}
+
+.fs-remaining-line {
+  display: block;
+  object-fit: contain;
+}
+
+.fs-remaining-line--top {
+  height: 46%;
+  max-height: 42px;
+  width: auto;
+}
+
+.fs-remaining-line--bottom {
+  height: 46%;
+  max-height: 42px;
+  width: auto;
+}
+
+.fs-remaining-colon {
+  height: 62%;
+  max-height: 56px;
+  width: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+  margin: 0 1.8% 0 0.6%;
+}
+
+.fs-bottom-remaining__digits {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.fs-count-digit {
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.fs-bottom-remaining__digits.is-count-bump {
   animation: spin-count-bump 0.62s cubic-bezier(0.22, 1.2, 0.36, 1);
 }
 

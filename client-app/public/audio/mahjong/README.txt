@@ -20,9 +20,15 @@ win-cascade-4.mp3       第 4 级连击（×5 / ×10）
 scatter-first.mp3       首次 3 胡触发免费旋转
 scatter-retrigger.mp3   免费局中再触发
 free-spin-enter.mp3     进入免费局 UI
-free-spin-bgm.mp3       免费局背景音乐（循环，可选）
 free-spin-end.mp3       免费局结束总结
+main-bgm.mp3            ★ 主局背景音乐（循环）
+free-spin-bgm.mp3       免费局背景音乐（循环，可选）
 
+PG 精灵音轨（整轨 + 代码内时间轴切片，优先于下方独立文件）
+general-audio.mp3       操作 / 中奖 / 倍数 / Scatter 等音效
+vox.mp3                 中文语音（倍数播报等）
+
+独立文件（可选，缺失时走精灵音轨或合成占位音）
 后续 P2 Big Win 可追加：
 big-win.mp3 / mega-win.mp3 / super-mega-win.mp3
 

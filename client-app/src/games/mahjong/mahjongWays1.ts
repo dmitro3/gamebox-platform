@@ -196,6 +196,32 @@ export function evaluateWins(
   return { totalWin, winCells: dedupeCells(winCells), scatterCount }
 }
 
+/** 本次中奖用于中文报牌的符号（取赔付最高的 ways） */
+export function getWinAnnounceSymbol(grid: TileCell[][]): PaySymbolId | null {
+  let best: PaySymbolId | null = null
+  let bestPay = 0
+
+  for (const symbol of PAY_SYMBOLS) {
+    let waysLength = 0
+    for (let c = 0; c < COLS; c++) {
+      let count = 0
+      for (const r of VISIBLE_ROW_INDICES) {
+        const cell = grid[c][r]
+        if (cell && cellMatches(cell, symbol)) count++
+      }
+      if (count === 0) break
+      waysLength++
+    }
+    if (waysLength < 3) continue
+    const pay = PAYTABLE[symbol][waysLength - 3]
+    if (pay > bestPay) {
+      bestPay = pay
+      best = symbol
+    }
+  }
+  return best
+}
+
 export function dedupeCells(cells: GridPos[]): GridPos[] {
   const seen = new Set<string>()
   return cells.filter(({ col, row }) => {

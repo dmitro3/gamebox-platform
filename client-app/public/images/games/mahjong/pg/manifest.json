@@ -85,7 +85,7 @@
     "multiplier-bar-bg": "pg/ui/multiplier-bar-bg.png",
     "top-bar-orange": "pg/ui/top-bar-orange.png",
     "multiplier-bar-bg-free": "pg/ui/multiplier-bar-bg-free.png",
-    "cover": "../mahjong.png",
+    "cover": "mahjong-cover-custom.jpg",
     "bg-bottom-bar": "pg/ui/bg-bottom-bar.png",
     "btn-auto-center": "pg/ui/btn-auto-center.png",
     "btn-circle": "pg/ui/btn-circle.png",
@@ -124,6 +124,10 @@
     "win-digit-comma": "pg/ui/win-digit-comma.png",
     "win-digit-dot": "pg/ui/win-digit-dot.png",
     "win-digits": "pg/ui/win-digits.png",
-    "win-info": "pg/ui/win-info.png"
+    "win-info": "pg/ui/win-info.png",
+    "cover-bg": "mahjong-cover-custom.jpg",
+    "cover-bottom-bg": "pg/ui/cover-bottom-bg.jpg",
+    "cover-footer-cert": "pg/ui/cover-footer-cert.png",
+    "btn-spin-count": "pg/ui/btn-spin-count.png"
   }
 }

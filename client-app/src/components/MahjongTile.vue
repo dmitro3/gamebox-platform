@@ -58,6 +58,24 @@
         alt=""
       />
     </template>
+    <!-- 胡：正版分层 — 光晕(CSS) + 纹章 + 胡字（同一容器等比缩放，与其他牌对齐） -->
+    <template v-else-if="props.symbol === 'hu'">
+      <div class="hu-symbol-stack">
+        <div class="hu-scatter-glow" aria-hidden="true" />
+        <img
+          :src="huEmblemUrl"
+          class="symbol-img symbol-layer-hu-emblem"
+          draggable="false"
+          alt=""
+        />
+        <img
+          :src="huOverlayUrl"
+          class="symbol-img symbol-layer-hu-char"
+          draggable="false"
+          alt=""
+        />
+      </div>
+    </template>
     <img
       v-else
       :src="`${assetBase}/${symbol}.png`"
@@ -100,6 +118,8 @@ const symbolRoot = computed(() =>
 
 const wildIngotUrl = computed(() => `${symbolRoot.value}/wild-ingot.png`)
 const wildOverlayUrl = computed(() => `${symbolRoot.value}/wild-overlay.png`)
+const huEmblemUrl = computed(() => `${symbolRoot.value}/hu-emblem.png`)
+const huOverlayUrl = computed(() => `${symbolRoot.value}/hu-overlay.png`)
 
 const isIconTile = computed(() => props.symbol === 'wild' || props.symbol === 'hu')
 
@@ -158,6 +178,18 @@ const onClick = () => {
   transform: scale(1.04);
 }
 
+.mahjong-tile.is-hu.is-clickable:not(.is-selected):hover .symbol-img {
+  transform: none;
+}
+
+.mahjong-tile.is-hu.is-clickable .hu-symbol-stack {
+  transition: transform 0.15s ease;
+}
+
+.mahjong-tile.is-hu.is-clickable:not(.is-selected):hover .hu-symbol-stack {
+  transform: scale(0.97);
+}
+
 .mahjong-tile.is-selected {
   z-index: 12;
 }
@@ -185,10 +217,55 @@ const onClick = () => {
   z-index: 1;
 }
 
-/* 胡散牌：提升层级，让光晕可以显示在邻牌上面 */
+/* 胡散牌：庆祝时提升层级；平时与其他牌同一基准，避免底部压住下行 */
 .mahjong-tile.is-hu {
-  z-index: 3;
+  overflow: hidden;
+}
+
+.mahjong-tile.is-hu.is-scatter-celebrate {
+  z-index: 5;
   overflow: visible;
+}
+
+/* 纹章+胡字同容器等比缩小，中心与其他 symbol-img（inset:0 fill）对齐 */
+.hu-symbol-stack {
+  position: absolute;
+  inset: 0;
+  transform: scale(0.94);
+  transform-origin: center center;
+}
+
+/* 正版 scatter_glow_a：ADD 光晕，单独特效层（不在纹章/胡字图里） */
+.hu-scatter-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(255, 235, 90, 0.72) 0%,
+    rgba(255, 180, 40, 0.38) 32%,
+    rgba(255, 90, 20, 0.12) 52%,
+    transparent 68%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.mahjong-tile.is-hu .symbol-layer-hu-emblem,
+.mahjong-tile.is-hu .symbol-layer-hu-char {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+}
+
+.symbol-layer-hu-emblem {
+  z-index: 1;
+  /* 正版 scatter_bg 为 Cocos ADD 混合，screen 近似还原金黄发光感 */
+  mix-blend-mode: screen;
+}
+
+.symbol-layer-hu-char {
+  z-index: 2;
 }
 
 /* 光晕在字符底部向上辐射 */

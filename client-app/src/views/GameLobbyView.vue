@@ -79,9 +79,11 @@
 
   <TabBar />
   
-  <PgLoading v-if="showPgLoading" :progress="pgLoadingProgress" />
+  <MahjongPgLoader v-if="showMahjongPgLoader" @done="onMahjongPgLoaderDone" />
+  <MahjongPgLoader v-if="showCaptainPgLoader" @done="onCaptainPgLoaderDone" />
+  <PgLoading v-if="showPgLoading" :progress="pgLoadingProgress" :show-progress="pgLoadingShowProgress" />
   <MahjongCover v-if="showMahjongCover" @start="enterMahjongGame" />
-  <QueenCover v-if="showQueenCover" @start="enterQueenGame" />
+  <CaptainCover v-if="showCaptainCover" @start="enterCaptainGame" />
   <LabaCover v-if="showLabaCover" @start="enterLabaGame" />
   <SlotsCover v-if="showSlotsCover" @start="enterSlotsGame" />
   <BcbmCover v-if="showBcbmCover" @start="enterBcbmGame" />
@@ -98,8 +100,9 @@ import { useBodyClass } from '@/composables/useBodyClass'
 import { gamesApi } from '@/api/games'
 import TabBar from '@/components/TabBar.vue'
 import PgLoading from '@/components/PgLoading.vue'
+import MahjongPgLoader from '@/components/MahjongPgLoader.vue'
 import MahjongCover from '@/components/MahjongCover.vue'
-import QueenCover from '@/components/QueenCover.vue'
+import CaptainCover from '@/components/CaptainCover.vue'
 import LabaCover from '@/components/LabaCover.vue'
 import SlotsCover from '@/components/SlotsCover.vue'
 import BcbmCover from '@/components/BcbmCover.vue'
@@ -132,13 +135,13 @@ interface LobbyGame {
 const GAMES: LobbyGame[] = [
   {
     key: 'mahjong', name: '麻将胡了', tag: '热 门', type: 'instant',
-    iconImg: '/images/games/mahjong.png',
+    iconImg: '/images/games/mahjong/mahjong.webp',
     route: '/game/slot/slots-mahjong', backendCode: 'slots-mahjong',
   },
   {
-    key: 'queen', name: '赏金女王', tag: '热 门', type: 'instant',
-    iconImg: '/images/games/queen.png',
-    route: '/game/slot/slots-queen', backendCode: 'slots-queen',
+    key: 'captain', name: '赏金船长', tag: '维护中', type: 'instant',
+    iconImg: '/images/games/captain/captain.webp',
+    // 素材整理中，暂不开放
   },
   {
     key: 'ssc', name: '时时彩', type: 'lottery', intervalSec: 600,
@@ -298,12 +301,15 @@ function tickAll() {
 /* ===== 后端在线游戏（决定卡片是否可进入） ===== */
 const onlineCodes = ref<Set<string>>(new Set())
 
+const showMahjongPgLoader = ref(false)
 const showPgLoading = ref(false)
 const pgLoadingProgress = ref(0)
+const pgLoadingShowProgress = ref(true)
 const showMahjongCover = ref(false)
 let currentMahjongRoute = ''
-const showQueenCover = ref(false)
-let currentQueenRoute = ''
+const showCaptainPgLoader = ref(false)
+const showCaptainCover = ref(false)
+let currentCaptainRoute = ''
 const showLabaCover = ref(false)
 let currentLabaRoute = ''
 const showSlotsCover = ref(false)
@@ -315,6 +321,11 @@ let currentLonghuRoute = ''
 const showWheelCover = ref(false)
 let currentWheelRoute = ''
 
+function onMahjongPgLoaderDone() {
+  showMahjongCover.value = true
+  showMahjongPgLoader.value = false
+}
+
 function enterMahjongGame() {
   showMahjongCover.value = false
   if (currentMahjongRoute) {
@@ -322,10 +333,15 @@ function enterMahjongGame() {
   }
 }
 
-function enterQueenGame() {
-  showQueenCover.value = false
-  if (currentQueenRoute) {
-    router.push(currentQueenRoute)
+function onCaptainPgLoaderDone() {
+  showCaptainCover.value = true
+  showCaptainPgLoader.value = false
+}
+
+function enterCaptainGame() {
+  showCaptainCover.value = false
+  if (currentCaptainRoute) {
+    router.push(currentCaptainRoute)
   }
 }
 
@@ -364,19 +380,35 @@ function enterWheelGame() {
   }
 }
 
-const pgAnimatedGames = ['mahjong', 'queen', 'slots', 'bcbm', 'laba', 'longhu', 'lucky-wheel']
+const pgAnimatedGames = ['mahjong', 'slots', 'bcbm', 'laba', 'longhu', 'lucky-wheel']
+
 
 function onGameClick(g: LobbyGame) {
-  // 检查游戏是否可玩（有路由，且后端在线或后端未加载）
-  const isPlayable = g.route && (onlineCodes.value.size === 0 || !g.backendCode || onlineCodes.value.has(g.backendCode))
+  const isPlayable =
+    g.route &&
+    (onlineCodes.value.size === 0 || !g.backendCode || onlineCodes.value.has(g.backendCode))
 
   if (!isPlayable) {
     toast(`${g.name.replace(/\s+/g, '')} · 即将上线`)
     return
   }
 
+  // 麻将胡了：正版 PG 开屏（黑底 + 青点 + PG SVG）→ 专属封面
+  if (g.key === 'mahjong') {
+    currentMahjongRoute = g.route || ''
+    showMahjongPgLoader.value = true
+    return
+  }
+
+  // 赏金船长：素材隔离整理中，暂不开放
+  if (g.key === 'captain') {
+    toast('赏金船长 · 素材整理中')
+    return
+  }
+
   // 如果是需要展示 PG 动画的游戏
   if (pgAnimatedGames.includes(g.key)) {
+    pgLoadingShowProgress.value = true
     showPgLoading.value = true
     pgLoadingProgress.value = 0
     
@@ -390,15 +422,7 @@ function onGameClick(g: LobbyGame) {
         // 加载完成后延迟一小段时间
         setTimeout(() => {
           showPgLoading.value = false
-          if (g.key === 'mahjong') {
-            // 麻将胡了有专属封面
-            currentMahjongRoute = g.route || ''
-            showMahjongCover.value = true
-          } else if (g.key === 'queen') {
-            // 赏金女王有专属封面
-            currentQueenRoute = g.route || ''
-            showQueenCover.value = true
-          } else if (g.key === 'laba') {
+          if (g.key === 'laba') {
             currentLabaRoute = g.route || ''
             showLabaCover.value = true
           } else if (g.key === 'slots') {

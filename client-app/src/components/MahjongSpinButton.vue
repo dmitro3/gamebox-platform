@@ -36,11 +36,10 @@
 import { computed } from 'vue'
 import { pgUi } from '../games/mahjong/pgAssets'
 
-const props = defineProps({
+defineProps({
   isAccelerating: { type: Boolean, default: false },
   isTurbo: { type: Boolean, default: false },
-  freeSpinsRemaining: { type: Number, default: 0 },
-  isFreeSpinMode: { type: Boolean, default: false },
+  showArrows: { type: Boolean, default: true },
   retriggerFlash: { type: Number, default: 0 },
   disabled: { type: Boolean, default: false },
 })
@@ -48,11 +47,6 @@ const props = defineProps({
 const emit = defineEmits<{ click: [] }>()
 
 const spinArrowsUrl = computed(() => pgUi('btn-spin-arrows'))
-
-/** 有剩余免费次数时隐藏箭头，改由外层 spin-count-layer 显示数字 */
-const showArrows = computed(
-  () => !(props.isFreeSpinMode && props.freeSpinsRemaining > 0),
-)
 </script>
 
 <style scoped>
@@ -81,13 +75,17 @@ const showArrows = computed(
 .spin-btn__arrows-wrap {
   position: absolute;
   inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
   z-index: 2;
 }
 
 .spin-btn__arrows-spin {
-  width: 100%;
-  height: 100%;
+  width: 90%;
+  height: 90%;
+  flex-shrink: 0;
   animation: mj-spin-idle 3.5s linear infinite;
   transform-origin: center center;
 }

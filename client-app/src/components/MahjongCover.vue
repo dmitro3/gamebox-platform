@@ -1,79 +1,96 @@
 <template>
-  <div class="mahjong-cover" v-if="visible">
-    <!-- PG 正版加载动画 -->
-    <div v-if="loading" class="pg-loader" aria-hidden="true">
-      <div class="pg-loader__dots">
-        <span class="pg-loader__dot" />
-        <span class="pg-loader__dot" />
-        <span class="pg-loader__dot" />
-      </div>
-    </div>
+  <div v-if="visible" class="mahjong-cover-root">
+    <img
+      v-if="coverBottomBgUrl"
+      class="mahjong-cover-backdrop"
+      :src="coverBottomBgUrl"
+      alt=""
+      aria-hidden="true"
+    />
 
-    <img v-else-if="coverBgUrl" :src="coverBgUrl" class="cover-bg" alt="麻将胡了" />
-
-    <div v-if="!loading" class="ui-layer">
-      <button
-        v-if="startBtnUrl"
-        type="button"
-        class="start-btn"
-        :style="startBtnStyle"
-        aria-label="开始"
-        @click="handleStart"
-        @mousedown="startPressed = true"
-        @mouseup="startPressed = false"
-        @mouseleave="startPressed = false"
-        @touchstart.passive="startPressed = true"
-        @touchend="startPressed = false"
+    <PgScreenCompat backdrop-transparent>
+      <div id="splash" class="screen_compat screen_color">
+      <img
+        v-if="coverBgUrl"
+        class="cover-bg"
+        :src="coverBgUrl"
+        alt=""
       />
 
-      <div class="footer-container">
-        <div class="footer-top">
-          <div class="pg-brand">
-            <div class="pg-logo-txt">PG</div>
-            <div class="pg-logo-sub">POCKET GAMES SOFT®</div>
-          </div>
-          <div class="cert-group">
-            <div class="cert-box">
-              <div class="cert-label">权威机构</div>
-              <div class="cert-val">
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="white" style="margin-right:2px"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                MGA
+      <MahjongPgFooterContainer />
+
+      <div class="screen_safe_area">
+        <div v-if="phase === 'loading'" class="loading-container-port">
+          <div class="progress-bar-container-port">
+            <div class="progress-bar-background" />
+            <div class="progress-bar-fill-container">
+              <div
+                class="progress-bar-fill stripes"
+                :style="{ width: `${progress}%` }"
+              >
+                <div class="top-highlight" />
+                <div class="front-highlight" />
               </div>
-              <div class="cert-txt">全球最高规格牌照机构颁发牌照：<br>马耳他 (证书号: C76195)，<br>业务覆盖全球</div>
             </div>
-            <div class="cert-box">
-              <div class="cert-label">公平认证</div>
-              <div class="cert-val">
-                <i style="margin-right:2px">ga</i> bmm <span style="font-size:8px; font-weight:normal;">testlabs</span>
-              </div>
-              <div class="cert-txt">由最严苛的RTP认证机构颁发<br>游戏证书：GA 和 BMM，<br>所有游戏保证100%公平，赔付有保障</div>
-            </div>
+            <div class="progress-bar-outline border-inner" />
+            <div class="progress-bar-outline border-outer" />
           </div>
+          <p class="text-port tips-text">
+            <span>{{ tipText }}</span>
+            <span class="tips-text-child2" :class="{ 'tips-text-child2-hidden': !showPercent }">
+              [{{ progress }}%]
+            </span>
+          </p>
         </div>
-        <div class="footer-bottom">
-          PGSOFT.COM 2026 © PG SOFT® 版权所有
-        </div>
+
+        <button
+          v-else-if="startBtnUrl"
+          type="button"
+          id="__startedButton"
+          class="start-button-container-port start-btn"
+          :class="{ pressed: startPressed }"
+          :style="startBtnStyle"
+          aria-label="开始"
+          @click="handleStart"
+          @mousedown="startPressed = true"
+          @mouseup="startPressed = false"
+          @mouseleave="startPressed = false"
+          @touchstart.passive="startPressed = true"
+          @touchend="startPressed = false"
+        />
       </div>
+
+      <MahjongPgLogoContainer />
     </div>
+    </PgScreenCompat>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { pgUi } from '../games/mahjong/pgAssets'
+import PgScreenCompat from './PgScreenCompat.vue'
+import MahjongPgFooterContainer from './MahjongPgFooterContainer.vue'
+import MahjongPgLogoContainer from './MahjongPgLogoContainer.vue'
 
-const props = defineProps({
+defineProps({
   visible: {
     type: Boolean,
-    default: true
-  }
-});
+    default: true,
+  },
+})
 
-const emit = defineEmits(['start']);
+const emit = defineEmits(['start'])
 
-const loading = ref(true)
+const phase = ref('loading')
+const progress = ref(0)
+const showPercent = ref(false)
+const tipText = ref('正在加载游戏资源...')
 const startPressed = ref(false)
 
+let progressTimer = null
+
+const coverBottomBgUrl = computed(() => pgUi('cover-bottom-bg'))
 const coverBgUrl = computed(() => pgUi('cover'))
 const startBtnUrl = computed(() =>
   startPressed.value
@@ -86,205 +103,250 @@ const startBtnStyle = computed(() => {
   if (!url) return undefined
   return {
     backgroundImage: `url(${url})`,
-    backgroundSize: 'contain',
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'center',
   }
 })
 
+function handleStart() {
+  emit('start')
+}
+
+function startLoading() {
+  const durationMs = 2200
+  const startAt = Date.now()
+  progressTimer = window.setInterval(() => {
+    const elapsed = Date.now() - startAt
+    const ratio = Math.min(1, elapsed / durationMs)
+    progress.value = Math.min(100, Math.round(ratio * 100))
+    if (ratio >= 0.15) showPercent.value = true
+    if (ratio >= 1) {
+      window.clearInterval(progressTimer)
+      progressTimer = null
+      phase.value = 'ready'
+    }
+  }, 50)
+}
+
 onMounted(() => {
-  setTimeout(() => {
-    loading.value = false
-  }, 900)
+  startLoading()
 })
 
-const handleStart = () => {
-  emit('start');
-};
+onUnmounted(() => {
+  if (progressTimer !== null) window.clearInterval(progressTimer)
+})
 </script>
 
 <style scoped>
-.mahjong-cover {
+.mahjong-cover-root {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   z-index: 9998;
-  background-color: #000;
   overflow: hidden;
-  font-family: 'PingFang SC', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
-.pg-loader {
+.mahjong-cover-backdrop {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #000;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
 }
 
-.pg-loader__dots {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 40px;
-  height: 10px;
+.screen_compat {
+  width: 360px;
+  height: 640px;
+  position: relative;
+  overflow: hidden;
 }
 
-.pg-loader__dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background-color: #30a2d0;
-  animation: pg-dot-bounce 0.25s ease-out infinite alternate;
-}
-
-.pg-loader__dot:nth-child(1) { animation-delay: 0s; }
-.pg-loader__dot:nth-child(2) { animation-delay: -0.075s; }
-.pg-loader__dot:nth-child(3) { animation-delay: -0.15s; }
-
-@keyframes pg-dot-bounce {
-  from { transform: translateY(0); }
-  to { transform: translateY(-15px); }
+.screen_color {
+  background-color: transparent;
 }
 
 .cover-bg {
   position: absolute;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100%;
   height: 100%;
+  display: block;
   object-fit: fill;
-  animation: coverScaleIn 0.8s ease-out forwards;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
 }
 
-@keyframes coverScaleIn {
-  from { transform: scale(1.05); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-.ui-layer {
-  position: absolute;
-  top: 0;
+.screen_safe_area {
+  height: 640px;
+  width: 360px;
+  z-index: 2;
+  bottom: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-  padding-bottom: 20px;
+  margin: auto;
+  position: absolute;
+  right: 0;
+  top: 0;
   pointer-events: none;
 }
 
-.start-btn {
-  pointer-events: auto;
-  margin-bottom: 52px;
-  width: min(260px, 52vw);
-  height: min(68px, 11vw);
-  background-color: transparent;
-  border: none;
-  cursor: pointer;
-  transition: transform 0.12s ease, filter 0.12s ease;
-  animation: btnBreathe 2.5s infinite alternate ease-in-out;
-}
-
-@keyframes btnBreathe {
-  from {
-    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)) brightness(1);
-    transform: scale(1);
-  }
-  to {
-    filter: drop-shadow(0 8px 25px rgba(255, 204, 0, 0.7)) brightness(1.08);
-    transform: scale(1.03);
-  }
-}
-
-.start-btn:active {
-  transform: translateY(3px) scale(0.96);
-  animation: none;
-  filter: brightness(0.92);
-}
-
-.footer-container {
-  pointer-events: auto;
-  width: 100%;
-  background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 70%, transparent 100%);
-  padding: 20px 15px 10px;
-  box-sizing: border-box;
-}
-
-.footer-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  max-width: 600px;
-  margin: 0 auto 15px;
-}
-
-.pg-brand {
-  display: flex;
-  flex-direction: column;
-}
-
-.pg-logo-txt {
-  font-size: 32px;
-  font-weight: 900;
-  color: #fff;
-  letter-spacing: 2px;
-  line-height: 1;
-}
-
-.pg-logo-sub {
-  color: #aaa;
-  font-size: 9px;
-  margin-top: 4px;
-  letter-spacing: 0.5px;
-}
-
-.cert-group {
-  display: flex;
-  gap: 15px;
-}
-
-.cert-box {
-  display: flex;
-  flex-direction: column;
-}
-
-.cert-label {
-  color: #999;
-  font-size: 10px;
-  margin-bottom: 2px;
-}
-
-.cert-val {
-  color: #fff;
-  font-weight: bold;
-  font-size: 12px;
-  margin-bottom: 4px;
-  display: flex;
+.loading-container-port {
   align-items: center;
+  display: flex;
+  flex-direction: column;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 477px;
+  pointer-events: none;
 }
 
-.cert-txt {
-  color: #666;
-  font-size: 9px;
-  line-height: 1.3;
-  transform: scale(0.85);
-  transform-origin: left top;
-  width: 115%;
+.progress-bar-container-port {
+  background-color: initial;
+  height: 13px;
+  position: relative;
+  width: 212px;
 }
 
-.footer-bottom {
+.progress-bar-background {
+  background-color: #111;
+  border-radius: 3.5px;
+  height: 100%;
+  position: absolute;
+  width: 100%;
+}
+
+.progress-bar-fill-container {
+  bottom: 0.87px;
+  left: 0.87px;
+  position: absolute;
+  right: 0.87px;
+  top: 0.87px;
+}
+
+.progress-bar-fill {
+  backface-visibility: hidden;
+  background-color: #b47850;
+  background-size: 8.7px 100%;
+  border-radius: 3.5px;
+  height: 100%;
+  position: absolute;
+  width: 0;
+  transition: width 0.12s linear;
+}
+
+.stripes {
+  background-image: linear-gradient(
+    -75deg,
+    rgba(255, 255, 255, 0) 35%,
+    rgba(255, 255, 255, 0.1) 0,
+    rgba(255, 255, 255, 0.1) 75%,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0)
+  );
+  animation: animate-stripes 1s linear infinite;
+}
+
+.top-highlight {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 3.5px 3.5px 0 0;
+  height: 50%;
+  position: absolute;
+  width: 100%;
+}
+
+.front-highlight {
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0), #fff);
+  border-radius: 0 3.5px 3.5px 0;
+  height: 100%;
+  max-width: 20px;
+  position: absolute;
+  right: 0;
+  width: 50%;
+}
+
+.progress-bar-outline {
+  border-radius: 3.5px;
+  bottom: 0;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  transform: translateZ(0);
+}
+
+.border-inner {
+  border: 1.7px solid #272727;
+}
+
+.border-outer {
+  border: 0.85px solid #111;
+}
+
+@keyframes animate-stripes {
+  from { background-position: 0 0; }
+  to { background-position: 34.7px 0; }
+}
+
+.tips-text {
+  margin-top: 4px;
   text-align: center;
-  color: #555;
-  font-size: 10px;
-  border-top: 1px solid rgba(255,255,255,0.05);
-  padding-top: 8px;
-  max-width: 600px;
-  margin: 0 auto;
+  text-overflow: ellipsis;
+  width: 90%;
+}
+
+.text-port {
+  color: #fff;
+  font-size: 10.3px;
+  margin: 0;
+  padding: 0;
+}
+
+.tips-text-child2 {
+  margin-left: 5px;
+}
+
+.tips-text-child2-hidden {
+  display: none;
+}
+
+.start-button-container-port {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  left: 0;
+  margin: auto;
+  position: absolute;
+  right: 0;
+  top: 448px;
+  width: 182px;
+  height: 64px;
+  pointer-events: auto;
+}
+
+.start-btn {
+  height: 64px;
+  width: 182px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  animation: show-bounce 0.6s ease-out forwards;
+}
+
+.start-btn.pressed {
+  transform: scale(0.96);
+  animation: none;
+}
+
+@keyframes show-bounce {
+  0% { transform: scale(0); }
+  20% { transform: scale(1.08); }
+  50% { transform: scale(0.98); }
+  100% { transform: scale(1); }
 }
 </style>

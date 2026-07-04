@@ -10,6 +10,8 @@ from pathlib import Path
 
 from PIL import Image, ImageChops
 UUID_NATIVE_HINTS: dict[str, str] = {
+    # import__0b 暗刻倍数（x1~x10, texture_index=0）— 必须走 13 小图集，勿误匹配 6a
+    "13GdcO/QxHEKa5WoNqUXgo": "native__13_1319d70e-fd0c-4710-a6b9-5a836a517828.d29f9.png",
     # spin_button_controller 小圆钮 — 按 import 指定 native（755 uuid 图集爬取损坏）
     "755QemO8VKoYn/j8Mchu8M": "native__75_75e507a6-3bc5-4aa1-89ff-8fc31c86ef0c.f8847.png",
     # feature_symbols.plist（s_wild / s_scatter 百搭、胡字）

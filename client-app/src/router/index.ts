@@ -40,6 +40,7 @@ const router = createRouter({
     { path: '/game/slot/slots-mahjong', name: 'mahjong', component: () => import('@/views/MahjongGameView.vue'), meta: { public: true } },
     { path: '/game/slot/slots-mahjong-iframe', name: 'mahjong-iframe', component: () => import('@/views/AssetsGameView.vue'), meta: { public: true, assetGame: 'slots-mahjong' } },
     { path: '/game/slot/slots-mahjong-vue', redirect: '/game/slot/slots-mahjong' },
+    { path: '/game/slot/slots-captain', name: 'captain', component: () => import('@/views/CaptainGameView.vue'), meta: { public: true } },
     { path: '/game/slot/:gameCode',    name: 'slot',    component: () => import('@/views/SlotView.vue') },
     { path: '/game/lottery/bjsc', name: 'bjsc', component: () => import('@/views/AssetsGameView.vue'), meta: { assetGame: 'bjsc' } },
     { path: '/game/lottery/:gameCode', name: 'lottery', component: () => import('@/views/LotteryView.vue') },

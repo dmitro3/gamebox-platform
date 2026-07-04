@@ -64,7 +64,7 @@ const GAMES = [
   },
   // ── 更多 SLOT ──
   {
-    code: 'slots-queen', name: '赏金女王', category: 'SLOT' as const,
+    code: 'slots-captain', name: '赏金船长', category: 'SLOT' as const,
     status: 'ONLINE' as const, sortOrder: 4, minBet: 1, maxBet: 5000,
     rtp: 0.96,
     payTable: [

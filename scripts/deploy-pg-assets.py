@@ -54,6 +54,7 @@ UI_SPRITE_MAP: dict[str, str] = {
 EXTRA_UI_SPRITES: dict[str, str] = {
     "spin_base": "btn-spin-frame",
     "arrow": "btn-spin-arrows",
+    "auto_spin": "btn-spin-count",
 }
 
 # 手工验证 native（import 内 uuid 索引 → 大图）
@@ -170,6 +171,84 @@ def pick_sprite_frames(text: str, names: set[str]) -> dict[str, dict]:
 TILE_W, TILE_H = 162, 190
 
 
+def clean_add_glow(img: Image.Image, lum_min: int = 110, alpha_min: int = 50) -> Image.Image:
+    """去掉 ADD 光晕/纹章在绿毡上的半透明暗边（否则会形成矩形遮罩）。"""
+    import numpy as np
+
+    arr = np.array(img.convert("RGBA"))
+    lum = arr[:, :, :3].max(axis=2)
+    bad = (arr[:, :, 3] < alpha_min) | (lum < lum_min)
+    arr[bad] = (0, 0, 0, 0)
+    return Image.fromarray(arr)
+
+
+def strip_red_halo(img: Image.Image) -> Image.Image:
+    """scatter_bg 正版纹章：保留金黄线（约 RGB 255,230,139），去掉外层红橙光晕。"""
+    import numpy as np
+
+    arr = np.array(img.convert("RGBA"))
+    r, g, b, a = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2], arr[:, :, 3]
+    is_red = (a > 0) & (r > g + 22) & (g < 130)
+    keep = (a > 0) & ~is_red & ((r > 45) | (g > 40))
+    arr[~keep] = (0, 0, 0, 0)
+    return Image.fromarray(arr)
+
+
+def clean_symbol_fringe(img: Image.Image, alpha_min: int = 50) -> Image.Image:
+    """去掉精灵图集边缘极低 alpha 的矩形外框。"""
+    import numpy as np
+
+    arr = np.array(img.convert("RGBA"))
+    arr[arr[:, :, 3] < alpha_min] = (0, 0, 0, 0)
+    return Image.fromarray(arr)
+
+
+def add_composite_at(canvas: Image.Image, src: Image.Image, x: int, y: int) -> Image.Image:
+    """Cocos ADD 混合：黑底透明，亮色叠加（比 alpha_over 更少暗边）。"""
+    import numpy as np
+
+    out = np.array(canvas.convert("RGBA"), dtype=np.float32)
+    s = np.array(src.convert("RGBA"), dtype=np.float32)
+    sw, sh = s.shape[1], s.shape[0]
+    x0, y0 = max(0, x), max(0, y)
+    x1, y1 = min(out.shape[1], x + sw), min(out.shape[0], y + sh)
+    sx0, sy0 = x0 - x, y0 - y
+    sx1, sy1 = sx0 + (x1 - x0), sy0 + (y1 - y0)
+    if x1 <= x0 or y1 <= y0:
+        return canvas
+    dst = out[y0:y1, x0:x1]
+    src_slice = s[sy0:sy1, sx0:sx1]
+    sa = src_slice[:, :, 3:4] / 255.0
+    dst[:, :, :3] = np.minimum(255.0, dst[:, :, :3] + src_slice[:, :, :3] * sa)
+    dst[:, :, 3:4] = np.maximum(dst[:, :, 3:4], src_slice[:, :, 3:4])
+    out[y0:y1, x0:x1] = dst
+    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8))
+
+
+def place_add_effect_sprite(
+    sprite: Image.Image,
+    scale: float,
+    cy_ratio: float = 0.50,
+) -> Image.Image:
+    """将 ADD 混合特效精灵居中放入牌面格（仅光晕/纹章层，不含胡字）。"""
+    canvas = Image.new("RGBA", (TILE_W, TILE_H), (0, 0, 0, 0))
+    nw = max(1, round(sprite.width * scale))
+    nh = max(1, round(sprite.height * scale))
+    scaled = sprite.resize((nw, nh), Image.Resampling.LANCZOS)
+    cx, cy = TILE_W / 2, TILE_H * cy_ratio
+    return add_composite_at(canvas, scaled, round(cx - nw / 2), round(cy - nh / 2))
+
+
+def build_hu_emblem(scatter_bg: Image.Image) -> Image.Image:
+    """正版 scatter_bg 纹章：仅金黄图案，不含 scatter_glow_a 光晕。"""
+    return place_add_effect_sprite(strip_red_halo(scatter_bg), 0.96)
+
+
+def fit_scatter_bg(bg: Image.Image) -> Image.Image:
+    """兼容旧调用：仅 scatter_bg 时仍走 build_hu_emblem。"""
+    return build_hu_emblem(bg)
+
+
 def fit_hu_glow_bg(bg: Image.Image) -> Image.Image:
     """scatter_glow_c 整体圆形底：Cocos 子节点 scale 约 2.5×4，居中叠入牌面格"""
     canvas = Image.new("RGBA", (TILE_W, TILE_H), (0, 0, 0, 0))
@@ -190,8 +269,11 @@ def normalize_tile(img: Image.Image) -> Image.Image:
 
 def save_symbol(img: Image.Image, alias: str, manifest: dict) -> None:
     out = normalize_tile(img)
-    out.save(SYMBOLS_OUT / f"{alias}.png")
+    SYMBOLS_OUT.mkdir(parents=True, exist_ok=True)
+    GOLDEN_OUT.mkdir(parents=True, exist_ok=True)
     (PG / "symbols").mkdir(parents=True, exist_ok=True)
+    (PG / "ui").mkdir(parents=True, exist_ok=True)
+    out.save(SYMBOLS_OUT / f"{alias}.png")
     out.save(PG / "symbols" / f"{alias}.png")
     out.save(PG / "ui" / f"symbol-{alias}.png")
     manifest["symbols"][alias] = f"pg/symbols/{alias}.png"
@@ -246,10 +328,25 @@ def deploy_symbols(manifest: dict) -> None:
         save_symbol(compose_tile_origin(ingot_base, wild_sym), "wild", manifest)
 
     scatter_sym = feature.get("s_scatter")
+    scatter_bg_raw = RESOLVER.extract_sprite("scatter_bg")
+    scatter_bg = add_blend_to_rgba(scatter_bg_raw, black_threshold=25) if scatter_bg_raw else None
     if scatter_sym:
+        scatter_sym = clean_symbol_fringe(scatter_sym)
         scatter_sym.save(PG / "symbols" / "hu-overlay.png")
         manifest["symbols"]["hu-overlay"] = "pg/symbols/hu-overlay.png"
-        save_symbol(scatter_sym, "hu", manifest)
+        hu_canvas = Image.new("RGBA", (TILE_W, TILE_H), (0, 0, 0, 0))
+        if scatter_bg:
+            hu_emblem = build_hu_emblem(scatter_bg)
+            hu_emblem.save(PG / "symbols" / "hu-emblem.png")
+            hu_emblem.save(SYMBOLS_OUT / "hu-emblem.png")
+            manifest["symbols"]["hu-emblem"] = "pg/symbols/hu-emblem.png"
+            hu_canvas = compose_tile_origin(hu_canvas, hu_emblem)
+        # hu.png = 纹章+胡字（无光晕）；牌面光晕由 CSS .hu-scatter-glow 单独叠加
+        save_symbol(clean_symbol_fringe(compose_tile_origin(hu_canvas, scatter_sym)), "hu", manifest)
+        stale = PG / "symbols" / "hu-pattern.png"
+        if stale.is_file():
+            stale.unlink()
+        manifest["symbols"].pop("hu-pattern", None)
         stale_hu_bg = PG / "symbols" / "hu-bg.png"
         if stale_hu_bg.is_file():
             stale_hu_bg.unlink()
@@ -266,12 +363,19 @@ def deploy_symbols(manifest: dict) -> None:
             out.save(GOLDEN_OUT / f"{alias}.png")
             out.save(PG / "symbols-golden" / f"{alias}.png")
             manifest["symbols_golden"][alias] = f"pg/symbols-golden/{alias}.png"
-        for sp in ("wild", "hu"):
-            src = PG / "symbols" / f"{sp}.png"
-            if src.exists():
-                shutil.copy2(src, GOLDEN_OUT / f"{sp}.png")
-                shutil.copy2(src, PG / "symbols-golden" / f"{sp}.png")
-                manifest["symbols_golden"][sp] = f"pg/symbols-golden/{sp}.png"
+        wild_src = PG / "symbols" / "wild.png"
+        if wild_src.exists():
+            shutil.copy2(wild_src, GOLDEN_OUT / "wild.png")
+            shutil.copy2(wild_src, PG / "symbols-golden" / "wild.png")
+            manifest["symbols_golden"]["wild"] = "pg/symbols-golden/wild.png"
+        if scatter_sym:
+            hu_golden = Image.new("RGBA", (TILE_W, TILE_H), (0, 0, 0, 0))
+            if scatter_bg:
+                hu_golden = compose_tile_origin(hu_golden, build_hu_emblem(scatter_bg))
+            hu_golden = normalize_tile(clean_symbol_fringe(compose_tile_origin(hu_golden, scatter_sym)))
+            hu_golden.save(GOLDEN_OUT / "hu.png")
+            hu_golden.save(PG / "symbols-golden" / "hu.png")
+            manifest["symbols_golden"]["hu"] = "pg/symbols-golden/hu.png"
 
 
 def save_ui_sprite(img: Image.Image, key: str, manifest: dict) -> None:
@@ -522,10 +626,20 @@ def deploy_ui_sprites(manifest: dict) -> None:
     manifest["ui"].pop("bg-base", None)
 
     covers = list(SCRAPE.glob("images__*65*.jpg")) + list(SCRAPE.glob("images__65_*.jpg"))
+    mahjong_dir = ROOT.parent / "client-app/public/images/games/mahjong"
+    mahjong_dir.mkdir(parents=True, exist_ok=True)
     if covers:
         cover = max(covers, key=lambda x: x.stat().st_size)
-        shutil.copy2(cover, ROOT.parent / "client-app/public/images/games/mahjong.png")
-        manifest["ui"]["cover"] = "../mahjong.png"
+        cover_dest = mahjong_dir / "mahjong-cover-custom.jpg"
+        shutil.copy2(cover, cover_dest)
+        manifest["ui"]["cover"] = "mahjong-cover-custom.jpg"
+        manifest["ui"]["cover-bg"] = "mahjong-cover-custom.jpg"
+
+    icon_candidates = [p for p in covers if p.stat().st_size < 200_000]
+    if icon_candidates:
+        icon_src = max(icon_candidates, key=lambda p: p.stat().st_size)
+        shutil.copy2(icon_src, mahjong_dir / "mahjong.webp")
+        manifest["ui"]["lobby-icon"] = "mahjong.webp"
 
 
 def main() -> None:
