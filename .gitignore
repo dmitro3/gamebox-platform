@@ -45,3 +45,20 @@ tmp/
 
 # 游戏美术生成脚本的中间产物（按需）
 games-assets/**/__pycache__/
+
+# Python 缓存（全局）
+__pycache__/
+*.pyc
+
+# scripts 工具目录：临时调试文件与爬取缓存（禁止入库）
+scripts/node_modules/
+scripts/_*
+scripts/麻将胡了*/
+scripts/赏金船长*/
+scripts/runtime-atlas-cache/
+scripts/runtime-sprites/
+scripts/mahjong_img_backup/
+scripts/*.png
+scripts/*.jpg
+scripts/*-dump.json
+scripts/pg-cocos-dump.json
