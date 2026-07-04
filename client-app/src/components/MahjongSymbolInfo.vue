@@ -33,7 +33,7 @@ import {
   isPaySymbol,
   type MahjongSymbolId,
   type PaySymbolId,
-} from '../games/mahjong/mahjongWays1'
+} from '@/games/mahjong/mahjongWays1'
 
 export interface TileAnchor {
   x: number

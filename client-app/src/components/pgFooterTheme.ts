@@ -1,7 +1,7 @@
 import { computed, toValue, type MaybeRefOrGetter } from 'vue'
 
-/** 正版麻将胡了 theme_color：RGB(180,120,80) */
-export const MAHJONG_PG_THEME_COLOR = '#B47850'
+/** PG 封面页脚默认 theme_color（正版麻将胡了取值 RGB(180,120,80)），各游戏可传入自己的主题色覆盖 */
+export const PG_THEME_COLOR = '#B47850'
 
 function hexToRgb(hex: string) {
   const normalized = hex.replace('#', '')

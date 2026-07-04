@@ -5,7 +5,7 @@
       class="screen_color screen_compat"
       :style="splashStyle"
     >
-      <MahjongPgFooterContainer />
+      <PgFooterContainer />
 
       <div class="screen_safe_area">
         <div v-if="phase === 'loading'" id="loading-container" class="loading-container-port">
@@ -65,16 +65,16 @@
         </div>
       </div>
 
-      <MahjongPgLogoContainer />
+      <PgLogoContainer :cert-url="certUrl" />
     </div>
   </PgScreenCompat>
 </template>
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { pgUi } from '../games/mahjong/pgAssets'
-import MahjongPgFooterContainer from './MahjongPgFooterContainer.vue'
-import MahjongPgLogoContainer from './MahjongPgLogoContainer.vue'
+import { pgUi } from '@/games/mahjong/pgAssets'
+import PgFooterContainer from './PgFooterContainer.vue'
+import PgLogoContainer from './PgLogoContainer.vue'
 import PgScreenCompat from './PgScreenCompat.vue'
 
 defineProps({
@@ -89,6 +89,7 @@ const emit = defineEmits(['done'])
 /** 全程中文封面底图，不用英文 splash.jpg */
 const bgUrl = computed(() => pgUi('cover'))
 const logoUrl = computed(() => pgUi('splash-paytable-logo'))
+const certUrl = computed(() => pgUi('cover-footer-cert'))
 const pageUrls = computed(() =>
   ['splash-paytable-p1', 'splash-paytable-p2']
     .map((key) => pgUi(key))

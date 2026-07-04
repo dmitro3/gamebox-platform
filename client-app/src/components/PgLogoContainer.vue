@@ -1,6 +1,6 @@
 <template>
   <div class="logo-container" :style="{ bottom: props.bottom }">
-    <MahjongPgFooterLogo />
+    <PgFooterLogo />
     <img
       v-if="certUrl"
       class="footer-text-img"
@@ -11,19 +11,19 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { pgUi } from '../games/mahjong/pgAssets'
-import MahjongPgFooterLogo from './MahjongPgFooterLogo.vue'
+import PgFooterLogo from './PgFooterLogo.vue'
 
+/** certUrl：认证条图片（正版 download.png），由各游戏从自己的 manifest 传入 */
 const props = defineProps({
   bottom: {
     type: String,
     default: '52px',
   },
+  certUrl: {
+    type: String,
+    default: null,
+  },
 })
-
-/** 正版只用 download.png 认证条，不用 footer.png 整图 */
-const certUrl = computed(() => pgUi('cover-footer-cert'))
 </script>
 
 <style scoped>

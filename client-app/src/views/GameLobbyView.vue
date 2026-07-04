@@ -79,8 +79,8 @@
 
   <TabBar />
   
-  <MahjongPgLoader v-if="showMahjongPgLoader" @done="onMahjongPgLoaderDone" />
-  <MahjongPgLoader v-if="showCaptainPgLoader" @done="onCaptainPgLoaderDone" />
+  <PgLoader v-if="showMahjongPgLoader" @done="onMahjongPgLoaderDone" />
+  <PgLoader v-if="showCaptainPgLoader" @done="onCaptainPgLoaderDone" />
   <PgLoading v-if="showPgLoading" :progress="pgLoadingProgress" :show-progress="pgLoadingShowProgress" />
   <MahjongCover v-if="showMahjongCover" @start="enterMahjongGame" />
   <CaptainCover v-if="showCaptainCover" @start="enterCaptainGame" />
@@ -100,7 +100,7 @@ import { useBodyClass } from '@/composables/useBodyClass'
 import { gamesApi } from '@/api/games'
 import TabBar from '@/components/TabBar.vue'
 import PgLoading from '@/components/PgLoading.vue'
-import MahjongPgLoader from '@/components/MahjongPgLoader.vue'
+import PgLoader from '@/components/PgLoader.vue'
 import MahjongCover from '@/components/MahjongCover.vue'
 import CaptainCover from '@/components/CaptainCover.vue'
 import LabaCover from '@/components/LabaCover.vue'
@@ -145,73 +145,73 @@ const GAMES: LobbyGame[] = [
   },
   {
     key: 'ssc', name: '时时彩', type: 'lottery', intervalSec: 600,
-    iconImg: '/images/games/ssc.png',
+    iconImg: '/images/games/ssc/ssc.png',
     route: '/game/lottery/ssc', backendCode: 'ssc',
   },
   {
     key: 'ffc', name: '分分彩', type: 'lottery', intervalSec: 60,
-    iconImg: '/images/games/ffc.png',
+    iconImg: '/images/games/ffc/ffc.png',
     route: '/game/lottery/ffc', backendCode: 'ffc',
   },
   {
     key: 'speed-racing', name: '极速赛车', type: 'lottery', intervalSec: 60,
-    iconImg: '/images/games/speed-racing.png',
+    iconImg: '/images/games/speed-racing/speed-racing.png',
     route: '/game/lottery/speed-racing', backendCode: 'speed-racing',
   },
   {
     key: 'bjsc', name: '北京赛车', type: 'lottery', intervalSec: 300,
-    iconImg: '/images/games/bjsc.png',
+    iconImg: '/images/games/bjsc/bjsc.png',
     route: '/game/lottery/bjsc', backendCode: 'bjsc',
   },
   {
     key: 'speed-boat', name: '极速飞艇', type: 'lottery', intervalSec: 60,
-    iconImg: '/images/games/speed-boat.png',
+    iconImg: '/images/games/speed-boat/speed-boat.png',
   },
   {
     key: 'lhc', name: '六合彩', type: 'lottery', intervalSec: 60,
-    iconImg: '/images/games/hk-mark6.png',
+    iconImg: '/images/games/hk-mark6/hk-mark6.png',
   },
   {
     key: 'kuai3', name: '极速快三', type: 'lottery', intervalSec: 60,
-    iconImg: '/images/games/kuai3.png',
+    iconImg: '/images/games/kuai3/kuai3.png',
     route: '/game/lottery/kuai3', backendCode: 'kuai3',
   },
   {
     key: 'zhajinhua', name: '炸金花', tag: '热 门', type: 'lottery', intervalSec: 60,
-    iconImg: '/images/games/zhajinhua.png',
+    iconImg: '/images/games/zhajinhua/zhajinhua.png',
   },
   {
     key: 'douniu', name: '斗牛', type: 'lottery', intervalSec: 63,
-    iconImg: '/images/games/douniu.png',
+    iconImg: '/images/games/douniu/douniu.png',
   },
   {
     key: 'baccarat', name: '百家乐', tag: '热 门', type: 'lottery', intervalSec: 60,
-    iconImg: '/images/games/baccarat.png',
+    iconImg: '/images/games/baccarat/baccarat.png',
     route: '/game/table/baccarat', backendCode: 'baccarat',
   },
   {
     key: 'slots', name: '老虎机', type: 'instant',
-    iconImg: '/images/games/slots.png',
+    iconImg: '/images/games/slots/slots.png',
     route: '/game/slot/slots-classic', backendCode: 'slots-classic',
   },
   {
     key: 'bcbm', name: '奔驰宝马', tag: '新 品', type: 'instant',
-    iconImg: '/images/games/bcbm-icon.png',
+    iconImg: '/images/games/bcbm/bcbm-icon.png',
     route: '/game/arcade/bcbm', backendCode: 'bcbm',
   },
   {
     key: 'laba', name: '经典拉霸', tag: '新 品', type: 'instant',
-    iconImg: '/images/games/laba-icon.png',
+    iconImg: '/images/games/laba/laba-icon.png',
     route: '/game/laba', backendCode: 'slots-classic',
   },
   {
     key: 'longhu', name: '龙虎斗', tag: '新 品', type: 'instant',
-    iconImg: '/images/games/longhu-icon.png',
+    iconImg: '/images/games/longhu/longhu-icon.png',
     route: '/game/table/dragon-tiger', backendCode: 'dragon-tiger',
   },
   {
     key: 'lucky-wheel', name: '幸运转盘', type: 'instant',
-    iconImg: '/images/games/lucky-wheel-icon.png',
+    iconImg: '/images/games/wheel/lucky-wheel-icon.png',
     route: '/game/lucky-wheel', backendCode: 'lucky-wheel',
   },
 ]

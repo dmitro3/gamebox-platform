@@ -20,7 +20,7 @@ import {
   PG_INITIAL_LOADER_FADE_MS,
   PG_INITIAL_LOADER_MIN_MS,
   mountOfficialPgLoader,
-} from '../games/mahjong/pgInitialLoader'
+} from '@/games/pg-common/pgInitialLoader'
 
 const props = defineProps({
   visible: {

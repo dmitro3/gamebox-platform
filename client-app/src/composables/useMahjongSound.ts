@@ -4,7 +4,7 @@
  * - 其次播放独立 mp3 样本（见 README.txt）
  * - 缺失时用 Web Audio 合成近似 PG 的基础操作音
  */
-import type { PaySymbolId } from '../games/mahjong/mahjongWays1'
+import type { PaySymbolId } from '@/games/mahjong/mahjongWays1'
 import { MAHJONG_AUDIO_SPRITES, type AudioSpriteCue } from './mahjongAudioSprites'
 import { PG_MAHJONG_AUDIO_PUBLIC } from './pgMahjongAudioFromJson'
 

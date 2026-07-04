@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { pgUi } from '../games/mahjong/pgAssets'
+import { pgUi } from '@/games/mahjong/pgAssets'
 
 defineProps({
   isAccelerating: { type: Boolean, default: false },

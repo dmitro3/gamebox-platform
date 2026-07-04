@@ -197,7 +197,7 @@ import {
   CASCADE_MULTIPLIERS,
   FREE_SPIN_MULTIPLIERS,
   type PaySymbolId,
-} from '../games/mahjong/mahjongWays1'
+} from '@/games/mahjong/mahjongWays1'
 
 const props = defineProps<{
   visible: boolean

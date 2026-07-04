@@ -1,7 +1,7 @@
 <template>
   <div class="bcbm-cover" v-if="visible">
     <!-- 真正的竖屏背景图（用户自定义） -->
-    <img src="/images/games/bcbm-cover-custom.png" class="cover-bg" alt="奔驰宝马" />
+    <img src="/images/games/bcbm/bcbm-cover-custom.png" class="cover-bg" alt="奔驰宝马" />
     
     <!-- UI 交互层 -->
     <div class="ui-layer">
@@ -108,7 +108,7 @@ const handleStart = () => {
   margin-bottom: 45px;
   width: 260px; /* 调整为更协调的黄金比例尺寸 */
   height: 95px;
-  background-image: url('/images/games/start-btn-ai.png');
+  background-image: url('/images/start-btn-ai.png');
   background-size: 100% 100%;
   background-position: center;
   background-repeat: no-repeat;

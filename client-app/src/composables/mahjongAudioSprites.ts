@@ -4,7 +4,7 @@
  * 路径 / BGM / clip 时长：PG export JSON（pgMahjongAudioFromJson.ts）
  * general-audio / vox 切片：v4 捕获（scripts/_pg_capture.json）+ vox silencedetect 分段
  */
-import type { PaySymbolId } from '../games/mahjong/mahjongWays1'
+import type { PaySymbolId } from '@/games/mahjong/mahjongWays1'
 import { PG_MAHJONG_AUDIO_PUBLIC } from './pgMahjongAudioFromJson'
 
 export type AudioSpriteCue = { start: number; end: number }

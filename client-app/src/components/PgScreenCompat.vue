@@ -15,7 +15,7 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { calcPgScreenScale, PG_SCREEN_H, PG_SCREEN_W } from '../games/mahjong/pgScreenScale'
+import { calcPgScreenScale, PG_SCREEN_H, PG_SCREEN_W } from '@/games/pg-common/pgScreenScale'
 
 const props = defineProps({
   zIndex: {

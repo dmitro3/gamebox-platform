@@ -9,12 +9,12 @@
 </template>
 
 <script setup>
-import { MAHJONG_PG_THEME_COLOR, usePgFooterTheme } from './mahjongPgFooterTheme'
+import { PG_THEME_COLOR, usePgFooterTheme } from './pgFooterTheme'
 
 const props = defineProps({
   themeColor: {
     type: String,
-    default: MAHJONG_PG_THEME_COLOR,
+    default: PG_THEME_COLOR,
   },
 })
 

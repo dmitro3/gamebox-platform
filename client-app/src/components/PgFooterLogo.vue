@@ -89,7 +89,7 @@
 
 <script setup>
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import { mountPgLogoColorCycle } from '../games/mahjong/pgFooterLogoAnimator'
+import { mountPgLogoColorCycle } from '@/games/pg-common/pgFooterLogoAnimator'
 
 const rootRef = ref(null)
 

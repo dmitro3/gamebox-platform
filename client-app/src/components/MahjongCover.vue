@@ -17,7 +17,7 @@
         alt=""
       />
 
-      <MahjongPgFooterContainer />
+      <PgFooterContainer />
 
       <div class="screen_safe_area">
         <div v-if="phase === 'loading'" class="loading-container-port">
@@ -60,7 +60,7 @@
         />
       </div>
 
-      <MahjongPgLogoContainer />
+      <PgLogoContainer :cert-url="certUrl" />
     </div>
     </PgScreenCompat>
   </div>
@@ -68,10 +68,10 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { pgUi } from '../games/mahjong/pgAssets'
+import { pgUi } from '@/games/mahjong/pgAssets'
 import PgScreenCompat from './PgScreenCompat.vue'
-import MahjongPgFooterContainer from './MahjongPgFooterContainer.vue'
-import MahjongPgLogoContainer from './MahjongPgLogoContainer.vue'
+import PgFooterContainer from './PgFooterContainer.vue'
+import PgLogoContainer from './PgLogoContainer.vue'
 
 defineProps({
   visible: {
@@ -92,6 +92,7 @@ let progressTimer = null
 
 const coverBottomBgUrl = computed(() => pgUi('cover-bottom-bg'))
 const coverBgUrl = computed(() => pgUi('cover'))
+const certUrl = computed(() => pgUi('cover-footer-cert'))
 const startBtnUrl = computed(() =>
   startPressed.value
     ? (pgUi('btn-start-pressed') ?? pgUi('btn-start'))

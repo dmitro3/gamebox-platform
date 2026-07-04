@@ -91,7 +91,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, onUnmounted } from 'vue'
-import { FS_END_DIGIT_H_PCT, digitSpriteStyle } from '../games/mahjong/digitAtlas'
+import { FS_END_DIGIT_H_PCT, digitSpriteStyle } from '@/games/mahjong/digitAtlas'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },

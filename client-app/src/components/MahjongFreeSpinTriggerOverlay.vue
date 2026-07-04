@@ -87,7 +87,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, onUnmounted } from 'vue'
-import { digitSpriteStyle } from '../games/mahjong/digitAtlas'
+import { digitSpriteStyle } from '@/games/mahjong/digitAtlas'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },

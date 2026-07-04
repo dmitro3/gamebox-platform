@@ -1018,15 +1018,15 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import MahjongTile from '../components/MahjongTile.vue'
-import MahjongSymbolInfo, { type TileAnchor } from '../components/MahjongSymbolInfo.vue'
-import MahjongInfoSheet from '../components/MahjongInfoSheet.vue'
-import MahjongFreeSpinTriggerOverlay from '../components/MahjongFreeSpinTriggerOverlay.vue'
-import MahjongFreeSpinEndOverlay from '../components/MahjongFreeSpinEndOverlay.vue'
-import MahjongSpinButton from '../components/MahjongSpinButton.vue'
-import MahjongCover from '../components/MahjongCover.vue'
-import { MAHJONG_PG_VISUAL_STEP } from '../games/mahjong/pgVisualStep'
-import { useMahjongSound } from '../composables/useMahjongSound'
+import MahjongTile from '@/components/MahjongTile.vue'
+import MahjongSymbolInfo, { type TileAnchor } from '@/components/MahjongSymbolInfo.vue'
+import MahjongInfoSheet from '@/components/MahjongInfoSheet.vue'
+import MahjongFreeSpinTriggerOverlay from '@/components/MahjongFreeSpinTriggerOverlay.vue'
+import MahjongFreeSpinEndOverlay from '@/components/MahjongFreeSpinEndOverlay.vue'
+import MahjongSpinButton from '@/components/MahjongSpinButton.vue'
+import MahjongCover from '@/components/MahjongCover.vue'
+import { MAHJONG_PG_VISUAL_STEP } from '@/games/mahjong/pgVisualStep'
+import { useMahjongSound } from '@/composables/useMahjongSound'
 import {
   BASE_BET,
   COLS,
@@ -1050,11 +1050,11 @@ import {
   freeSpinsFromScatters,
   getScatterCells,
   isPaySymbol,
-} from '../games/mahjong/mahjongWays1'
-import cocosLayout from '../games/mahjong/cocosLayout.json'
-import pgSpinLayout from '../games/mahjong/pgSpinLayout.json'
-import { hasPgUi, pgBigWinImage, pgUi, pgUiMode } from '../games/mahjong/pgAssets'
-import { digitSpriteStyle } from '../games/mahjong/digitAtlas'
+} from '@/games/mahjong/mahjongWays1'
+import cocosLayout from '@/games/mahjong/cocosLayout.json'
+import pgSpinLayout from '@/games/mahjong/pgSpinLayout.json'
+import { hasPgUi, pgBigWinImage, pgUi, pgUiMode } from '@/games/mahjong/pgAssets'
+import { digitSpriteStyle } from '@/games/mahjong/digitAtlas'
 
 type PctBox = {
   topPct: number
