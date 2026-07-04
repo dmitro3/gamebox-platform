@@ -1,0 +1,122 @@
+/** 开奖结果卡片 HTML（ssc.js 共用） */
+(function (global) {
+  function sumOf(nums) {
+    return nums.reduce((a, b) => a + b, 0);
+  }
+
+  function gyMeta(nums) {
+    const s = sumOf(nums);
+    return { text: `${s} ${s >= 23 ? '大' : '小'} ${s % 2 ? '单' : '双'}`, sum: s };
+  }
+
+  function niuValue(nums) {
+    const total = sumOf(nums);
+    for (let i = 0; i < 3; i++) {
+      for (let j = i + 1; j < 4; j++) {
+        for (let k = j + 1; k < 5; k++) {
+          if ((nums[i] + nums[j] + nums[k]) % 10 === 0) {
+            const v = (total - nums[i] - nums[j] - nums[k]) % 10;
+            return v === 0 ? 10 : v;
+          }
+        }
+      }
+    }
+    return -1;
+  }
+
+  function niuLabel(v) {
+    if (v === -1) return '无牛';
+    if (v === 10) return '牛牛';
+    return '牛' + v;
+  }
+
+  function lhRow(nums) {
+    return niuLabel(niuValue(nums));
+  }
+
+  const POS_LABELS = ['万', '千', '百', '十', '个'];
+
+  function buildResultCardHtml(nums, issue) {
+    const meta = gyMeta(nums);
+    const sideText = meta.text.replace(/^\d+\s*/, '');
+    const balls = nums.map((n, i) => {
+      const delay = (i * 0.16).toFixed(2);
+      return `<div class="ssc-bot-result__ball-col" style="--roll-delay:${delay}s">
+        <div class="ssc-bot-result__ball-roll">
+          <span class="ssc-bot-result__ball-num">0</span>
+        </div>
+        <span class="ssc-bot-result__ball-pos">${POS_LABELS[i]}</span>
+      </div>`;
+    }).join('');
+    const chipBase = 1.15 + nums.length * 0.22;
+    const sideVal = sideText.replace(/\s+/g, '');
+    const chip = (label, val, delay) =>
+      `<span class="ssc-bot-result__chip ssc-bot-chip-pop" style="--pop-delay:${delay}s">` +
+      `<span class="ssc-bot-result__chip-k">${label}</span>` +
+      `<span class="ssc-bot-result__chip-v">${val}</span></span>`;
+    return `<div class="ssc-bot-card ssc-bot-card--result is-reveal">
+      <div class="ssc-bot-card__head"><span class="ssc-bot-card__title">开奖结果</span><span class="ssc-bot-card__issue">${issue}</span></div>
+      <div class="ssc-bot-result__body">
+        <div class="ssc-bot-result__glow" aria-hidden="true"></div>
+        <div class="ssc-bot-result__balls">${balls}</div>
+        <div class="ssc-bot-result__meta">
+          ${chip('和值', meta.sum, chipBase.toFixed(2))}
+          ${chip('双面', sideVal, (chipBase + 0.14).toFixed(2))}
+          ${chip('斗牛', lhRow(nums), (chipBase + 0.28).toFixed(2))}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function randomDraw() {
+    return Array.from({ length: 5 }, () => Math.floor(Math.random() * 10));
+  }
+
+  function parseNums(text) {
+    const parts = String(text || '')
+      .split(/[,，\s]+/)
+      .map(s => s.trim())
+      .filter(Boolean);
+    if (parts.length !== 5) return null;
+    const nums = parts.map(n => parseInt(n, 10));
+    if (nums.some(n => Number.isNaN(n) || n < 0 || n > 9)) return null;
+    return nums;
+  }
+
+  function bindReveal(root, nums) {
+    if (!root || !nums || nums.length !== 5) return;
+    const rolls = root.querySelectorAll('.ssc-bot-result__ball-roll');
+    rolls.forEach((roll, i) => {
+      const numEl = roll.querySelector('.ssc-bot-result__ball-num');
+      if (!numEl) return;
+      const target = nums[i];
+      const startDelay = i * 180;
+      const spinMs = 480 + i * 70;
+      setTimeout(() => {
+        roll.classList.add('is-rolling');
+        const t0 = performance.now();
+        function frame(now) {
+          const elapsed = now - t0;
+          if (elapsed < spinMs) {
+            numEl.textContent = Math.floor(Math.random() * 10);
+            requestAnimationFrame(frame);
+          } else {
+            numEl.textContent = target;
+            roll.classList.remove('is-rolling');
+            roll.classList.add('is-settled');
+          }
+        }
+        requestAnimationFrame(frame);
+      }, startDelay);
+    });
+  }
+
+  global.SscResultCard = {
+    build: buildResultCardHtml,
+    bindReveal,
+    randomDraw,
+    parseNums,
+    gyMeta,
+    lhRow
+  };
+})(typeof window !== 'undefined' ? window : this);

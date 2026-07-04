@@ -2,10 +2,19 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>时时彩</title>
-  <link rel="stylesheet" href="../../client-app/assets/css/common.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>快乐时时彩</title>
+  <link rel="stylesheet" href="/legacy/css/common.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap">
   <link rel="stylesheet" href="./css/ssc.css">
+  <script>
+    /* 大厅 iframe 嵌入时标记，布局用 100% 跟随容器而非外层 100dvh */
+    (function () {
+      if (window.parent !== window) {
+        document.documentElement.classList.add('ssc-in-iframe');
+      }
+    })();
+  </script>
 </head>
 <body class="ssc-body ssc-bg">
 
@@ -15,7 +24,7 @@
   <header class="ssc-head">
     <div class="ssc-head__brand">
       <button type="button" class="ssc-head-back" id="backBtn" aria-label="返回"></button>
-      <h1 class="ssc-head-title">时 时 彩</h1>
+      <h1 class="ssc-head-title">快乐时时彩</h1>
     </div>
     <div class="ssc-stats" id="statsBar">
       <div class="ssc-stat"><span class="k">积分</span><span class="v" id="statBalance">0</span></div>
@@ -25,39 +34,42 @@
     </div>
   </header>
 
-  <!-- 期号卡片：左期数 · 中秒表 · 右按钮 -->
+  <!-- 期号行：一行 · 期号 + 倒计时 + 按钮 -->
   <section class="ssc-issue-card">
-    <div class="ssc-issue-card__left">
-      <span class="lbl">期数</span>
-      <span class="val" id="curIssue">00000000</span>
-    </div>
-
-    <div class="ssc-issue-card__mid">
-      <div class="ssc-timer" id="countdownBox">
-        <svg class="ssc-timer__ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
-          <rect class="ssc-timer__ring-track" x="1.5" y="1.5" width="97" height="37" rx="5" ry="5" pathLength="1" />
-          <rect class="ssc-timer__ring-fill" x="1.5" y="1.5" width="97" height="37" rx="5" ry="5" pathLength="1" />
-        </svg>
-        <div class="ssc-timer__row">
-          <span class="ssc-timer__lbl" id="cdLabel">距封盘</span>
-          <span class="ssc-timer__time" id="cdTime">--:--</span>
+    <div class="ssc-issue-card__top">
+      <div class="ssc-issue-card__left">
+        <span class="ssc-cur-issue" id="curIssue" title="">--------</span>
+      </div>
+      <div class="ssc-issue-card__mid">
+        <div class="ssc-timer" id="countdownBox">
+          <div class="ssc-timer__digits" id="cdDigits" aria-label="倒计时">
+            <div class="ssc-timer__group">
+              <span class="ssc-timer__cell">0</span>
+              <span class="ssc-timer__cell">0</span>
+            </div>
+            <span class="ssc-timer__sep" aria-hidden="true">:</span>
+            <div class="ssc-timer__group">
+              <span class="ssc-timer__cell">0</span>
+              <span class="ssc-timer__cell">0</span>
+            </div>
+          </div>
+          <span class="ssc-timer__prep" id="cdPrep" hidden>准备中</span>
         </div>
       </div>
-    </div>
-
-    <div class="ssc-issue-card__acts">
-      <button type="button" class="ssc-issue-btn" id="btnSlip">注单</button>
-      <button type="button" class="ssc-issue-btn" id="btnLong">长龙</button>
-      <button type="button" class="ssc-issue-btn" id="btnPredict">预测</button>
+      <div class="ssc-issue-card__acts">
+        <button type="button" class="ssc-issue-btn" id="btnSlip">注单</button>
+        <button type="button" class="ssc-issue-btn" id="btnLong">长龙</button>
+        <button type="button" class="ssc-issue-btn" id="btnPredict">预测</button>
+      </div>
     </div>
   </section>
 
   <!-- 开奖下拉栏 -->
   <section class="ssc-draw-bar" id="drawBar">
     <button type="button" class="ssc-draw-bar__main" id="drawToggle" aria-expanded="false">
-      <span class="ssc-draw-bar__issue" id="barIssue">00000000</span>
+      <span class="ssc-draw-bar__issue" id="barIssue">--------</span>
       <span class="ssc-draw-bar__balls" id="barBalls"></span>
-      <span class="ssc-draw-bar__gy" id="barGy">五星和 —</span>
+      <span class="ssc-draw-bar__meta" id="barSummary">---</span>
       <span class="ssc-draw-bar__arrow" id="drawArrow">▼</span>
     </button>
     <div class="ssc-draw-panel" id="drawPanel">
@@ -74,7 +86,7 @@
               <th>期数</th>
               <th>万</th><th>千</th><th>百</th><th>十</th><th>个</th>
               <th>和值</th>
-              <th>形态</th>
+              <th>斗牛</th>
             </tr>
           </thead>
           <tbody id="drawTableBody"></tbody>
@@ -86,25 +98,22 @@
   <!-- 聊天主栏：全房间下注信息 -->
   <main class="ssc-chat" id="chatFeed" role="log" aria-live="polite"></main>
 
-  <!-- 右侧浮钮 -->
+  <!-- 右侧浮钮（参考图：一列圆形图标） -->
   <aside class="ssc-rail" aria-label="快捷操作">
     <button type="button" class="ssc-rail-btn" id="btnCs" title="客服">
       <span class="ssc-rail-icon ssc-rail-icon--cs"></span>
-      <span class="ssc-rail-txt">客服</span>
     </button>
-    <button type="button" class="ssc-rail-btn" id="btnExpand" title="展开玩法">
+    <button type="button" class="ssc-rail-btn" id="btnExpand" title="玩法">
       <span class="ssc-rail-icon ssc-rail-icon--expand"></span>
-      <span class="ssc-rail-txt">玩法</span>
     </button>
     <button type="button" class="ssc-rail-btn" id="btnRedpack" title="红包">
       <span class="ssc-rail-icon ssc-rail-icon--rp"></span>
-      <span class="ssc-rail-txt">红包</span>
     </button>
   </aside>
 
   <!-- 底部输入 -->
   <footer class="ssc-composer">
-    <input type="text" class="ssc-input" id="chatInput" placeholder="请输入竞猜内容" autocomplete="off" enterkeyhint="send">
+    <input type="text" class="ssc-input" id="chatInput" placeholder="玩法/金额，如 十百59/100、万单/梭哈" autocomplete="off" enterkeyhint="send">
     <button type="button" class="ssc-plus-btn" id="plusBtn" aria-label="更多">+</button>
   </footer>
 
@@ -133,19 +142,76 @@
     <button type="button" data-link="points-log">积分账变</button>
   </div>
 
-  <!-- 玩法展开 -->
+  <!-- 玩法展开：左玩法名 · 右选项 · 底金额投注 -->
   <div class="ssc-play-mask" id="playMask" hidden></div>
   <div class="ssc-play-sheet" id="playSheet" hidden>
     <div class="ssc-play-sheet__head">
       <span>全部玩法</span>
       <button type="button" id="playSheetClose">×</button>
     </div>
-    <div class="ssc-play-sheet__body" id="playSheetBody"></div>
+    <div class="ssc-play-sheet__main">
+      <nav class="ssc-play-nav" id="playNav" aria-label="玩法分类"></nav>
+      <div class="ssc-play-panel">
+        <p class="ssc-play-panel__hint" id="playHint"></p>
+        <div class="ssc-play-panel__sub" id="playSub" hidden></div>
+        <div class="ssc-play-panel__grid" id="playGrid"></div>
+      </div>
+    </div>
+    <footer class="ssc-play-sheet__foot">
+      <div class="ssc-play-foot__sel">已选 <strong id="playSelected">—</strong> <span class="ssc-play-foot__hint">（可多选）</span></div>
+      <div class="ssc-play-foot__chips" id="playAmountChips"></div>
+      <div class="ssc-play-foot__row">
+        <button type="button" class="ssc-play-foot__step" id="playAmountMinus" aria-label="减少">−</button>
+        <input type="number" class="ssc-play-foot__input" id="playAmount" value="100" min="1" inputmode="numeric">
+        <button type="button" class="ssc-play-foot__step" id="playAmountPlus" aria-label="增加">+</button>
+        <button type="button" class="ssc-play-foot__submit" id="playSubmit">投注</button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 长龙统计 -->
+  <div class="ssc-long-mask" id="longMask" hidden></div>
+  <div class="ssc-long-sheet" id="longSheet" hidden>
+    <div class="ssc-long-sheet__handle" aria-hidden="true"></div>
+    <div class="ssc-long-sheet__head">
+      <div class="ssc-long-sheet__title-wrap">
+        <span class="ssc-long-sheet__title">长龙统计</span>
+        <span class="ssc-long-sheet__sub" id="longSummary">连续 2 期及以上</span>
+      </div>
+      <button type="button" id="longSheetClose" aria-label="关闭">×</button>
+    </div>
+    <div class="ssc-long-sheet__tabs" id="longTabs">
+      <button type="button" class="is-active" data-tab="side">两面</button>
+      <button type="button" data-tab="lhh">龙虎</button>
+      <button type="button" data-tab="niu">斗牛</button>
+    </div>
+    <div class="ssc-long-sheet__body" id="longBody"></div>
+  </div>
+
+  <!-- 智能预测 -->
+  <div class="ssc-long-mask" id="predictMask" hidden></div>
+  <div class="ssc-long-sheet ssc-predict-sheet" id="predictSheet" hidden>
+    <div class="ssc-long-sheet__handle" aria-hidden="true"></div>
+    <div class="ssc-long-sheet__head">
+      <div class="ssc-long-sheet__title-wrap">
+        <span class="ssc-long-sheet__title">智能预测</span>
+        <span class="ssc-predict-sheet__issue" id="predictSummary">下一期 · --------</span>
+      </div>
+      <button type="button" id="predictSheetClose" aria-label="关闭">×</button>
+    </div>
+    <div class="ssc-long-sheet__tabs" id="predictTabs">
+      <button type="button" class="is-active" data-tab="side">双面</button>
+      <button type="button" data-tab="digit">号码</button>
+      <button type="button" data-tab="shape">形态</button>
+    </div>
+    <div class="ssc-long-sheet__body" id="predictBody"></div>
+    <div class="ssc-predict-foot">基于近期开奖走势统计，仅供参考</div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-<script src="../../client-app/assets/js/common.js"></script>
+<script src="/legacy/js/games-common.js"></script>
+<script src="./js/result-card.js"></script>
 <script src="./js/ssc.js"></script>
 </body>
 </html>

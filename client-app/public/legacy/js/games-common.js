@@ -95,13 +95,16 @@
   }
 
   App.go = function (url) {
-    const vuePath = App.resolveVuePath(url)
+    const s = String(url || '')
+    const vuePath = App.resolveVuePath(s)
+    const qIdx = s.indexOf('?')
+    const qs = qIdx >= 0 ? s.slice(qIdx) : ''
     if (vuePath && window.parent !== window) {
-      window.parent.postMessage({ type: 'assets-game-nav', path: vuePath }, '*')
+      window.parent.postMessage({ type: 'assets-game-nav', path: vuePath + qs }, '*')
       return
     }
     if (vuePath) {
-      location.href = vuePath
+      location.href = vuePath + qs
       return
     }
     App.toast('该功能即将开放')

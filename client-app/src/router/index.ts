@@ -43,6 +43,7 @@ const router = createRouter({
     { path: '/game/slot/slots-captain', name: 'captain', component: () => import('@/views/CaptainGameView.vue'), meta: { public: true } },
     { path: '/game/slot/:gameCode',    name: 'slot',    component: () => import('@/views/SlotView.vue') },
     { path: '/game/lottery/bjsc', name: 'bjsc', component: () => import('@/views/AssetsGameView.vue'), meta: { assetGame: 'bjsc' } },
+    { path: '/game/lottery/ssc', name: 'ssc', component: () => import('@/views/AssetsGameView.vue'), meta: { assetGame: 'ssc' } },
     { path: '/game/lottery/:gameCode', name: 'lottery', component: () => import('@/views/LotteryView.vue') },
     { path: '/game/table/:gameCode',   name: 'table',   component: () => import('@/views/TableView.vue') },
     { path: '/activities',             name: 'activities', component: () => import('@/views/ActivityView.vue') },

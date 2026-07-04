@@ -127,7 +127,7 @@ const { success: toastSuccess, error: toastError } = useToast()
 const gameCode = computed(() => route.params.gameCode as string)
 
 const GAME_LABELS: Record<string, string> = {
-  ffc: '分分彩', ssc: '时时彩', kuai3: '极速快三',
+  ffc: '分分彩', ssc: '快乐时时彩', kuai3: '极速快三',
   bjsc: '北京赛车', 'speed-racing': '极速赛车',
 }
 

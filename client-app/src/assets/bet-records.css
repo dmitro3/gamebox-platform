@@ -42,7 +42,7 @@
 }
 
 /* ===== 竞猜记录卡：3 行内容 ===== */
-.br-list { display: flex; flex-direction: column; gap: 12px; }
+.br-list { display: flex; flex-direction: column; gap: 8px; }
 .br-card {
   background:
     linear-gradient(180deg, var(--bg-card) 0%, var(--bg-card-2) 100%);
@@ -121,3 +121,117 @@
 }
 .br-empty-icon { font-size: 42px; color: var(--gold-deep); opacity: 0.5; margin-bottom: 10px; }
 .br-empty-text { font-size: 13px; letter-spacing: 3px; font-family: 'Noto Serif SC', serif; }
+
+/* 折叠注单 · 默认仅时间 + 状态 */
+.br-fold {
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, var(--bg-card) 0%, var(--bg-card-2) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+.br-fold__head {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+.br-fold__head:active { background: rgba(212, 175, 55, 0.06); }
+.br-fold__issue {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold-bright);
+  white-space: nowrap;
+}
+.br-fold__meta {
+  min-width: 0;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.br-fold__result {
+  flex-shrink: 0;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.br-fold__result.pos { color: var(--gold-bright); }
+.br-fold__result.neg { color: #ff6b7a; }
+.br-fold__result.wait {
+  font-family: 'Noto Serif SC', serif;
+  font-weight: 400;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--gold);
+}
+.br-fold__arrow {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--gold);
+  transition: transform 0.2s;
+}
+.br-fold.is-open .br-fold__arrow { transform: rotate(180deg); }
+.br-fold__body {
+  border-top: 1px dashed rgba(212, 175, 55, 0.15);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.br-detail {
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.br-detail-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  font-size: 12px;
+}
+.br-detail-play {
+  font-family: ui-monospace, Consolas, monospace;
+  color: var(--text);
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.br-detail-mid {
+  color: var(--text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.br-detail-profit {
+  font-family: ui-monospace, Consolas, monospace;
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: right;
+}
+.br-detail-profit.pos { color: var(--gold-bright); }
+.br-detail-profit.neg { color: #ff6b7a; }
+
+.br-draw-line {
+  padding: 6px 14px 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+}

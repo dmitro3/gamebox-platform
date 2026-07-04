@@ -144,7 +144,7 @@ const GAMES: LobbyGame[] = [
     // 素材整理中，暂不开放
   },
   {
-    key: 'ssc', name: '时时彩', type: 'lottery', intervalSec: 600,
+    key: 'ssc', name: '快乐时时彩', type: 'lottery', intervalSec: 120,
     iconImg: '/images/games/ssc/ssc.png',
     route: '/game/lottery/ssc', backendCode: 'ssc',
   },

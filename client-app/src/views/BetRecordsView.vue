@@ -9,7 +9,7 @@
   <div class="page br-page">
     <div class="app-bar">
       <div class="back" @click="goBack">‹</div>
-      <div class="title">竞猜记录</div>
+      <div class="title">{{ pageTitle }}</div>
       <div class="right"></div>
     </div>
 
@@ -21,7 +21,7 @@
           v-for="t in RANGES"
           :key="t.key"
           :class="['tt-item', range === t.key ? 'active' : '']"
-          @click="range = t.key"
+          @click="onRangeChange(t.key)"
         >{{ t.label }}</button>
       </div>
 
@@ -30,6 +30,43 @@
           <div class="br-empty-icon">◇</div>
           <div class="br-empty-text">加 载 中 …</div>
         </div>
+        <template v-else-if="hasSscGroups">
+          <div
+            v-for="g in sscGroupsInRange"
+            :key="g.issue"
+            class="br-fold"
+            :class="{ 'is-open': expandedIssue === g.issue }"
+          >
+            <button
+              type="button"
+              class="br-fold__head"
+              :aria-expanded="expandedIssue === g.issue"
+              @click="toggleExpand(g.issue)"
+            >
+              <span class="ssc-bet-record-issue">{{ g.issue }}</span>
+              <span class="br-fold__meta">{{ g.bets.length }} 注 · {{ fmt(g.totalAmount) }}</span>
+              <span :class="['br-fold__result', g.settled ? (g.totalProfit >= 0 ? 'pos' : 'neg') : 'wait']">
+                {{ g.settled ? fmtProfit(g.totalProfit) : '待开奖' }}
+              </span>
+              <span class="br-fold__arrow" aria-hidden="true">▼</span>
+            </button>
+
+            <div v-show="expandedIssue === g.issue" class="br-fold__body">
+              <ul class="br-detail">
+                <li v-for="(b, idx) in g.bets" :key="idx" class="br-detail-row">
+                  <span class="br-detail-play">{{ b.play }}/{{ b.amount }}</span>
+                  <span class="br-detail-mid">{{ betDetailMid(b, g.settled) }}</span>
+                  <span :class="['br-detail-profit', detailProfitClass(b, g.settled)]">
+                    {{ detailProfitText(b, g.settled) }}
+                  </span>
+                </li>
+              </ul>
+              <div v-if="g.settled && g.drawSummary" class="br-draw-line">
+                开奖 {{ g.drawSummary }}
+              </div>
+            </div>
+          </div>
+        </template>
         <div v-else-if="!summary" class="br-empty">
           <div class="br-empty-icon">◇</div>
           <div class="br-empty-text">该 时 段 暂 无 记 录</div>
@@ -69,8 +106,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import http from '@/api/http'
 import { useBodyClass } from '@/composables/useBodyClass'
 import TabBar from '@/components/TabBar.vue'
@@ -78,6 +115,7 @@ import '@/assets/bet-records.css'
 
 useBodyClass('deco-bg')
 
+const route = useRoute()
 const router = useRouter()
 
 interface BetRecord {
@@ -86,6 +124,27 @@ interface BetRecord {
   payout: number
   status: 'PENDING' | 'WON' | 'LOST' | 'CANCELLED'
   createdAt: string
+}
+
+interface SscBetItem {
+  play: string
+  amount: number
+  status: string
+  profit: number
+  winAmount: number
+  hit: string
+}
+
+interface SscBetGroup {
+  game: string
+  issue: string
+  createdAt: string
+  settledAt?: string
+  settled: boolean
+  drawSummary?: string
+  bets: SscBetItem[]
+  totalAmount: number
+  totalProfit: number
 }
 
 const RANGES = [
@@ -102,6 +161,46 @@ type RangeKey = typeof RANGES[number]['key']
 const range = ref<RangeKey>('today')
 const loading = ref(true)
 const records = ref<BetRecord[]>([])
+const sscLog = ref<SscBetGroup[]>([])
+const expandedIssue = ref<string | null>(null)
+let sscPollTimer: ReturnType<typeof setInterval> | null = null
+
+function sscBetLogStorageKey() {
+  try {
+    const raw = localStorage.getItem('gamebox_user')
+    if (!raw) return null
+    const u = JSON.parse(raw)
+    return u?.uid ? 'ssc_bet_log_' + u.uid : null
+  } catch {
+    return null
+  }
+}
+
+function onSscLogStorage(e: StorageEvent) {
+  const key = sscBetLogStorageKey()
+  if (key && e.key && e.key !== key) return
+  loadSscBetLog()
+}
+
+function onSscLogVisible() {
+  if (document.visibilityState === 'visible') loadSscBetLog()
+}
+
+function startSscPollIfNeeded() {
+  if (sscPollTimer) return
+  sscPollTimer = setInterval(() => {
+    if (route.query.game !== 'ssc') return
+    if (sscLog.value.some(g => !g.settled)) loadSscBetLog()
+  }, 1200)
+}
+
+function stopSscPoll() {
+  if (!sscPollTimer) return
+  clearInterval(sscPollTimer)
+  sscPollTimer = null
+}
+
+const pageTitle = computed(() => (route.query.game === 'ssc' ? '快乐时时彩注单' : '竞猜记录'))
 
 function rangeBounds(key: RangeKey): [number, number] {
   const now = new Date()
@@ -121,7 +220,20 @@ function rangeBounds(key: RangeKey): [number, number] {
   }
 }
 
+function groupInRange(g: SscBetGroup, from: number, to: number) {
+  const t = new Date(g.settledAt || g.createdAt).getTime()
+  return t >= from && t < to
+}
+
+const sscGroupsInRange = computed(() => {
+  const [from, to] = rangeBounds(range.value)
+  return sscLog.value.filter(g => groupInRange(g, from, to))
+})
+
+const hasSscGroups = computed(() => sscGroupsInRange.value.length > 0)
+
 const summary = computed(() => {
+  if (hasSscGroups.value) return null
   const [from, to] = rangeBounds(range.value)
   const list = records.value.filter(r => {
     const t = new Date(r.createdAt).getTime()
@@ -147,19 +259,85 @@ const summary = computed(() => {
 })
 
 function fmt(n: number) {
-  return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+}
+
+function fmtProfit(n: number) {
+  return (n >= 0 ? '+' : '') + fmt(n)
+}
+
+function toggleExpand(issue: string) {
+  expandedIssue.value = expandedIssue.value === issue ? null : issue
+}
+
+function onRangeChange(key: RangeKey) {
+  range.value = key
+  expandedIssue.value = null
+}
+
+function betDetailMid(b: SscBetItem, settled: boolean) {
+  if (!settled) return '待开'
+  if (b.status === 'WON') return b.hit || '中奖'
+  return '未中'
+}
+
+function detailProfitText(b: SscBetItem, settled: boolean) {
+  if (!settled) return '—'
+  return fmtProfit(b.profit)
+}
+
+function detailProfitClass(b: SscBetItem, settled: boolean) {
+  if (!settled) return ''
+  return b.profit >= 0 ? 'pos' : 'neg'
+}
+
+function loadSscBetLog() {
+  try {
+    const raw = localStorage.getItem('gamebox_user')
+    if (!raw) return
+    const u = JSON.parse(raw)
+    if (!u?.uid) return
+    const logRaw = localStorage.getItem('ssc_bet_log_' + u.uid)
+    sscLog.value = logRaw ? JSON.parse(logRaw) : []
+  } catch {
+    sscLog.value = []
+  }
 }
 
 function goBack() {
   if (window.history.length > 1) router.back()
-  else router.push('/settings')
+  else router.push('/lobby')
 }
 
 onMounted(async () => {
+  loadSscBetLog()
+  startSscPollIfNeeded()
+  window.addEventListener('storage', onSscLogStorage)
+  window.addEventListener('ssc-bet-log-updated', loadSscBetLog)
+  document.addEventListener('visibilitychange', onSscLogVisible)
   try {
     records.value = await http.get<BetRecord[], BetRecord[]>('/bet/history')
   } catch { /* 静默 */ } finally {
     loading.value = false
   }
 })
+
+onUnmounted(() => {
+  stopSscPoll()
+  window.removeEventListener('storage', onSscLogStorage)
+  window.removeEventListener('ssc-bet-log-updated', loadSscBetLog)
+  document.removeEventListener('visibilitychange', onSscLogVisible)
+})
 </script>
+
+<style scoped>
+/* 快乐时时彩注单 · 期号（独立样式，不共用 br-fold__issue） */
+.ssc-bet-record-issue {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: ui-monospace, Consolas, monospace;
+  color: #f4d36b;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+}
+</style>

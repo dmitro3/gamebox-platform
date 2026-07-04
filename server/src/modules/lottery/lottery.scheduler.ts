@@ -12,7 +12,7 @@ import { LotteryService } from './lottery.service';
 /** 各彩票游戏的开奖间隔（秒） */
 const GAME_INTERVALS: Record<string, number> = {
   ffc:           60,
-  ssc:           600,
+  ssc:           120,
   kuai3:         60,
   bjsc:          300,
   'speed-racing': 60,

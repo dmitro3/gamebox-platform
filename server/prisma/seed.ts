@@ -119,8 +119,8 @@ const GAMES = [
   },
   // ── 彩票类游戏 ──
   {
-    code: 'ssc', name: '时时彩', category: 'LOTTERY' as const,
-    status: 'ONLINE' as const, sortOrder: 4, drawIntervalSec: 600, minBet: 1, maxBet: 10000,
+    code: 'ssc', name: '快乐时时彩', category: 'LOTTERY' as const,
+    status: 'ONLINE' as const, sortOrder: 4, drawIntervalSec: 120, minBet: 1, maxBet: 10000,
     rtp: 0.95,
     payTable: {
       big:   { multiplier: 1.98, desc: '总和 23-45' },
