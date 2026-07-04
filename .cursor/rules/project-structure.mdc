@@ -1,0 +1,52 @@
+---
+description: 项目目录结构与游戏素材隔离规范（所有改动必须遵守）
+alwaysApply: true
+---
+
+# 项目结构规范
+
+保持项目大体架构不变，内部模块区分清楚。顶层目录职责固定，禁止新增顶层目录：
+
+- `server/` — NestJS 后端（modules 按业务拆分）
+- `client-app/` — 玩家端 Vue 3 应用
+- `admin-panel/` — 管理后台 Vue 3 应用
+- `packages/shared/` — 多端共享 TS 库
+- `games-assets/` — 静态 H5 小游戏（每个游戏一个子目录）
+- `scripts/` — 素材爬取/部署工具脚本
+- `docs/` — 项目文档
+
+# 游戏素材与代码隔离（重要）
+
+每个游戏的所有资源必须放在自己的专属文件夹内，游戏之间互不影响：
+
+- 图片：`client-app/public/images/games/<游戏名>/`（如 `mahjong/`、`captain/`、`laba/`）
+  - 封面、大厅图标、UI 图全部放游戏目录内，**禁止散落在 `images/games/` 根目录**
+  - PG 素材统一放 `<游戏名>/pg/`（manifest.json、ui/、symbols/、sprites/）
+  - 跨游戏共用的 UI 图（如通用开始按钮）放 `public/images/` 根，不放任何游戏目录
+- 音频：`client-app/public/audio/<游戏名>/`
+- 游戏逻辑与布局数据：`client-app/src/games/<游戏名>/`
+- 游戏专属组件：`client-app/src/components/<游戏名前缀>*.vue`（如 `MahjongCover.vue`、`CaptainSpinButton.vue`）
+
+**禁止跨游戏引用**：A 游戏的组件/素材/manifest 不得 import 或复制 B 游戏的资源。
+
+**PG 通用能力放共享层**（无游戏前缀，内部禁止依赖任何 `games/<游戏名>/` 模块）：
+
+- 共享组件：`components/PgScreenCompat.vue`、`PgLoader.vue`、`PgFooterContainer.vue`、`PgLogoContainer.vue`、`PgFooterLogo.vue`、`pgFooterTheme.ts`
+- 共享逻辑：`src/games/pg-common/`（pgScreenScale、pgInitialLoader、pgFooterLogoAnimator、pgOfficialPaths）
+- 游戏差异（主题色、认证条图等）通过 props 传入，如 `<PgLogoContainer :cert-url="pgUi('cover-footer-cert')" />`
+
+整理/移动素材时只改路径，**不得顺手改业务逻辑、不得运行 rebuild 重建素材**。
+
+# 代码风格
+
+- `client-app` 跨目录 import 一律用 `@/` 别名（`@` = `client-app/src`），同目录用 `./`
+- 新增游戏时按四层落位：`public/images/games/<游戏名>/`、`public/audio/<游戏名>/`、`src/games/<游戏名>/`、`components/<前缀>*.vue`，并复用 pg-common 共享层，禁止复制粘贴其他游戏的组件改名
+
+# Git 提交规范
+
+- 提交说明使用**中文描述**，格式：`类型(范围): 中文摘要`
+  - 例：`feat(mahjong): 补全自动旋转按钮绿色方块素材`
+  - 例：`fix(captain): 修正封面底图路径`
+- 类型：feat / fix / refactor / docs / chore
+- 一次提交只包含一个游戏或一个模块的变更，禁止把多个游戏的改动混在同一提交
+- 禁止提交：`scripts/node_modules/`、`__pycache__/`、`scripts/_*` 临时调试文件、爬取缓存目录（`scripts/麻将胡了/` 等大型 dump）
