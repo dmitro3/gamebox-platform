@@ -2,20 +2,40 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>百家乐</title>
-  <link rel="stylesheet" href="../../client-app/assets/css/common.css">
-  <link rel="stylesheet" href="./css/bjl.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&family=Orbitron:wght@600;700&family=ZCOOL+QingKe+HuangYou&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/bjl-table.css?v=13">
+  <script>
+    (function () {
+      if (window.parent !== window) document.documentElement.classList.add('bjl-in-iframe');
+      var DESIGN_W = 1024, DESIGN_H = 1536;
+      function applyScale() {
+        var head = document.querySelector('.bjl-head');
+        var headH = head ? head.offsetHeight : 56;
+        var availW = window.innerWidth;
+        var availH = Math.max(120, window.innerHeight - headH);
+        var s = Math.min(1, availW / DESIGN_W, availH / DESIGN_H);
+        document.documentElement.style.setProperty('--bjl-scale', String(s));
+      }
+      window.addEventListener('resize', applyScale);
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', applyScale);
+      } else {
+        applyScale();
+      }
+    })();
+  </script>
 </head>
-<body class="bjl-body bjl-bg">
+<body class="bjl-body">
 
-<div class="bjl-room">
-  <div class="bjl-room-glow" aria-hidden="true"></div>
-  <!-- 顶：返回+标题 | 统计 2×2 -->
+<div class="bjl-viewport">
   <header class="bjl-head">
     <div class="bjl-head__brand">
       <button type="button" class="bjl-head-back" id="backBtn" aria-label="返回"></button>
-      <h1 class="bjl-head-title">百 家 乐</h1>
+      <h1 class="bjl-head-title">百家乐</h1>
     </div>
     <div class="bjl-stats" id="statsBar">
       <div class="bjl-stat"><span class="k">积分</span><span class="v" id="statBalance">0</span></div>
@@ -25,125 +45,239 @@
     </div>
   </header>
 
-  <!-- 期号卡片：左期数 · 中秒表 · 右按钮 -->
-  <section class="bjl-issue-card">
-    <div class="bjl-issue-card__left">
-      <span class="lbl">期数</span>
-      <span class="val" id="curIssue">00000000</span>
-    </div>
+  <div class="bjl-stage">
+    <div class="bjl-room">
+      <div class="bjl-shoe" id="shoeBox" aria-hidden="true">
+        <img class="bjl-shoe__body" src="./assets/ui/shoe-dealer-live.png?v=1" alt="" draggable="false">
+        <img class="bjl-shoe__cards" src="./assets/ui/shoe-cards-live.png?v=3" alt="" draggable="false">
+      </div>
 
-    <div class="bjl-issue-card__mid">
-      <div class="bjl-timer" id="countdownBox">
-        <svg class="bjl-timer__ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
-          <rect class="bjl-timer__ring-track" x="1.5" y="1.5" width="97" height="37" rx="5" ry="5" pathLength="1" />
-          <rect class="bjl-timer__ring-fill" x="1.5" y="1.5" width="97" height="37" rx="5" ry="5" pathLength="1" />
-        </svg>
-        <div class="bjl-timer__row">
-          <span class="bjl-timer__lbl" id="cdLabel">距封盘</span>
-          <span class="bjl-timer__time" id="cdTime">--:--</span>
+      <div class="bjl-timer" id="timerBox" aria-label="倒计时">
+        <span class="bjl-timer__time" id="cdTime">15</span>
+      </div>
+
+      <div class="bjl-deal" id="dealArea" aria-label="发牌区">
+        <div class="bjl-hand bjl-hand--banker" id="bankerHand">
+          <div class="bjl-card" data-slot="b3">
+            <div class="bjl-card__inner">
+              <div class="bjl-card__face bjl-card__face--back"><img src="./assets/cards/card-back.png?v=6" alt="" draggable="false"></div>
+              <div class="bjl-card__face bjl-card__face--front"><img src="./assets/cards/card-back.png?v=6" alt="" draggable="false"></div>
+            </div>
+          </div>
+          <div class="bjl-card" data-slot="b1">
+            <div class="bjl-card__inner">
+              <div class="bjl-card__face bjl-card__face--back"><img src="./assets/cards/card-back.png?v=6" alt="" draggable="false"></div>
+              <div class="bjl-card__face bjl-card__face--front"><img src="./assets/cards/card-back.png?v=6" alt="" draggable="false"></div>
+            </div>
+          </div>
+          <div class="bjl-card" data-slot="b2">
+            <div class="bjl-card__inner">
+              <div class="bjl-card__face bjl-card__face--back"><img src="./assets/cards/card-back.png?v=6" alt="" draggable="false"></div>
+              <div class="bjl-card__face bjl-card__face--front"><img src="./assets/cards/card-back.png?v=6" alt="" draggable="false"></div>
+            </div>
+          </div>
+          <div class="bjl-hand-type" id="bankerType" hidden></div>
+        </div>
+        <div class="bjl-hand bjl-hand--player" id="playerHand">
+          <div class="bjl-card" data-slot="p1">
+            <div class="bjl-card__inner">
+              <div class="bjl-card__face bjl-card__face--back"><img src="./assets/cards/card-back.png?v=6" alt="" draggable="false"></div>
+              <div class="bjl-card__face bjl-card__face--front"><img src="./assets/cards/card-back.png?v=6" alt="" draggable="false"></div>
+            </div>
+          </div>
+          <div class="bjl-card" data-slot="p2">
+            <div class="bjl-card__inner">
+              <div class="bjl-card__face bjl-card__face--back"><img src="./assets/cards/card-back.png?v=6" alt="" draggable="false"></div>
+              <div class="bjl-card__face bjl-card__face--front"><img src="./assets/cards/card-back.png?v=6" alt="" draggable="false"></div>
+            </div>
+          </div>
+          <div class="bjl-card" data-slot="p3">
+            <div class="bjl-card__inner">
+              <div class="bjl-card__face bjl-card__face--back"><img src="./assets/cards/card-back.png?v=6" alt="" draggable="false"></div>
+              <div class="bjl-card__face bjl-card__face--front"><img src="./assets/cards/card-back.png?v=6" alt="" draggable="false"></div>
+            </div>
+          </div>
+          <div class="bjl-hand-type" id="playerType" hidden></div>
         </div>
       </div>
-    </div>
 
-    <div class="bjl-issue-card__acts">
-      <button type="button" class="bjl-issue-btn" id="btnSlip">注单</button>
-      <button type="button" class="bjl-issue-btn" id="btnLong">长龙</button>
-      <button type="button" class="bjl-issue-btn" id="btnPredict">预测</button>
-    </div>
-  </section>
+      <div class="bjl-fly-layer" id="flyLayer" aria-hidden="true"></div>
 
-  <!-- 开奖下拉栏 -->
-  <section class="bjl-draw-bar" id="drawBar">
-    <button type="button" class="bjl-draw-bar__main" id="drawToggle" aria-expanded="false">
-      <span class="bjl-draw-bar__issue" id="barIssue">00000000</span>
-      <span class="bjl-draw-bar__balls" id="barBalls" class="bar-cards"></span>
-      <span class="bjl-draw-bar__gy" id="barGy">牌型 —</span>
-      <span class="bjl-draw-bar__arrow" id="drawArrow">▼</span>
-    </button>
-    <div class="bjl-draw-panel" id="drawPanel">
-      <div class="bjl-draw-table-wrap">
-        <table class="bjl-draw-table">
-          <colgroup>
-            <col class="col-issue">
-            <col class="col-ball" span="5">
-            <col class="col-gy">
-            <col class="col-lh">
-          </colgroup>
-          <thead>
-            <tr>
-              <th>期数</th>
-              <th>庄</th><th>闲</th><th>结果</th><th>庄对</th><th>闲对</th>
-            </tr>
-          </thead>
-          <tbody id="drawTableBody"></tbody>
-        </table>
+      <div class="bjl-bet" id="betArea" aria-label="下注区">
+        <button type="button" class="bjl-bet-btn" data-bet="banker">
+          <img class="bjl-bet-btn__frame" src="./assets/ui/bet-btns/banker.png?v=1" alt="" draggable="false">
+          <span class="bjl-bet-btn__name">庄</span>
+          <span class="bjl-bet-btn__odds">1:0.95</span>
+          <span class="bjl-bet-btn__chips" aria-hidden="true"></span>
+          <span class="bjl-bet-btn__stake" hidden>0</span>
+        </button>
+        <button type="button" class="bjl-bet-btn" data-bet="tie">
+          <img class="bjl-bet-btn__frame" src="./assets/ui/bet-btns/tie.png?v=1" alt="" draggable="false">
+          <span class="bjl-bet-btn__name">和</span>
+          <span class="bjl-bet-btn__odds">1:8</span>
+          <span class="bjl-bet-btn__chips" aria-hidden="true"></span>
+          <span class="bjl-bet-btn__stake" hidden>0</span>
+        </button>
+        <button type="button" class="bjl-bet-btn" data-bet="player">
+          <img class="bjl-bet-btn__frame" src="./assets/ui/bet-btns/player.png?v=1" alt="" draggable="false">
+          <span class="bjl-bet-btn__name">闲</span>
+          <span class="bjl-bet-btn__odds">1:1</span>
+          <span class="bjl-bet-btn__chips" aria-hidden="true"></span>
+          <span class="bjl-bet-btn__stake" hidden>0</span>
+        </button>
+        <button type="button" class="bjl-bet-btn" data-bet="bankerPair">
+          <img class="bjl-bet-btn__frame" src="./assets/ui/bet-btns/banker-pair.png?v=1" alt="" draggable="false">
+          <span class="bjl-bet-btn__name">庄对</span>
+          <span class="bjl-bet-btn__odds">1:11</span>
+          <span class="bjl-bet-btn__chips" aria-hidden="true"></span>
+          <span class="bjl-bet-btn__stake" hidden>0</span>
+        </button>
+        <button type="button" class="bjl-bet-btn" data-bet="playerPair">
+          <img class="bjl-bet-btn__frame" src="./assets/ui/bet-btns/player-pair.png?v=1" alt="" draggable="false">
+          <span class="bjl-bet-btn__name">闲对</span>
+          <span class="bjl-bet-btn__odds">1:11</span>
+          <span class="bjl-bet-btn__chips" aria-hidden="true"></span>
+          <span class="bjl-bet-btn__stake" hidden>0</span>
+        </button>
+      </div>
+
+      <div class="bjl-roadmap" id="roadmap" aria-label="路单">
+        <div class="bjl-roadmap__inner">
+          <header class="bjl-roadmap__head">
+            <div class="bjl-roadmap__brand">
+              <i class="bjl-roadmap__brand-mark" aria-hidden="true"></i>
+              <span class="bjl-roadmap__title">路单</span>
+            </div>
+            <div class="bjl-roadmap__stats" aria-label="统计">
+              <div class="bjl-roadmap__stat bjl-roadmap__stat--banker">
+                <span class="bjl-roadmap__pill"><i></i>庄</span>
+                <b id="roadB">0</b>
+                <em id="roadBpct">0%</em>
+              </div>
+              <div class="bjl-roadmap__stat bjl-roadmap__stat--player">
+                <span class="bjl-roadmap__pill"><i></i>闲</span>
+                <b id="roadP">0</b>
+                <em id="roadPpct">0%</em>
+              </div>
+              <div class="bjl-roadmap__stat bjl-roadmap__stat--tie">
+                <span class="bjl-roadmap__pill"><i></i>和</span>
+                <b id="roadT">0</b>
+                <em id="roadTpct">0%</em>
+              </div>
+              <div class="bjl-roadmap__stat bjl-roadmap__stat--total">
+                <span class="bjl-roadmap__pill bjl-roadmap__pill--mute">总局</span>
+                <b id="roadN">0</b>
+              </div>
+            </div>
+          </header>
+          <div class="bjl-roadmap__body">
+            <section class="bjl-roadmap__panel bjl-roadmap__panel--bead">
+              <div class="bjl-roadmap__tag">珠盘</div>
+              <div class="bjl-roadmap__scroll" id="beadScroll">
+                <div class="bjl-roadmap__paper">
+                  <div class="bjl-roadmap__grid bjl-roadmap__grid--bead" id="beadGrid" role="list"></div>
+                </div>
+              </div>
+            </section>
+            <section class="bjl-roadmap__panel bjl-roadmap__panel--big">
+              <div class="bjl-roadmap__tag">大路</div>
+              <div class="bjl-roadmap__scroll" id="bigScroll">
+                <div class="bjl-roadmap__paper">
+                  <div class="bjl-roadmap__grid bjl-roadmap__grid--big" id="bigGrid" role="list"></div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <div class="bjl-actions" id="actionBar" aria-label="操作">
+        <button type="button" class="bjl-action bjl-action--undo" data-action="undo" aria-label="撤销">
+          <img src="./assets/ui/action-btns/undo.png?v=4" alt="撤销" draggable="false">
+        </button>
+        <button type="button" class="bjl-action bjl-action--rebet" data-action="rebet" aria-label="续押">
+          <img src="./assets/ui/action-btns/rebet.png?v=4" alt="续押" draggable="false">
+        </button>
+      </div>
+
+      <div class="bjl-players" id="playersBox" aria-label="在线人数">
+        <img class="bjl-players__icon" src="./assets/ui/action-btns/players.png?v=2" alt="" draggable="false">
+        <span class="bjl-players__count" id="playersCount">36</span>
+      </div>
+
+      <div class="bjl-chips" id="chipBar" aria-label="筹码">
+        <button type="button" class="bjl-chip is-selected" data-chip="1" aria-label="1">
+          <span class="bjl-chip__glow" aria-hidden="true"></span>
+          <img src="./assets/ui/chips/chip-1.png?v=4" alt="1" draggable="false">
+        </button>
+        <button type="button" class="bjl-chip" data-chip="5" aria-label="5">
+          <span class="bjl-chip__glow" aria-hidden="true"></span>
+          <img src="./assets/ui/chips/chip-5.png?v=4" alt="5" draggable="false">
+        </button>
+        <button type="button" class="bjl-chip" data-chip="10" aria-label="10">
+          <span class="bjl-chip__glow" aria-hidden="true"></span>
+          <img src="./assets/ui/chips/chip-10.png?v=4" alt="10" draggable="false">
+        </button>
+        <button type="button" class="bjl-chip" data-chip="50" aria-label="50">
+          <span class="bjl-chip__glow" aria-hidden="true"></span>
+          <img src="./assets/ui/chips/chip-50.png?v=4" alt="50" draggable="false">
+        </button>
+        <button type="button" class="bjl-chip" data-chip="100" aria-label="100">
+          <span class="bjl-chip__glow" aria-hidden="true"></span>
+          <img src="./assets/ui/chips/chip-100.png?v=4" alt="100" draggable="false">
+        </button>
+        <button type="button" class="bjl-chip" data-chip="500" aria-label="500">
+          <span class="bjl-chip__glow" aria-hidden="true"></span>
+          <img src="./assets/ui/chips/chip-500.png?v=4" alt="500" draggable="false">
+        </button>
+        <button type="button" class="bjl-chip-more" id="chipPageBtn" aria-label="切换筹码页" title="切换筹码">
+          <span class="bjl-chip-more__dot"></span>
+          <span class="bjl-chip-more__dot"></span>
+          <span class="bjl-chip-more__dot"></span>
+        </button>
       </div>
     </div>
-  </section>
+  </div><!-- /.bjl-stage -->
+  <div class="bjl-payout-fly" id="payoutFlyLayer" aria-hidden="true"></div>
+  <div class="bjl-phase-banner" id="phaseBanner" aria-hidden="true">
+    <img class="bjl-phase-banner__img" id="phaseBannerImg" alt="" draggable="false">
+  </div>
 
-  <!-- 聊天主栏：全房间下注信息 -->
-  <main class="bjl-chat" id="chatFeed" role="log" aria-live="polite"></main>
-
-  <!-- 右侧浮钮 -->
-  <aside class="bjl-rail" aria-label="快捷操作">
-    <button type="button" class="bjl-rail-btn" id="btnCs" title="客服">
-      <span class="bjl-rail-icon bjl-rail-icon--cs"></span>
-      <span class="bjl-rail-txt">客服</span>
+  <!-- 右侧快捷竖排：客服 / 历史 / 记录 / 玩法 / 设置 -->
+  <aside class="bjl-rail" id="bjlRail" aria-label="快捷操作">
+    <button type="button" class="bjl-rail-btn" id="railCs" title="客服">
+      <svg class="bjl-rail-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a8 8 0 0 0-8 8v4.5A2.5 2.5 0 0 0 6.5 18H8v-6H6v-1a6 6 0 1 1 12 0v1h-2v6h1.5a2.5 2.5 0 0 0 .4-.03A4 4 0 0 1 14 21h-2v-1.6h2a2.4 2.4 0 0 0 2.36-2H16A8 8 0 0 0 12 3z"/></svg>
+      <span class="bjl-rail-lb">客服</span>
     </button>
-    <button type="button" class="bjl-rail-btn" id="btnExpand" title="展开玩法">
-      <span class="bjl-rail-icon bjl-rail-icon--expand"></span>
-      <span class="bjl-rail-txt">玩法</span>
+    <button type="button" class="bjl-rail-btn" id="railHistory" title="历史记录">
+      <svg class="bjl-rail-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3a9 9 0 1 0 8.94 10H19.9A7 7 0 1 1 13 5a7 7 0 0 1 5 2.06L15.5 9.5H22V3l-2.35 2.35A9 9 0 0 0 13 3zm-1 4v6l5 3 .9-1.5-4.4-2.6V7z"/></svg>
+      <span class="bjl-rail-lb">历史</span>
     </button>
-    <button type="button" class="bjl-rail-btn" id="btnRedpack" title="红包">
-      <span class="bjl-rail-icon bjl-rail-icon--rp"></span>
-      <span class="bjl-rail-txt">红包</span>
+    <button type="button" class="bjl-rail-btn" id="railRecords" title="下注记录">
+      <svg class="bjl-rail-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm6 1.5V8h4.5L13 3.5zM8.5 12h7v1.6h-7V12zm0 3.4h7V17h-7v-1.6zm0-6.8h4V10h-4V8.6z"/></svg>
+      <span class="bjl-rail-lb">记录</span>
+    </button>
+    <button type="button" class="bjl-rail-btn" id="railRules" title="玩法规则">
+      <svg class="bjl-rail-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9a3 3 0 0 1 3 3v15.2a1 1 0 0 1-1.45.9L12 18.8l-3.55 2.3A1 1 0 0 1 7 20.2V4H6a1 1 0 0 1 0-2zm3 2v13.3l2.45-1.58a1 1 0 0 1 1.1 0L15 17.3V5a1 1 0 0 0-1-1H9z"/></svg>
+      <span class="bjl-rail-lb">玩法</span>
+    </button>
+    <button type="button" class="bjl-rail-btn" id="railSettings" title="设置">
+      <svg class="bjl-rail-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0 1.8A2.2 2.2 0 1 1 12 14.2 2.2 2.2 0 0 1 12 9.8zM10.7 2h2.6l.5 2.2a7.6 7.6 0 0 1 1.7 1l2.1-.8 1.3 2.3-1.6 1.5q.1.9 0 1.6l1.6 1.5-1.3 2.3-2.1-.8a7.6 7.6 0 0 1-1.7 1l-.5 2.2h-2.6l-.5-2.2a7.6 7.6 0 0 1-1.7-1l-2.1.8-1.3-2.3 1.6-1.5a7.6 7.6 0 0 1 0-1.6L3.1 6.7 4.4 4.4l2.1.8a7.6 7.6 0 0 1 1.7-1L8.7 2z"/></svg>
+      <span class="bjl-rail-lb">设置</span>
     </button>
   </aside>
 
-  <!-- 底部输入 -->
-  <footer class="bjl-composer">
-    <input type="text" class="bjl-input" id="chatInput" placeholder="请输入竞猜内容" autocomplete="off" enterkeyhint="send">
-    <button type="button" class="bjl-plus-btn" id="plusBtn" aria-label="更多">+</button>
-  </footer>
-
-  <!-- 投注键盘 -->
-  <div class="bjl-keypad" id="keypad" hidden>
-    <div class="bjl-keypad__tools">
-      <button type="button" data-cmd="topup">上分</button>
-      <button type="button" data-cmd="cancel">取消</button>
-      <button type="button" data-cmd="allin">梭哈</button>
-      <button type="button" data-cmd="repeat">重复</button>
-      <button type="button" data-cmd="withdraw">下分</button>
-    </div>
-    <div class="bjl-keypad__grid" id="keyGrid"></div>
-  </div>
-
-  <!-- + 菜单：2 行 × 4 列 = 8 项 -->
-  <div class="bjl-menu-mask" id="menuMask" hidden></div>
-  <div class="bjl-plus-menu" id="plusMenu" hidden>
-    <button type="button" data-link="recharge">存款</button>
-    <button type="button" data-link="withdraw">取款</button>
-    <button type="button" data-link="apply-records">申请记录</button>
-    <button type="button" data-link="welfare">自助回水</button>
-    <button type="button" data-link="bet-records">竞猜报表</button>
-    <button type="button" data-link="flow">回水报表</button>
-    <button type="button" data-link="redpack">红包报表</button>
-    <button type="button" data-link="points-log">积分账变</button>
-  </div>
-
-  <!-- 玩法展开 -->
-  <div class="bjl-play-mask" id="playMask" hidden></div>
-  <div class="bjl-play-sheet" id="playSheet" hidden>
-    <div class="bjl-play-sheet__head">
-      <span>全部玩法</span>
-      <button type="button" id="playSheetClose">×</button>
-    </div>
-    <div class="bjl-play-sheet__body" id="playSheetBody"></div>
-  </div>
+  <div class="bjl-sheet-mask" id="bjlSheetMask" hidden></div>
+  <section class="bjl-sheet" id="bjlSheet" hidden aria-hidden="true" role="dialog" aria-modal="true">
+    <header class="bjl-sheet__head">
+      <h2 class="bjl-sheet__title" id="bjlSheetTitle">标题</h2>
+      <button type="button" class="bjl-sheet__close" id="bjlSheetClose" aria-label="关闭">&times;</button>
+    </header>
+    <div class="bjl-sheet__body" id="bjlSheetBody"></div>
+  </section>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-<script src="../../client-app/assets/js/common.js"></script>
-<script src="./js/bjl.js"></script>
+<script src="/legacy/js/games-common.js"></script>
+<script src="./js/bjl-table.js?v=11"></script>
 </body>
 </html>
