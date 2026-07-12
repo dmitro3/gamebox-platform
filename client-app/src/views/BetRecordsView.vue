@@ -118,6 +118,24 @@ useBodyClass('deco-bg')
 const route = useRoute()
 const router = useRouter()
 
+const LOTTERY_BET_GAMES: Record<string, { title: string; storagePrefix: string; eventName: string }> = {
+  ssc: { title: '快乐时时彩注单', storagePrefix: 'ssc_bet_log_', eventName: 'ssc-bet-log-updated' },
+  ffc: { title: '1分时时彩注单', storagePrefix: 'ffc_bet_log_', eventName: 'ffc-bet-log-updated' },
+  'speed-racing': { title: '极速赛车注单', storagePrefix: 'jsr_bet_log_', eventName: 'jsr-bet-log-updated' },
+  'speed-boat': { title: '幸运飞艇注单', storagePrefix: 'jsb_bet_log_', eventName: 'jsb-bet-log-updated' },
+  bjsc: { title: '北京赛车注单', storagePrefix: 'bjsc_bet_log_', eventName: 'bjsc-bet-log-updated' },
+  kuai3: { title: '1分快三注单', storagePrefix: 'k3_bet_log_', eventName: 'k3-bet-log-updated' },
+  zhajinhua: { title: '炸金花注单', storagePrefix: 'zjh_bet_log_', eventName: 'zjh-bet-log-updated' },
+  douniu: { title: '斗牛注单', storagePrefix: 'dn_bet_log_', eventName: 'dn-bet-log-updated' },
+  baccarat: { title: '百家乐注单', storagePrefix: 'bjl_bet_log_', eventName: 'bjl-bet-log-updated' },
+  longhu: { title: '龙虎斗注单', storagePrefix: 'lhd_bet_log_', eventName: 'lhd-bet-log-updated' },
+}
+
+const activeLotteryGame = computed(() => {
+  const g = route.query.game
+  return typeof g === 'string' ? LOTTERY_BET_GAMES[g] : undefined
+})
+
 interface BetRecord {
   id: string
   amount: number
@@ -163,44 +181,46 @@ const loading = ref(true)
 const records = ref<BetRecord[]>([])
 const sscLog = ref<SscBetGroup[]>([])
 const expandedIssue = ref<string | null>(null)
-let sscPollTimer: ReturnType<typeof setInterval> | null = null
+let lotteryPollTimer: ReturnType<typeof setInterval> | null = null
 
-function sscBetLogStorageKey() {
+function lotteryBetLogStorageKey() {
+  const cfg = activeLotteryGame.value
+  if (!cfg) return null
   try {
     const raw = localStorage.getItem('gamebox_user')
     if (!raw) return null
     const u = JSON.parse(raw)
-    return u?.uid ? 'ssc_bet_log_' + u.uid : null
+    return u?.uid ? cfg.storagePrefix + u.uid : null
   } catch {
     return null
   }
 }
 
-function onSscLogStorage(e: StorageEvent) {
-  const key = sscBetLogStorageKey()
+function onLotteryLogStorage(e: StorageEvent) {
+  const key = lotteryBetLogStorageKey()
   if (key && e.key && e.key !== key) return
-  loadSscBetLog()
+  loadLotteryBetLog()
 }
 
-function onSscLogVisible() {
-  if (document.visibilityState === 'visible') loadSscBetLog()
+function onLotteryLogVisible() {
+  if (document.visibilityState === 'visible') loadLotteryBetLog()
 }
 
-function startSscPollIfNeeded() {
-  if (sscPollTimer) return
-  sscPollTimer = setInterval(() => {
-    if (route.query.game !== 'ssc') return
-    if (sscLog.value.some(g => !g.settled)) loadSscBetLog()
+function startLotteryPollIfNeeded() {
+  if (lotteryPollTimer || !activeLotteryGame.value) return
+  lotteryPollTimer = setInterval(() => {
+    if (!activeLotteryGame.value) return
+    if (sscLog.value.some(g => !g.settled)) loadLotteryBetLog()
   }, 1200)
 }
 
-function stopSscPoll() {
-  if (!sscPollTimer) return
-  clearInterval(sscPollTimer)
-  sscPollTimer = null
+function stopLotteryPoll() {
+  if (!lotteryPollTimer) return
+  clearInterval(lotteryPollTimer)
+  lotteryPollTimer = null
 }
 
-const pageTitle = computed(() => (route.query.game === 'ssc' ? '快乐时时彩注单' : '竞猜记录'))
+const pageTitle = computed(() => activeLotteryGame.value?.title ?? '竞猜记录')
 
 function rangeBounds(key: RangeKey): [number, number] {
   const now = new Date()
@@ -291,13 +311,14 @@ function detailProfitClass(b: SscBetItem, settled: boolean) {
   return b.profit >= 0 ? 'pos' : 'neg'
 }
 
-function loadSscBetLog() {
+function loadLotteryBetLog() {
+  const key = lotteryBetLogStorageKey()
+  if (!key) {
+    sscLog.value = []
+    return
+  }
   try {
-    const raw = localStorage.getItem('gamebox_user')
-    if (!raw) return
-    const u = JSON.parse(raw)
-    if (!u?.uid) return
-    const logRaw = localStorage.getItem('ssc_bet_log_' + u.uid)
+    const logRaw = localStorage.getItem(key)
     sscLog.value = logRaw ? JSON.parse(logRaw) : []
   } catch {
     sscLog.value = []
@@ -310,11 +331,14 @@ function goBack() {
 }
 
 onMounted(async () => {
-  loadSscBetLog()
-  startSscPollIfNeeded()
-  window.addEventListener('storage', onSscLogStorage)
-  window.addEventListener('ssc-bet-log-updated', loadSscBetLog)
-  document.addEventListener('visibilitychange', onSscLogVisible)
+  loadLotteryBetLog()
+  startLotteryPollIfNeeded()
+  window.addEventListener('storage', onLotteryLogStorage)
+  window.addEventListener('ssc-bet-log-updated', loadLotteryBetLog)
+  window.addEventListener('ffc-bet-log-updated', loadLotteryBetLog)
+  window.addEventListener('jsr-bet-log-updated', loadLotteryBetLog)
+  window.addEventListener('zjh-bet-log-updated', loadLotteryBetLog)
+  document.addEventListener('visibilitychange', onLotteryLogVisible)
   try {
     records.value = await http.get<BetRecord[], BetRecord[]>('/bet/history')
   } catch { /* 静默 */ } finally {
@@ -323,10 +347,13 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  stopSscPoll()
-  window.removeEventListener('storage', onSscLogStorage)
-  window.removeEventListener('ssc-bet-log-updated', loadSscBetLog)
-  document.removeEventListener('visibilitychange', onSscLogVisible)
+  stopLotteryPoll()
+  window.removeEventListener('storage', onLotteryLogStorage)
+  window.removeEventListener('ssc-bet-log-updated', loadLotteryBetLog)
+  window.removeEventListener('ffc-bet-log-updated', loadLotteryBetLog)
+  window.removeEventListener('jsr-bet-log-updated', loadLotteryBetLog)
+  window.removeEventListener('zjh-bet-log-updated', loadLotteryBetLog)
+  document.removeEventListener('visibilitychange', onLotteryLogVisible)
 })
 </script>
 

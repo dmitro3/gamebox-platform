@@ -4,14 +4,14 @@
  */
 (function () {
   const VUE_ROUTE_MAP = [
-    [/game-lobby|lobby/, '/lobby'],
-    [/cs\.html|pages\/cs/, '/cs'],
-    [/bet-records/, '/bets'],
-    [/recharge/, '/recharge'],
+    [/game-lobby|\/lobby\b|^\/lobby\b/, '/lobby'],
+    [/cs\.html|pages\/cs|^\/cs\b/, '/cs'],
+    [/bet-records|^\/bets\b/, '/bets'],
+    [/recharge|^\/recharge\b/, '/recharge'],
     [/apply-records/, '/apply-records'],
-    [/flow\.html|pages\/flow/, '/flow'],
+    [/flow\.html|pages\/flow|^\/flow\b/, '/flow'],
     [/points-log/, '/points-log'],
-    [/profile\.html|withdraw/, '/settings'],
+    [/profile\.html|withdraw|^\/settings\b/, '/settings'],
     [/welfare/, '/flow'],
   ]
 

@@ -17,9 +17,16 @@ import { useUserStore } from '@/stores/user'
 import { useWalletStore } from '@/stores/wallet'
 
 const ASSET_GAMES: Record<string, string> = {
-  bjsc: '/games-assets/bjsc/index.html',
+  bjsc: '/games-assets/bjsc/index.html?v=2',
   ssc: '/games-assets/ssc/index.html',
-  'speed-racing': '/games-assets/speed-racing/index.html',
+  ffc: '/games-assets/ffc/index.html',
+  'speed-racing': '/games-assets/speed-racing/index.html?v=79',
+  'speed-boat': '/games-assets/speed-boat/index.html?v=5',
+  kuai3: '/games-assets/kuai3/index.html?v=38',
+  zhajinhua: '/games-assets/zhajinhua/index.html?v=288',
+  douniu: '/games-assets/douniu/index.html?v=40',
+  baccarat: '/games-assets/baccarat/index.html?v=19',
+  longhu: '/games-assets/longhu/index.html?v=14',
   mahjong: '/games-assets/mahjong/index.html',
   'slots-mahjong': '/games-assets/mahjong/index.html',
 }
@@ -36,7 +43,14 @@ const gameTitle = computed(() => {
   const titles: Record<string, string> = {
     bjsc: '北京赛车',
     ssc: '快乐时时彩',
+    ffc: '1分时时彩',
     'speed-racing': '极速赛车',
+    'speed-boat': '幸运飞艇',
+    kuai3: '1分快三',
+    zhajinhua: '炸金花',
+    douniu: '斗牛',
+    baccarat: '百家乐',
+    longhu: '龙虎斗',
     mahjong: '麻将胡了',
     'slots-mahjong': '麻将胡了',
   }

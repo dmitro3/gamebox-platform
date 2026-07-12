@@ -87,7 +87,6 @@
   <LabaCover v-if="showLabaCover" @start="enterLabaGame" />
   <SlotsCover v-if="showSlotsCover" @start="enterSlotsGame" />
   <BcbmCover v-if="showBcbmCover" @start="enterBcbmGame" />
-  <LonghuCover v-if="showLonghuCover" @start="enterLonghuGame" />
   <WheelCover v-if="showWheelCover" @start="enterWheelGame" />
 </template>
 
@@ -106,7 +105,6 @@ import CaptainCover from '@/components/CaptainCover.vue'
 import LabaCover from '@/components/LabaCover.vue'
 import SlotsCover from '@/components/SlotsCover.vue'
 import BcbmCover from '@/components/BcbmCover.vue'
-import LonghuCover from '@/components/LonghuCover.vue'
 import WheelCover from '@/components/WheelCover.vue'
 import '@/assets/game-lobby.css'
 
@@ -130,6 +128,8 @@ interface LobbyGame {
   svg?: string
   route?: string
   backendCode?: string
+  /** games-assets 内嵌聊天室，不依赖后端上架状态即可进入 */
+  assetGame?: boolean
 }
 
 const GAMES: LobbyGame[] = [
@@ -146,48 +146,56 @@ const GAMES: LobbyGame[] = [
   {
     key: 'ssc', name: '快乐时时彩', type: 'lottery', intervalSec: 120,
     iconImg: '/images/games/ssc/ssc.png',
-    route: '/game/lottery/ssc', backendCode: 'ssc',
+    route: '/game/lottery/ssc', backendCode: 'ssc', assetGame: true,
   },
   {
-    key: 'ffc', name: '分分彩', type: 'lottery', intervalSec: 60,
+    key: 'ffc', name: '1分时时彩', type: 'lottery', intervalSec: 60,
     iconImg: '/images/games/ffc/ffc.png',
-    route: '/game/lottery/ffc', backendCode: 'ffc',
+    route: '/game/lottery/ffc', backendCode: 'ffc', assetGame: true,
   },
   {
     key: 'speed-racing', name: '极速赛车', type: 'lottery', intervalSec: 60,
     iconImg: '/images/games/speed-racing/speed-racing.png',
-    route: '/game/lottery/speed-racing', backendCode: 'speed-racing',
+    route: '/game/lottery/speed-racing', backendCode: 'speed-racing', assetGame: true,
   },
   {
-    key: 'bjsc', name: '北京赛车', type: 'lottery', intervalSec: 300,
+    key: 'bjsc', name: '北京赛车', type: 'lottery', intervalSec: 60,
     iconImg: '/images/games/bjsc/bjsc.png',
-    route: '/game/lottery/bjsc', backendCode: 'bjsc',
+    route: '/game/lottery/bjsc', backendCode: 'bjsc', assetGame: true,
   },
   {
-    key: 'speed-boat', name: '极速飞艇', type: 'lottery', intervalSec: 60,
+    key: 'speed-boat', name: '幸运飞艇', type: 'lottery', intervalSec: 60,
     iconImg: '/images/games/speed-boat/speed-boat.png',
+    route: '/game/lottery/speed-boat', backendCode: 'speed-boat', assetGame: true,
   },
   {
     key: 'lhc', name: '六合彩', type: 'lottery', intervalSec: 60,
     iconImg: '/images/games/hk-mark6/hk-mark6.png',
   },
   {
-    key: 'kuai3', name: '极速快三', type: 'lottery', intervalSec: 60,
+    key: 'kuai3', name: '1分快三', type: 'lottery', intervalSec: 60,
     iconImg: '/images/games/kuai3/kuai3.png',
     route: '/game/lottery/kuai3', backendCode: 'kuai3',
   },
   {
     key: 'zhajinhua', name: '炸金花', tag: '热 门', type: 'lottery', intervalSec: 60,
     iconImg: '/images/games/zhajinhua/zhajinhua.png',
+    route: '/game/lottery/zhajinhua', assetGame: true,
   },
   {
     key: 'douniu', name: '斗牛', type: 'lottery', intervalSec: 63,
     iconImg: '/images/games/douniu/douniu.png',
+    route: '/game/lottery/douniu', assetGame: true,
   },
   {
     key: 'baccarat', name: '百家乐', tag: '热 门', type: 'lottery', intervalSec: 60,
     iconImg: '/images/games/baccarat/baccarat.png',
-    route: '/game/table/baccarat', backendCode: 'baccarat',
+    route: '/game/lottery/baccarat', assetGame: true,
+  },
+  {
+    key: 'longhu', name: '龙虎斗', tag: '新 品', type: 'lottery', intervalSec: 60,
+    iconImg: '/images/games/longhu/longhu-icon.png',
+    route: '/game/lottery/longhu', assetGame: true,
   },
   {
     key: 'slots', name: '老虎机', type: 'instant',
@@ -203,11 +211,6 @@ const GAMES: LobbyGame[] = [
     key: 'laba', name: '经典拉霸', tag: '新 品', type: 'instant',
     iconImg: '/images/games/laba/laba-icon.png',
     route: '/game/laba', backendCode: 'slots-classic',
-  },
-  {
-    key: 'longhu', name: '龙虎斗', tag: '新 品', type: 'instant',
-    iconImg: '/images/games/longhu/longhu-icon.png',
-    route: '/game/table/dragon-tiger', backendCode: 'dragon-tiger',
   },
   {
     key: 'lucky-wheel', name: '幸运转盘', type: 'instant',
@@ -316,8 +319,6 @@ const showSlotsCover = ref(false)
 let currentSlotsRoute = ''
 const showBcbmCover = ref(false)
 let currentBcbmRoute = ''
-const showLonghuCover = ref(false)
-let currentLonghuRoute = ''
 const showWheelCover = ref(false)
 let currentWheelRoute = ''
 
@@ -366,13 +367,6 @@ function enterBcbmGame() {
   }
 }
 
-function enterLonghuGame() {
-  showLonghuCover.value = false
-  if (currentLonghuRoute) {
-    router.push(currentLonghuRoute)
-  }
-}
-
 function enterWheelGame() {
   showWheelCover.value = false
   if (currentWheelRoute) {
@@ -380,13 +374,16 @@ function enterWheelGame() {
   }
 }
 
-const pgAnimatedGames = ['mahjong', 'slots', 'bcbm', 'laba', 'longhu', 'lucky-wheel']
+const pgAnimatedGames = ['mahjong', 'slots', 'bcbm', 'laba', 'lucky-wheel']
 
 
 function onGameClick(g: LobbyGame) {
   const isPlayable =
     g.route &&
-    (onlineCodes.value.size === 0 || !g.backendCode || onlineCodes.value.has(g.backendCode))
+    (g.assetGame ||
+      onlineCodes.value.size === 0 ||
+      !g.backendCode ||
+      onlineCodes.value.has(g.backendCode))
 
   if (!isPlayable) {
     toast(`${g.name.replace(/\s+/g, '')} · 即将上线`)
@@ -431,9 +428,6 @@ function onGameClick(g: LobbyGame) {
           } else if (g.key === 'bcbm') {
             currentBcbmRoute = g.route || ''
             showBcbmCover.value = true
-          } else if (g.key === 'longhu') {
-            currentLonghuRoute = g.route || ''
-            showLonghuCover.value = true
           } else if (g.key === 'lucky-wheel') {
             currentWheelRoute = g.route || ''
             showWheelCover.value = true
