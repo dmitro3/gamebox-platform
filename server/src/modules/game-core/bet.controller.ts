@@ -2,6 +2,7 @@ import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SlotEngine } from './slot-engine';
 import { BcbmEngine } from './bcbm-engine';
+import { FruitMachineEngine } from './fruit-machine-engine';
 import { IsString, IsInt, IsOptional, IsObject, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -18,11 +19,23 @@ export class BcbmSpinDto {
   @IsOptional() @IsString() clientSeed?: string;
 }
 
+export class FruitSpinDto {
+  @IsOptional() @IsString() gameCode?: string;
+  @IsObject() bets!: Record<string, number>;
+  @IsOptional() @IsString() clientSeed?: string;
+}
+
+export class FruitGambleDto {
+  @IsInt() @Min(1) @Max(10_000_000) @Type(() => Number) amount!: number;
+  @IsString() choice!: 'big' | 'small';
+}
+
 @Controller('bet')
 export class BetController {
   constructor(
     private slot: SlotEngine,
     private bcbm: BcbmEngine,
+    private fruit: FruitMachineEngine,
     private prisma: PrismaService,
   ) {}
 
@@ -62,6 +75,29 @@ export class BetController {
       gameCode: dto.gameCode,
       bets: dto.bets,
       clientSeed: dto.clientSeed,
+    });
+  }
+
+  /**
+   * POST /api/bet/fruit — 经典水果机：多符号押注 + 跑灯开奖（含特殊大奖）
+   */
+  @Post('fruit')
+  async fruitSpin(@CurrentUser() u: { id: string }, @Body() dto: FruitSpinDto) {
+    return this.fruit.spin({
+      playerId: u.id,
+      gameCode: dto.gameCode || 'fruit-machine',
+      bets: dto.bets,
+      clientSeed: dto.clientSeed,
+    });
+  }
+
+  /** POST /api/bet/fruit/gamble — 当局赢分大小再赌 */
+  @Post('fruit/gamble')
+  async fruitGamble(@CurrentUser() u: { id: string }, @Body() dto: FruitGambleDto) {
+    return this.fruit.gamble({
+      playerId: u.id,
+      amount: dto.amount,
+      choice: dto.choice,
     });
   }
 

@@ -1,0 +1,17 @@
+# Place AI-generated center stage videos here (optional).
+# If missing, CSS fallback in FruitCenterStage.vue is used.
+#
+# Expected filenames:
+#   idle-loop.webm
+#   gamble-roll.webm
+#   gamble-win.webm
+#   gamble-lose.webm
+#   award-train.webm
+#   award-big3.webm
+#   award-small3.webm
+#   award-four.webm
+#   award-slam.webm
+#   award-luck.webm
+#   award-bar.webm
+#
+# Symbols already cropped under symbols/

@@ -24,11 +24,44 @@ export interface SpinResult {
   balance: number
 }
 
+export interface FruitSpinResult {
+  gameCode: string
+  roundId: string
+  awardType: string
+  stopIndex: number
+  hitIndexes: number[]
+  wins: Array<{ symbol: string; mult: number; amount: number; cellIndex: number }>
+  bets: Array<{ position: string; amount: number; payout: number; won: boolean }>
+  totalBet: number
+  totalWin: number
+  totalPayout: number
+  balance: number
+}
+
+export interface FruitGambleResult {
+  roll: number
+  choice: 'big' | 'small'
+  result: 'win' | 'lose' | 'push'
+  amount: number
+  payout: number
+  balance: number
+}
+
 export const gamesApi = {
   list: () => http.get<GameItem[], GameItem[]>('/games'),
 
   spin: (gameCode: string, amount: number, clientSeed?: string) =>
     http.post<SpinResult, SpinResult>('/bet/spin', { gameCode, amount, clientSeed }),
+
+  fruitSpin: (bets: Record<string, number>, clientSeed?: string) =>
+    http.post<FruitSpinResult, FruitSpinResult>('/bet/fruit', {
+      gameCode: 'fruit-machine',
+      bets,
+      clientSeed,
+    }),
+
+  fruitGamble: (amount: number, choice: 'big' | 'small') =>
+    http.post<FruitGambleResult, FruitGambleResult>('/bet/fruit/gamble', { amount, choice }),
 
   betHistory: () =>
     http.get<any[], any[]>('/bet/history'),

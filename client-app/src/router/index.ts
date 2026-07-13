@@ -35,6 +35,7 @@ const router = createRouter({
     { path: '/apply-records', name: 'apply-records', component: () => import('@/views/ApplyRecordsView.vue') },
     { path: '/points-log', name: 'points-log', component: () => import('@/views/PointsLogView.vue') },
     { path: '/game/arcade/:gameCode',  name: 'arcade',  component: () => import('@/views/BcbmView.vue') },
+    { path: '/game/fruit', name: 'fruit-machine', component: () => import('@/views/FruitMachineView.vue') },
     { path: '/game/lucky-wheel', name: 'lucky-wheel', component: () => import('@/views/LuckyWheelView.vue') },
     { path: '/game/laba', name: 'laba', component: () => import('@/views/LabaGameView.vue') },
     { path: '/game/slot/slots-mahjong', name: 'mahjong', component: () => import('@/views/MahjongGameView.vue'), meta: { public: true } },

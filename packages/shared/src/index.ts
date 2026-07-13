@@ -10,3 +10,4 @@
 export * from './enums';
 export * from './validators';
 export * from './format';
+export * from './fruit-machine';

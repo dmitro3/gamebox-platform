@@ -70,7 +70,10 @@ function serveGamesAssets(): Plugin {
 export default defineConfig({
   plugins: [vue(), serveGamesAssets()],
   resolve: {
-    alias: { '@': resolve(__dirname, 'src') },
+    alias: {
+      '@': resolve(__dirname, 'src'),
+      '@gamebox/shared': resolve(__dirname, '../packages/shared/src/index.ts'),
+    },
   },
   server: {
     port: 5173,

@@ -37,7 +37,7 @@ const GAMES = [
     ],
   },
   {
-    code: 'ffc', name: '分分彩', category: 'LOTTERY' as const,
+    code: 'ffc', name: '1分时时彩', category: 'LOTTERY' as const,
     status: 'ONLINE' as const, sortOrder: 2, drawIntervalSec: 60, minBet: 1, maxBet: 10000,
     rtp: 0.95,
     payTable: {
@@ -94,6 +94,24 @@ const GAMES = [
   },
   // ── 街机类游戏 ──
   {
+    code: 'fruit-machine', name: '水果机', category: 'ARCADE' as const,
+    status: 'ONLINE' as const, sortOrder: 3, minBet: 1, maxBet: 50_000,
+    rtp: 0.96,
+    // 盘面/赔率在 @gamebox/shared fruit-machine；此处只配大奖权重
+    payTable: {
+      awardWeights: {
+        normal: 62,
+        luck_send: 8,
+        luck_eat: 4,
+        train: 10,
+        big3: 5,
+        small3: 5,
+        four: 4,
+        slam: 2,
+      },
+    },
+  },
+  {
     code: 'bcbm', name: '奔驰宝马', category: 'ARCADE' as const,
     status: 'ONLINE' as const, sortOrder: 8, minBet: 10, maxBet: 50_000,
     rtp: 0.95,
@@ -131,7 +149,7 @@ const GAMES = [
     },
   },
   {
-    code: 'kuai3', name: '极速快三', category: 'LOTTERY' as const,
+    code: 'kuai3', name: '1分快三', category: 'LOTTERY' as const,
     status: 'ONLINE' as const, sortOrder: 5, drawIntervalSec: 60, minBet: 1, maxBet: 5000,
     rtp: 0.95,
     payTable: {
@@ -146,6 +164,19 @@ const GAMES = [
   {
     code: 'speed-racing', name: '极速赛车', category: 'LOTTERY' as const,
     status: 'ONLINE' as const, sortOrder: 6, drawIntervalSec: 60, minBet: 1, maxBet: 5000,
+    rtp: 0.95,
+    payTable: {
+      champion: { multiplier: 9.00, desc: '猜冠军号码（1-10）' },
+      runner:   { multiplier: 9.00, desc: '猜亚军号码（1-10）' },
+      top2big:  { multiplier: 1.98, desc: '冠亚和大（12-19）'  },
+      top2small:{ multiplier: 1.98, desc: '冠亚和小（3-11）'   },
+      top2odd:  { multiplier: 1.98, desc: '冠亚和奇'           },
+      top2even: { multiplier: 1.98, desc: '冠亚和偶'           },
+    },
+  },
+  {
+    code: 'speed-boat', name: '幸运飞艇', category: 'LOTTERY' as const,
+    status: 'ONLINE' as const, sortOrder: 8, drawIntervalSec: 60, minBet: 1, maxBet: 5000,
     rtp: 0.95,
     payTable: {
       champion: { multiplier: 9.00, desc: '猜冠军号码（1-10）' },
@@ -227,7 +258,7 @@ async function main() {
     const { payTable, rtp, ...gameData } = g;
     const game = await prisma.game.upsert({
       where: { code: g.code },
-      update: { status: g.status },
+      update: { status: g.status, name: g.name, sortOrder: g.sortOrder },
       create: gameData,
     });
     const existing = await prisma.gameConfig.findFirst({ where: { gameId: game.id, active: true } });

@@ -198,9 +198,9 @@ const GAMES: LobbyGame[] = [
     route: '/game/lottery/longhu', assetGame: true,
   },
   {
-    key: 'slots', name: '老虎机', type: 'instant',
+    key: 'slots', name: '水果机', type: 'instant',
     iconImg: '/images/games/slots/slots.png',
-    route: '/game/slot/slots-classic', backendCode: 'slots-classic',
+    route: '/game/fruit', backendCode: 'fruit-machine',
   },
   {
     key: 'bcbm', name: '奔驰宝马', tag: '新 品', type: 'instant',
@@ -374,7 +374,7 @@ function enterWheelGame() {
   }
 }
 
-const pgAnimatedGames = ['mahjong', 'slots', 'bcbm', 'laba', 'lucky-wheel']
+const pgAnimatedGames = ['mahjong', 'bcbm', 'laba', 'lucky-wheel']
 
 
 function onGameClick(g: LobbyGame) {
@@ -403,6 +403,13 @@ function onGameClick(g: LobbyGame) {
     return
   }
 
+  // 水果机：不走 PG 动画，直接专属封面
+  if (g.key === 'slots') {
+    currentSlotsRoute = g.route || ''
+    showSlotsCover.value = true
+    return
+  }
+
   // 如果是需要展示 PG 动画的游戏
   if (pgAnimatedGames.includes(g.key)) {
     pgLoadingShowProgress.value = true
@@ -422,9 +429,6 @@ function onGameClick(g: LobbyGame) {
           if (g.key === 'laba') {
             currentLabaRoute = g.route || ''
             showLabaCover.value = true
-          } else if (g.key === 'slots') {
-            currentSlotsRoute = g.route || ''
-            showSlotsCover.value = true
           } else if (g.key === 'bcbm') {
             currentBcbmRoute = g.route || ''
             showBcbmCover.value = true
