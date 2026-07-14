@@ -16,6 +16,33 @@
         draggable="false"
       />
 
+      <!-- 「水果机」上方弧形槽：常灭跑马灯，报奖时追跑点亮 -->
+      <div class="title-marquee" :class="{ on: titleMarqueeOn }" aria-hidden="true">
+        <span
+          v-for="(bulb, i) in titleMarqueeBulbs"
+          :key="`tm${i}`"
+          class="title-marquee-bulb"
+          :class="{ lit: titleMarqueeLit(i) }"
+          :style="titleMarqueeBulbStyle(bulb)"
+        />
+      </div>
+
+      <!-- 电视屏：只在底图大金框内侧黑屏播放（不动 24 格） -->
+      <FruitCenterStage
+        class="fruit-tv-screen"
+        :style="boxStyle(tvScreenBox)"
+        :mode="stageMode"
+        :mult="selectedMult"
+        :total-stake="stakedScore"
+        :win-amount="winScore"
+        :gamble-result="gambleResultNum"
+        :award-type="stageAwardType"
+        :hit-symbol="centerHitSymbol"
+        :hit-size="centerHitSize"
+        :hit-kind="centerHitKind"
+        :hit-label="centerHitLabel"
+      />
+
       <img
         class="fruit-ring"
         :src="fruitRingUrl"
@@ -36,21 +63,6 @@
           flash: flashAll,
         }"
         :style="boxStyle(cell)"
-      />
-
-      <!-- 中间大金框 · 中心舞台 -->
-      <FruitCenterStage
-        :style="boxStyle(centerStageBox)"
-        :mode="stageMode"
-        :mult="selectedMult"
-        :total-stake="stakedScore"
-        :win-amount="winScore"
-        :gamble-result="gambleResultNum"
-        :award-type="stageAwardType"
-        :hit-symbol="centerHitSymbol"
-        :hit-size="centerHitSize"
-        :hit-kind="centerHitKind"
-        :hit-label="centerHitLabel"
       />
 
       <div class="led-score led-score--total" :style="boxStyle(totalScoreBox)">
@@ -142,14 +154,76 @@
       </button>
     </div>
 
-    <button type="button" class="back-fab" @click="goBack">返回</button>
+    <button type="button" class="lobby-back fruit-top-btn" @click="goBack" aria-label="返回" />
+
+    <div class="fruit-top-right">
+      <button
+        type="button"
+        class="fruit-top-btn fruit-top-btn--history"
+        aria-label="历史记录"
+        @click="showHistory = true"
+      />
+      <button
+        type="button"
+        class="fruit-top-btn fruit-top-btn--rules"
+        aria-label="游戏玩法"
+        @click="showRules = true"
+      />
+      <button
+        type="button"
+        class="fruit-top-btn"
+        :class="soundOn ? 'fruit-top-btn--sound-on' : 'fruit-top-btn--sound-off'"
+        :aria-label="soundOn ? '关闭音效' : '开启音效'"
+        @click="toggleSound"
+      />
+    </div>
+
+    <!-- 历史记录 -->
+    <div v-if="showHistory" class="fruit-modal" @click.self="showHistory = false">
+      <div class="fruit-modal-card">
+        <div class="fruit-modal-head">
+          <h3>历史记录</h3>
+          <button type="button" class="fruit-modal-close" @click="showHistory = false">关闭</button>
+        </div>
+        <div v-if="spinHistory.length" class="fruit-history-list">
+          <div v-for="(row, i) in spinHistory" :key="i" class="fruit-history-row">
+            <span class="fh-time">{{ row.time }}</span>
+            <span class="fh-award">{{ row.award }}</span>
+            <span class="fh-win" :class="{ plus: row.win > 0 }">
+              {{ row.win > 0 ? `+${row.win}` : '0' }}
+            </span>
+          </div>
+        </div>
+        <div v-else class="fruit-modal-empty">暂无记录，开始游戏后这里会显示近局结果</div>
+      </div>
+    </div>
+
+    <!-- 游戏玩法 -->
+    <div v-if="showRules" class="fruit-modal" @click.self="showRules = false">
+      <div class="fruit-modal-card fruit-modal-card--rules">
+        <div class="fruit-modal-head">
+          <h3>游戏玩法</h3>
+          <button type="button" class="fruit-modal-close" @click="showRules = false">关闭</button>
+        </div>
+        <div class="fruit-rules-body">
+          <p>经典水果机（玛丽机）：先选倍数，再对各水果押分，按「开始」跑灯开奖。</p>
+          <p><b>普通中奖</b>：灯停在已押符号上，按该格倍率 × 该符号押注 × 当前倍数得分。</p>
+          <p><b>开火车</b>：连续点亮多格，沿途已押格一并计分。</p>
+          <p><b>大三元 / 小三元 / 大四喜 / 大满贯</b>：特殊大奖，对应多格或高倍结算。</p>
+          <p><b>送灯 / 吃灯</b>：停在好运格后的特殊跑灯玩法。</p>
+          <p><b>猜大小</b>：当局有赢分时可猜大(8-13)或小(1-6)，猜中翻倍，猜错清零，7 为和局。</p>
+          <p>顶部弧槽跑马灯会在报奖与庆祝时追跑点亮，属老式柜机效果。</p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, defineComponent, h, onMounted, onUnmounted, ref } from 'vue'
+import { computed, defineComponent, h, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
+  FRUIT_AWARD_LABELS,
   FRUIT_MULT_STEPS,
   FRUIT_RING,
   type FruitAwardType,
@@ -165,7 +239,10 @@ import {
   playFruitBet,
   playFruitGo,
   playFruitSfx,
+  initFruitMuteFromStorage,
+  isFruitMuted,
   setFruitBgmDuck,
+  setFruitMuted,
   startFruitBgm,
   stopFruitBgm,
   stopFruitGo,
@@ -257,16 +334,48 @@ interface PixelBox {
   h: number
 }
 
+/** 24 格盘面（位置不动） */
 const fruitRingBox: PixelBox = { x: 139, y: 421, w: 752, h: 680 }
-/** 24 格中心透明洞（相对 ring 内缩，避免压金边） */
-const centerStageBox: PixelBox = {
-  x: fruitRingBox.x + 112,
-  y: fruitRingBox.y + 112,
-  w: 528,
-  h: 456,
-}
+/**
+ * 底图中间大金框内侧黑屏 = 电视机画面区
+ * 仅中心舞台用这里，不改 24 格坐标
+ */
+const tvScreenBox: PixelBox = { x: 256, y: 534, w: 518, h: 455 }
 const totalScoreBox: PixelBox = { x: 275, y: 323, w: 185, h: 48 }
 const winScoreBox: PixelBox = { x: 571, y: 323, w: 182, h: 47 }
+
+/**
+ * 「水果机」标题上方金弧槽跑马灯坐标（底图 1024×1536）
+ * 平时只露暗泡；报奖 / 中奖庆祝时追跑点亮
+ */
+const TITLE_MARQUEE_BULBS = [
+  { x: 201, y: 131 },
+  { x: 230, y: 110 },
+  { x: 258, y: 93 },
+  { x: 286, y: 79 },
+  { x: 314, y: 66 },
+  { x: 343, y: 55 },
+  { x: 371, y: 47 },
+  { x: 399, y: 41 },
+  { x: 428, y: 35 },
+  { x: 456, y: 31 },
+  { x: 484, y: 29 },
+  // 跳过正中红宝石位
+  { x: 541, y: 28 },
+  { x: 569, y: 30 },
+  { x: 597, y: 34 },
+  { x: 626, y: 39 },
+  { x: 654, y: 45 },
+  { x: 682, y: 54 },
+  { x: 710, y: 63 },
+  { x: 739, y: 75 },
+  { x: 767, y: 90 },
+  { x: 795, y: 107 },
+  { x: 824, y: 118 },
+] as const
+
+const TITLE_MARQUEE_BULB_SIZE = 18
+const titleMarqueeBulbs = TITLE_MARQUEE_BULBS
 
 /**
  * 24 格在 ring 图内的实测格子（752×680）
@@ -334,6 +443,11 @@ const trainHead = ref(-1)
 const flashAll = ref(false)
 const selectedBet = ref<FruitBetSymbolId>('apple')
 
+/** 标题弧槽跑马灯：常灭，报奖时追跑 */
+const titleMarqueeOn = ref(false)
+const titleMarqueePhase = ref(0)
+let titleMarqueeTimer: ReturnType<typeof setInterval> | null = null
+
 /** 中心舞台状态 */
 const stageMode = ref<CenterStageMode>('idle')
 const stageAwardType = ref<FruitAwardType | 'bar' | 'normal'>('normal')
@@ -342,6 +456,16 @@ const centerHitSymbol = ref<FruitBetSymbolId | 'luck' | null>(null)
 const centerHitSize = ref<'big' | 'small' | 'luck'>('big')
 const centerHitKind = ref<string | null>(null)
 const centerHitLabel = ref('')
+const showHistory = ref(false)
+const showRules = ref(false)
+const soundOn = ref(true)
+
+interface SpinHistoryRow {
+  time: string
+  award: string
+  win: number
+}
+const spinHistory = ref<SpinHistoryRow[]>([])
 
 const totalScoreDigits = computed(() =>
   String(Math.min(999999, Math.max(0, totalScore.value))).padStart(6, '0').split(''),
@@ -552,6 +676,61 @@ function boxStyle(box: PixelBox) {
   }
 }
 
+function titleMarqueeBulbStyle(bulb: { x: number; y: number }) {
+  const s = TITLE_MARQUEE_BULB_SIZE
+  return {
+    left: `${((bulb.x - s / 2) / BASE_W) * 100}%`,
+    top: `${((bulb.y - s / 2) / BASE_H) * 100}%`,
+    width: `${(s / BASE_W) * 100}%`,
+    height: `${(s / BASE_H) * 100}%`,
+  }
+}
+
+/** 经典三段跑马：亮 → 灭 → 灭 循环追跑 */
+function titleMarqueeLit(index: number) {
+  if (!titleMarqueeOn.value) return false
+  const n = titleMarqueeBulbs.length
+  const phase = titleMarqueePhase.value % n
+  // 一串 3 颗亮灯沿弧追跑
+  for (let k = 0; k < 3; k++) {
+    if ((phase + k) % n === index) return true
+  }
+  // 对侧再一串，更像柜机对称跑灯
+  const phase2 = (phase + Math.floor(n / 2)) % n
+  for (let k = 0; k < 3; k++) {
+    if ((phase2 + k) % n === index) return true
+  }
+  return false
+}
+
+function startTitleMarquee() {
+  titleMarqueeOn.value = true
+  if (titleMarqueeTimer) return
+  titleMarqueeTimer = setInterval(() => {
+    titleMarqueePhase.value = (titleMarqueePhase.value + 1) % titleMarqueeBulbs.length
+  }, 70)
+}
+
+function stopTitleMarquee() {
+  titleMarqueeOn.value = false
+  titleMarqueePhase.value = 0
+  if (titleMarqueeTimer) {
+    clearInterval(titleMarqueeTimer)
+    titleMarqueeTimer = null
+  }
+}
+
+function syncTitleMarquee() {
+  const celebrating =
+    flashAll.value ||
+    stageMode.value === 'award' ||
+    stageMode.value === 'gamble_roll' ||
+    stageMode.value === 'gamble_win' ||
+    stageMode.value === 'gamble_push'
+  if (celebrating) startTitleMarquee()
+  else stopTitleMarquee()
+}
+
 function sleep(ms: number) {
   return new Promise<void>((r) => setTimeout(r, ms))
 }
@@ -568,6 +747,28 @@ function onFirstInteract() {
 function goBack() {
   stopFruitBgm()
   router.back()
+}
+
+function toggleSound() {
+  unlockFruitAudio()
+  const next = !soundOn.value
+  soundOn.value = next
+  setFruitMuted(!next)
+  if (next) startFruitBgm()
+  playFruitSfx('click', 0.5)
+}
+
+function pushSpinHistory(awardType: string, win: number) {
+  const award =
+    awardType in FRUIT_AWARD_LABELS
+      ? FRUIT_AWARD_LABELS[awardType as FruitAwardType]
+      : awardType === 'bar'
+        ? '天门'
+        : '普通中奖'
+  const now = new Date()
+  const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
+  spinHistory.value.unshift({ time, award, win })
+  if (spinHistory.value.length > 30) spinHistory.value.length = 30
 }
 
 /** 注数合计 × 倍数 = 实际扣分 */
@@ -1062,6 +1263,7 @@ async function doSpin() {
     // 以服务端/本地结算为准校正当局赢分（报奖过程中已滚动累加）
     const win = result.totalWin ?? 0
     winScore.value = win
+    pushSpinHistory(String(result.awardType || 'normal'), win)
     // 押注已消耗，清盘面但不退分
     stakedScore.value = 0
     for (const k of Object.keys(betCounts.value) as BetId[]) betCounts.value[k] = 0
@@ -1104,6 +1306,8 @@ async function doSpin() {
 }
 
 onMounted(async () => {
+  initFruitMuteFromStorage()
+  soundOn.value = !isFruitMuted()
   try {
     await walletStore.fetchBalance()
   } catch {
@@ -1116,8 +1320,13 @@ onMounted(async () => {
   syncScoreFromWallet()
 })
 
+watch([stageMode, flashAll], () => {
+  syncTitleMarquee()
+})
+
 onUnmounted(() => {
   stopBetHold()
+  stopTitleMarquee()
   stopFruitBgm()
 })
 </script>
@@ -1168,6 +1377,41 @@ onUnmounted(() => {
   user-select: none;
   -webkit-user-drag: none;
   display: block;
+  pointer-events: none;
+}
+
+/* 「水果机」上方弧槽跑马灯：常灭暗泡，报奖追跑 */
+.title-marquee {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.title-marquee-bulb {
+  position: absolute;
+  border-radius: 50%;
+  box-sizing: border-box;
+  /* 未亮：老柜机暗泡/空灯座 */
+  background: radial-gradient(circle at 35% 30%, #5a4830 0%, #2a1c10 55%, #120c08 100%);
+  border: 1px solid rgba(80, 55, 25, 0.85);
+  box-shadow: inset 0 1px 2px rgba(255, 220, 150, 0.12);
+  opacity: 0.85;
+}
+
+.title-marquee-bulb.lit {
+  background: radial-gradient(circle at 35% 28%, #fff8d0 0%, #ffe566 28%, #ffb020 62%, #c86800 100%);
+  border-color: rgba(255, 210, 80, 0.95);
+  box-shadow:
+    0 0 6px 2px rgba(255, 200, 60, 0.95),
+    0 0 14px 4px rgba(255, 140, 20, 0.65),
+    inset 0 0 4px rgba(255, 255, 220, 0.85);
+  opacity: 1;
+}
+
+.fruit-tv-screen {
+  position: absolute;
+  z-index: 1;
   pointer-events: none;
 }
 
@@ -1336,18 +1580,172 @@ onUnmounted(() => {
     0 0 14px 6px rgba(219, 58, 1, 0.55);
 }
 
-.back-fab {
-  position: absolute;
-  top: max(8px, env(safe-area-inset-top));
-  left: 8px;
-  z-index: 6;
+/* 与大厅一致的金圈顶栏按钮 */
+.fruit-top-btn {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  z-index: 100;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  font-size: 0;
+  color: transparent;
   border: none;
-  border-radius: 8px;
-  padding: 7px 11px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #f5e0c0;
-  background: rgba(20, 10, 6, 0.7);
+  background-color: transparent;
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition: transform 0.15s, filter 0.18s;
+}
+
+.fruit-top-btn:active {
+  transform: scale(0.92);
+  filter: brightness(1.18);
+}
+
+.lobby-back.fruit-top-btn {
+  left: 12px;
+  background-image: url('/images/back-button.svg');
+}
+
+.fruit-top-right {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: 12px;
+  z-index: 100;
+  display: flex;
+  gap: 8px;
+}
+
+.fruit-top-right .fruit-top-btn {
+  position: static;
+}
+
+.fruit-top-btn--history {
+  background-image: url('/images/history-button.svg');
+}
+
+.fruit-top-btn--rules {
+  background-image: url('/images/rules-button.svg');
+}
+
+.fruit-top-btn--sound-on {
+  background-image: url('/images/sound-on-button.svg');
+}
+
+.fruit-top-btn--sound-off {
+  background-image: url('/images/sound-off-button.svg');
+}
+
+.fruit-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.fruit-modal-card {
+  width: min(92vw, 380px);
+  max-height: min(72vh, 520px);
+  overflow: auto;
+  border-radius: 14px;
+  border: 1px solid rgba(244, 211, 107, 0.4);
+  background: linear-gradient(180deg, #2a1c10 0%, #140e08 100%);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  color: #f5e6c8;
+}
+
+.fruit-modal-card--rules {
+  max-height: min(78vh, 580px);
+}
+
+.fruit-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid rgba(244, 211, 107, 0.22);
+}
+
+.fruit-modal-head h3 {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: 0.12em;
+  color: #ffe7a0;
+}
+
+.fruit-modal-close {
+  border: 1px solid rgba(244, 211, 107, 0.35);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: #f5e0c0;
+  background: rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+.fruit-modal-empty {
+  padding: 36px 16px;
+  text-align: center;
+  color: rgba(245, 224, 192, 0.55);
+  font-size: 13px;
+}
+
+.fruit-history-list {
+  padding: 8px 12px 14px;
+}
+
+.fruit-history-row {
+  display: grid;
+  grid-template-columns: 72px 1fr 64px;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 6px;
+  border-bottom: 1px solid rgba(244, 211, 107, 0.12);
+  font-size: 13px;
+}
+
+.fh-time {
+  color: rgba(245, 224, 192, 0.55);
+  font-variant-numeric: tabular-nums;
+}
+
+.fh-award {
+  color: #ffe7a0;
+}
+
+.fh-win {
+  text-align: right;
+  color: rgba(245, 224, 192, 0.55);
+  font-variant-numeric: tabular-nums;
+}
+
+.fh-win.plus {
+  color: #7dff9a;
+  font-weight: 700;
+}
+
+.fruit-rules-body {
+  padding: 12px 16px 18px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: rgba(245, 230, 200, 0.88);
+}
+
+.fruit-rules-body p {
+  margin: 0 0 10px;
+}
+
+.fruit-rules-body b {
+  color: #ffe7a0;
+  font-weight: 700;
 }
 </style>

@@ -196,10 +196,23 @@ export function setFruitBgmDuck(duck: boolean) {
 
 export function setFruitMuted(v: boolean) {
   muted = v
+  if (typeof localStorage !== 'undefined') {
+    if (v) localStorage.setItem('fruit_sound_off', '1')
+    else localStorage.removeItem('fruit_sound_off')
+  }
   if (v) {
     stopFruitBgm()
     stopFruitGo()
   }
+}
+
+export function isFruitMuted() {
+  return muted
+}
+
+export function initFruitMuteFromStorage() {
+  if (typeof localStorage === 'undefined') return
+  muted = localStorage.getItem('fruit_sound_off') === '1'
 }
 
 /** 特殊大奖开场曲（短音效，可叠加语音） */
