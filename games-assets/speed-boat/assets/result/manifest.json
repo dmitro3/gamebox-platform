@@ -1,0 +1,11 @@
+{
+  "version": 3,
+  "theme": "tropical-sea-ai",
+  "canvas": { "width": 720, "height": 400 },
+  "assets": [
+    "bg.png",
+    "ai/boat-01~10.png"
+  ],
+  "notes": "排名 1st/2nd/3rd 由 result-card.js Canvas 绘制，无独立图片",
+  "build": "python scripts/import_ai_assets.py"
+}
