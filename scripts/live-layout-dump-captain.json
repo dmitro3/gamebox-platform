@@ -1,0 +1,958 @@
+{
+  "source": "live-cocos-runtime",
+  "page": "https://www.pgf-nvgais.com/54/index.html?btt=1&oc=0&iwk=1&ops=cd80d3917ab04319939d5502c46f7a85&l=zh&or=https://www.pgf-nvgais.com&ot=3159a489-7df7-4704-942f-288c03095ff5&card=1&game_code=54&al=vpxb5588415",
+  "design": [
+    1080,
+    2340
+  ],
+  "nodes": {
+    "background_controller": {
+      "leftPct": -10.657,
+      "topPct": 13.422,
+      "widthPct": 117.824,
+      "heightPct": 32.946
+    },
+    "infoboard_holder": {
+      "leftPct": -43.807,
+      "topPct": 28.056,
+      "widthPct": 187.614,
+      "heightPct": 22.436
+    },
+    "infoboard_controller": {
+      "leftPct": -43.807,
+      "topPct": 28.056,
+      "widthPct": 187.614,
+      "heightPct": 22.436
+    },
+    "spin_button_controller": {
+      "leftPct": 38.426,
+      "topPct": 76.709,
+      "widthPct": 23.148,
+      "heightPct": 10.684
+    },
+    "setting_menu": {
+      "leftPct": 0,
+      "topPct": -13.419,
+      "widthPct": 110.185,
+      "heightPct": 150.427
+    },
+    "wallet_button_sensor": {
+      "leftPct": 1.944,
+      "topPct": 77.735,
+      "widthPct": 96.111,
+      "heightPct": 17.949
+    },
+    "setting_info_footer_controller": {
+      "leftPct": 0,
+      "topPct": -6.923,
+      "widthPct": 100,
+      "heightPct": 102.607
+    },
+    "GameInfo": {
+      "leftPct": 0,
+      "topPct": 83.846,
+      "widthPct": 100,
+      "heightPct": 3.59
+    },
+    "content": {
+      "leftPct": 1.852,
+      "topPct": 85.889,
+      "widthPct": 96.296,
+      "heightPct": 2.154
+    },
+    "spin_button_controller/UI_holder": {
+      "leftPct": 37.619,
+      "topPct": 76.368,
+      "widthPct": 24.762,
+      "heightPct": 11.368
+    },
+    "spin_button_controller/effect_holder": {
+      "leftPct": 37.619,
+      "topPct": 76.368,
+      "widthPct": 24.762,
+      "heightPct": 11.368
+    },
+    "spin_button_controller/spin_back_glow_holder": {
+      "leftPct": 37.884,
+      "topPct": 78.048,
+      "widthPct": 24.232,
+      "heightPct": 8.006
+    },
+    "spin_button_controller/spin_back_glow": {
+      "leftPct": 37.884,
+      "topPct": 78.048,
+      "widthPct": 24.232,
+      "heightPct": 8.006
+    },
+    "spin_button_controller/spin_button_base_holder": {
+      "leftPct": 37.685,
+      "topPct": 76.368,
+      "widthPct": 24.63,
+      "heightPct": 11.367
+    },
+    "spin_button_controller/spin_hover_holder": {
+      "leftPct": 23.241,
+      "topPct": 72.5,
+      "widthPct": 54.352,
+      "heightPct": 19.402
+    },
+    "spin_button_controller/spin_button": {
+      "leftPct": 37.685,
+      "topPct": 76.368,
+      "widthPct": 24.63,
+      "heightPct": 11.367
+    },
+    "spin_button_controller/spin_button_blur": {
+      "leftPct": 37.685,
+      "topPct": 76.368,
+      "widthPct": 24.63,
+      "heightPct": 11.367
+    },
+    "spin_button_controller/spin_light": {
+      "leftPct": 37.685,
+      "topPct": 76.368,
+      "widthPct": 24.63,
+      "heightPct": 11.368
+    },
+    "spin_button_controller/spin_button_arrow_holder": {
+      "leftPct": 43.463,
+      "topPct": 79.055,
+      "widthPct": 13.074,
+      "heightPct": 5.993
+    },
+    "spin_button_controller/arrow": {
+      "leftPct": 43.463,
+      "topPct": 79.055,
+      "widthPct": 13.074,
+      "heightPct": 5.993
+    },
+    "spin_button_controller/spin_front_particle_holder": {
+      "leftPct": 37.619,
+      "topPct": 76.52,
+      "widthPct": 24.762,
+      "heightPct": 11.062
+    },
+    "spin_button_controller/spin_front_particle": {
+      "leftPct": 37.619,
+      "topPct": 76.52,
+      "widthPct": 24.762,
+      "heightPct": 11.062
+    },
+    "spin_button_controller/auto_spin_sprite": {
+      "leftPct": 44.63,
+      "topPct": 79.701,
+      "widthPct": 10.741,
+      "heightPct": 4.701
+    },
+    "spin_button_controller/auto_spin_count": {
+      "leftPct": 46.829,
+      "topPct": 79.145,
+      "widthPct": 6.447,
+      "heightPct": 5.812
+    },
+    "spin_button_controller/container": {
+      "leftPct": 46.829,
+      "topPct": 81.138,
+      "widthPct": 2.639,
+      "heightPct": 1.827
+    },
+    "spin_button_controller/numberSprite": {
+      "leftPct": 46.829,
+      "topPct": 81.138,
+      "widthPct": 2.639,
+      "heightPct": 1.827
+    },
+    "wallet_button_sensor/menus_layer_holder": {
+      "leftPct": 0,
+      "topPct": 77.179,
+      "widthPct": 110.185,
+      "heightPct": 10.256
+    },
+    "wallet_button_sensor/DefaultMenuLayer": {
+      "leftPct": 0,
+      "topPct": 77.179,
+      "widthPct": 110.185,
+      "heightPct": 10.256
+    },
+    "wallet_button_sensor/one_holder": {
+      "leftPct": 3.889,
+      "topPct": 77.821,
+      "widthPct": 16.667,
+      "heightPct": 7.692
+    },
+    "wallet_button_sensor/ReturnLobbyButton": {
+      "leftPct": 3.889,
+      "topPct": 77.821,
+      "widthPct": 16.667,
+      "heightPct": 7.692
+    },
+    "wallet_button_sensor/circle": {
+      "leftPct": 79.278,
+      "topPct": 88.034,
+      "widthPct": 16.667,
+      "heightPct": 7.692
+    },
+    "wallet_button_sensor/title_label": {
+      "leftPct": 84.259,
+      "topPct": 84.231,
+      "widthPct": 15.741,
+      "heightPct": 1.709
+    },
+    "wallet_button_sensor/effect": {
+      "leftPct": 8.056,
+      "topPct": 79.744,
+      "widthPct": 8.333,
+      "heightPct": 3.846
+    },
+    "wallet_button_sensor/ReturnLobbySprite": {
+      "leftPct": 8.056,
+      "topPct": 79.744,
+      "widthPct": 8.333,
+      "heightPct": 3.846
+    },
+    "wallet_button_sensor/turbo_effect_sprite": {
+      "leftPct": 8.056,
+      "topPct": 79.744,
+      "widthPct": 8.333,
+      "heightPct": 3.846
+    },
+    "wallet_button_sensor/turbo_effect_shadow_sprite": {
+      "leftPct": 8.981,
+      "topPct": 80.171,
+      "widthPct": 6.481,
+      "heightPct": 2.991
+    },
+    "wallet_button_sensor/lighthing_effect_sprite": {
+      "leftPct": 9.444,
+      "topPct": 80.385,
+      "widthPct": 5.556,
+      "heightPct": 2.564
+    },
+    "wallet_button_sensor/two_holder": {
+      "leftPct": 19.167,
+      "topPct": 77.436,
+      "widthPct": 16.667,
+      "heightPct": 8.462
+    },
+    "wallet_button_sensor/minus_bet_button": {
+      "leftPct": 19.167,
+      "topPct": 77.436,
+      "widthPct": 16.667,
+      "heightPct": 8.462
+    },
+    "wallet_button_sensor/chip_sprite": {
+      "leftPct": 67.5,
+      "topPct": 79.359,
+      "widthPct": 10,
+      "heightPct": 4.615
+    },
+    "wallet_button_sensor/sprite": {
+      "leftPct": 80.648,
+      "topPct": 78.376,
+      "widthPct": 14.259,
+      "heightPct": 6.581
+    },
+    "wallet_button_sensor/three_holder": {
+      "leftPct": 64.167,
+      "topPct": 77.436,
+      "widthPct": 16.667,
+      "heightPct": 8.462
+    },
+    "wallet_button_sensor/plus_bet_button": {
+      "leftPct": 64.167,
+      "topPct": 77.436,
+      "widthPct": 16.667,
+      "heightPct": 8.462
+    },
+    "wallet_button_sensor/four_holder": {
+      "leftPct": 79.444,
+      "topPct": 77.821,
+      "widthPct": 16.667,
+      "heightPct": 7.692
+    },
+    "wallet_button_sensor/AutoSpinButton": {
+      "leftPct": 79.444,
+      "topPct": 77.821,
+      "widthPct": 16.667,
+      "heightPct": 7.692
+    },
+    "wallet_button_sensor/holder": {
+      "leftPct": 80.648,
+      "topPct": 78.376,
+      "widthPct": 14.259,
+      "heightPct": 6.581
+    },
+    "wallet_button_sensor/AutoSpinTurn": {
+      "leftPct": 83.959,
+      "topPct": 79.868,
+      "widthPct": 7.637,
+      "heightPct": 3.598
+    },
+    "wallet_button_sensor/AutoSpinSprite": {
+      "leftPct": 83.611,
+      "topPct": 79.744,
+      "widthPct": 8.333,
+      "heightPct": 3.846
+    },
+    "wallet_button_sensor/AutoSpinIcon": {
+      "leftPct": 83.611,
+      "topPct": 79.744,
+      "widthPct": 8.333,
+      "heightPct": 3.846
+    },
+    "wallet_button_sensor/AutoSpinIconShadow": {
+      "leftPct": 80.648,
+      "topPct": 78.376,
+      "widthPct": 14.259,
+      "heightPct": 6.581
+    },
+    "wallet_button_sensor/AutoSpinLabel": {
+      "leftPct": 77.13,
+      "topPct": 84.231,
+      "widthPct": 21.296,
+      "heightPct": 1.709
+    },
+    "wallet_button_sensor/four_one_holder": {
+      "leftPct": 92.11,
+      "topPct": 77.821,
+      "widthPct": 18.076,
+      "heightPct": 7.692
+    },
+    "wallet_button_sensor/MoreMenuButton": {
+      "leftPct": 92.11,
+      "topPct": 77.821,
+      "widthPct": 18.076,
+      "heightPct": 7.692
+    },
+    "wallet_button_sensor/MoreMenuSprite": {
+      "leftPct": 94.151,
+      "topPct": 79.352,
+      "widthPct": 9.662,
+      "heightPct": 4.459
+    },
+    "wallet_button_sensor/MoreMenuLayer": {
+      "leftPct": 0,
+      "topPct": 87.436,
+      "widthPct": 100,
+      "heightPct": 10.256
+    },
+    "wallet_button_sensor/five_holder": {
+      "leftPct": 4.056,
+      "topPct": 88.034,
+      "widthPct": 16.667,
+      "heightPct": 9.573
+    },
+    "wallet_button_sensor/SoundButton": {
+      "leftPct": 4.056,
+      "topPct": 88.034,
+      "widthPct": 16.667,
+      "heightPct": 9.573
+    },
+    "wallet_button_sensor/SettingSprite": {
+      "leftPct": 7.389,
+      "topPct": 89.53,
+      "widthPct": 10,
+      "heightPct": 4.615
+    },
+    "wallet_button_sensor/SettingLabel": {
+      "leftPct": 4.519,
+      "topPct": 93.803,
+      "widthPct": 15.741,
+      "heightPct": 3.761
+    },
+    "wallet_button_sensor/six_holder": {
+      "leftPct": 22.861,
+      "topPct": 88.034,
+      "widthPct": 16.667,
+      "heightPct": 9.573
+    },
+    "wallet_button_sensor/PayoutButton": {
+      "leftPct": 22.861,
+      "topPct": 88.034,
+      "widthPct": 16.667,
+      "heightPct": 9.573
+    },
+    "wallet_button_sensor/New Label": {
+      "leftPct": 60.935,
+      "topPct": 93.803,
+      "widthPct": 15.741,
+      "heightPct": 3.761
+    },
+    "wallet_button_sensor/PayoutSprite": {
+      "leftPct": 26.194,
+      "topPct": 89.53,
+      "widthPct": 10,
+      "heightPct": 4.615
+    },
+    "wallet_button_sensor/seven_holder": {
+      "leftPct": 41.667,
+      "topPct": 88.034,
+      "widthPct": 16.667,
+      "heightPct": 9.573
+    },
+    "wallet_button_sensor/RulesButton": {
+      "leftPct": 41.667,
+      "topPct": 88.034,
+      "widthPct": 16.667,
+      "heightPct": 9.573
+    },
+    "wallet_button_sensor/RulesSprite": {
+      "leftPct": 45,
+      "topPct": 89.53,
+      "widthPct": 10,
+      "heightPct": 4.615
+    },
+    "wallet_button_sensor/eight_holder": {
+      "leftPct": 60.472,
+      "topPct": 88.034,
+      "widthPct": 16.667,
+      "heightPct": 9.573
+    },
+    "wallet_button_sensor/HistoryButton": {
+      "leftPct": 60.472,
+      "topPct": 88.034,
+      "widthPct": 16.667,
+      "heightPct": 9.573
+    },
+    "wallet_button_sensor/HistorySprite": {
+      "leftPct": 63.806,
+      "topPct": 89.53,
+      "widthPct": 10,
+      "heightPct": 4.615
+    },
+    "wallet_button_sensor/nine_holder": {
+      "leftPct": 78.352,
+      "topPct": 88.034,
+      "widthPct": 18.519,
+      "heightPct": 9.573
+    },
+    "wallet_button_sensor/CloseMoreMenuButton": {
+      "leftPct": 78.352,
+      "topPct": 88.034,
+      "widthPct": 18.519,
+      "heightPct": 9.573
+    },
+    "wallet_button_sensor/Button": {
+      "leftPct": 79.944,
+      "topPct": 89.145,
+      "widthPct": 15.333,
+      "heightPct": 8.462
+    },
+    "wallet_button_sensor/CloseSprite": {
+      "leftPct": 82.611,
+      "topPct": 89.53,
+      "widthPct": 10,
+      "heightPct": 4.615
+    },
+    "wallet_button_sensor/CloseLabel": {
+      "leftPct": 78.352,
+      "topPct": 93.803,
+      "widthPct": 18.519,
+      "heightPct": 3.761
+    },
+    "wallet_button_sensor/ten_holder": {
+      "leftPct": 83.079,
+      "topPct": 89.658,
+      "widthPct": 12.199,
+      "heightPct": 7.436
+    },
+    "setting_menu/black_tint_background": {
+      "leftPct": 0,
+      "topPct": 76.538,
+      "widthPct": 100,
+      "heightPct": 23.504
+    },
+    "setting_menu/wallet_button_sensor": {
+      "leftPct": 0,
+      "topPct": 77.179,
+      "widthPct": 110.185,
+      "heightPct": 18.504
+    },
+    "setting_menu/menus_layer_holder": {
+      "leftPct": 0,
+      "topPct": 77.179,
+      "widthPct": 110.185,
+      "heightPct": 10.256
+    },
+    "setting_menu/DefaultMenuLayer": {
+      "leftPct": 0,
+      "topPct": 77.179,
+      "widthPct": 110.185,
+      "heightPct": 10.256
+    },
+    "setting_menu/one_holder": {
+      "leftPct": 3.889,
+      "topPct": 77.821,
+      "widthPct": 16.667,
+      "heightPct": 7.692
+    },
+    "setting_menu/ReturnLobbyButton": {
+      "leftPct": 3.889,
+      "topPct": 77.821,
+      "widthPct": 16.667,
+      "heightPct": 7.692
+    },
+    "setting_menu/circle": {
+      "leftPct": 79.278,
+      "topPct": 88.034,
+      "widthPct": 16.667,
+      "heightPct": 7.692
+    },
+    "setting_menu/title_label": {
+      "leftPct": 84.259,
+      "topPct": 84.231,
+      "widthPct": 15.741,
+      "heightPct": 1.709
+    },
+    "setting_menu/effect": {
+      "leftPct": 8.056,
+      "topPct": 79.744,
+      "widthPct": 8.333,
+      "heightPct": 3.846
+    },
+    "setting_menu/ReturnLobbySprite": {
+      "leftPct": 8.056,
+      "topPct": 79.744,
+      "widthPct": 8.333,
+      "heightPct": 3.846
+    },
+    "setting_menu/turbo_effect_sprite": {
+      "leftPct": 8.056,
+      "topPct": 79.744,
+      "widthPct": 8.333,
+      "heightPct": 3.846
+    },
+    "setting_menu/turbo_effect_shadow_sprite": {
+      "leftPct": 8.981,
+      "topPct": 80.171,
+      "widthPct": 6.481,
+      "heightPct": 2.991
+    },
+    "setting_menu/lighthing_effect_sprite": {
+      "leftPct": 9.444,
+      "topPct": 80.385,
+      "widthPct": 5.556,
+      "heightPct": 2.564
+    },
+    "setting_menu/two_holder": {
+      "leftPct": 19.167,
+      "topPct": 77.436,
+      "widthPct": 16.667,
+      "heightPct": 8.462
+    },
+    "setting_menu/minus_bet_button": {
+      "leftPct": 19.167,
+      "topPct": 77.436,
+      "widthPct": 16.667,
+      "heightPct": 8.462
+    },
+    "setting_menu/chip_sprite": {
+      "leftPct": 67.5,
+      "topPct": 79.359,
+      "widthPct": 10,
+      "heightPct": 4.615
+    },
+    "setting_menu/sprite": {
+      "leftPct": 80.648,
+      "topPct": 78.376,
+      "widthPct": 14.259,
+      "heightPct": 6.581
+    },
+    "setting_menu/three_holder": {
+      "leftPct": 64.167,
+      "topPct": 77.436,
+      "widthPct": 16.667,
+      "heightPct": 8.462
+    },
+    "setting_menu/plus_bet_button": {
+      "leftPct": 64.167,
+      "topPct": 77.436,
+      "widthPct": 16.667,
+      "heightPct": 8.462
+    },
+    "setting_menu/four_holder": {
+      "leftPct": 79.444,
+      "topPct": 77.821,
+      "widthPct": 16.667,
+      "heightPct": 7.692
+    },
+    "setting_menu/AutoSpinButton": {
+      "leftPct": 79.444,
+      "topPct": 77.821,
+      "widthPct": 16.667,
+      "heightPct": 7.692
+    },
+    "setting_menu/holder": {
+      "leftPct": 6.667,
+      "topPct": 53.421,
+      "widthPct": 90.556,
+      "heightPct": 17.947
+    },
+    "setting_menu/AutoSpinTurn": {
+      "leftPct": 83.959,
+      "topPct": 79.868,
+      "widthPct": 7.637,
+      "heightPct": 3.598
+    },
+    "setting_menu/AutoSpinSprite": {
+      "leftPct": 83.611,
+      "topPct": 79.744,
+      "widthPct": 8.333,
+      "heightPct": 3.846
+    },
+    "setting_menu/AutoSpinIcon": {
+      "leftPct": 83.611,
+      "topPct": 79.744,
+      "widthPct": 8.333,
+      "heightPct": 3.846
+    },
+    "setting_menu/AutoSpinIconShadow": {
+      "leftPct": 80.648,
+      "topPct": 78.376,
+      "widthPct": 14.259,
+      "heightPct": 6.581
+    },
+    "setting_menu/AutoSpinLabel": {
+      "leftPct": 77.13,
+      "topPct": 84.231,
+      "widthPct": 21.296,
+      "heightPct": 1.709
+    },
+    "setting_menu/four_one_holder": {
+      "leftPct": 92.11,
+      "topPct": 77.821,
+      "widthPct": 18.076,
+      "heightPct": 7.692
+    },
+    "setting_menu/MoreMenuButton": {
+      "leftPct": 92.11,
+      "topPct": 77.821,
+      "widthPct": 18.076,
+      "heightPct": 7.692
+    },
+    "setting_menu/MoreMenuSprite": {
+      "leftPct": 94.151,
+      "topPct": 79.352,
+      "widthPct": 9.662,
+      "heightPct": 4.459
+    },
+    "setting_menu/MoreMenuLayer": {
+      "leftPct": 0,
+      "topPct": 87.436,
+      "widthPct": 100,
+      "heightPct": 10.256
+    },
+    "setting_menu/five_holder": {
+      "leftPct": 4.056,
+      "topPct": 88.034,
+      "widthPct": 16.667,
+      "heightPct": 9.573
+    },
+    "setting_menu/SoundButton": {
+      "leftPct": 4.056,
+      "topPct": 88.034,
+      "widthPct": 16.667,
+      "heightPct": 9.573
+    },
+    "setting_menu/SettingSprite": {
+      "leftPct": 7.389,
+      "topPct": 89.53,
+      "widthPct": 10,
+      "heightPct": 4.615
+    },
+    "setting_menu/SettingLabel": {
+      "leftPct": 4.519,
+      "topPct": 93.803,
+      "widthPct": 15.741,
+      "heightPct": 3.761
+    },
+    "setting_menu/six_holder": {
+      "leftPct": 22.861,
+      "topPct": 88.034,
+      "widthPct": 16.667,
+      "heightPct": 9.573
+    },
+    "setting_menu/PayoutButton": {
+      "leftPct": 22.861,
+      "topPct": 88.034,
+      "widthPct": 16.667,
+      "heightPct": 9.573
+    },
+    "setting_menu/New Label": {
+      "leftPct": 60.935,
+      "topPct": 93.803,
+      "widthPct": 15.741,
+      "heightPct": 3.761
+    },
+    "setting_menu/PayoutSprite": {
+      "leftPct": 26.194,
+      "topPct": 89.53,
+      "widthPct": 10,
+      "heightPct": 4.615
+    },
+    "setting_menu/seven_holder": {
+      "leftPct": 41.667,
+      "topPct": 88.034,
+      "widthPct": 16.667,
+      "heightPct": 9.573
+    },
+    "setting_menu/RulesButton": {
+      "leftPct": 41.667,
+      "topPct": 88.034,
+      "widthPct": 16.667,
+      "heightPct": 9.573
+    },
+    "setting_menu/RulesSprite": {
+      "leftPct": 45,
+      "topPct": 89.53,
+      "widthPct": 10,
+      "heightPct": 4.615
+    },
+    "setting_menu/eight_holder": {
+      "leftPct": 60.472,
+      "topPct": 88.034,
+      "widthPct": 16.667,
+      "heightPct": 9.573
+    },
+    "setting_menu/HistoryButton": {
+      "leftPct": 60.472,
+      "topPct": 88.034,
+      "widthPct": 16.667,
+      "heightPct": 9.573
+    },
+    "setting_menu/HistorySprite": {
+      "leftPct": 63.806,
+      "topPct": 89.53,
+      "widthPct": 10,
+      "heightPct": 4.615
+    },
+    "setting_menu/nine_holder": {
+      "leftPct": 78.352,
+      "topPct": 88.034,
+      "widthPct": 18.519,
+      "heightPct": 9.573
+    },
+    "setting_menu/CloseMoreMenuButton": {
+      "leftPct": 78.352,
+      "topPct": 88.034,
+      "widthPct": 18.519,
+      "heightPct": 9.573
+    },
+    "setting_menu/Button": {
+      "leftPct": 79.944,
+      "topPct": 89.145,
+      "widthPct": 15.333,
+      "heightPct": 8.462
+    },
+    "setting_menu/CloseSprite": {
+      "leftPct": 82.611,
+      "topPct": 89.53,
+      "widthPct": 10,
+      "heightPct": 4.615
+    },
+    "setting_menu/CloseLabel": {
+      "leftPct": 78.352,
+      "topPct": 93.803,
+      "widthPct": 18.519,
+      "heightPct": 3.761
+    },
+    "setting_menu/ten_holder": {
+      "leftPct": 83.079,
+      "topPct": 89.658,
+      "widthPct": 12.199,
+      "heightPct": 7.436
+    },
+    "setting_menu/mute_icon": {
+      "leftPct": 97.778,
+      "topPct": 79.017,
+      "widthPct": 2.222,
+      "heightPct": 1.026
+    },
+    "setting_menu/dim_background": {
+      "leftPct": 0,
+      "topPct": -13.419,
+      "widthPct": 100,
+      "heightPct": 143.59
+    },
+    "setting_menu/footer_front_holder": {
+      "leftPct": 0,
+      "topPct": 76.282,
+      "widthPct": 100,
+      "heightPct": 0
+    },
+    "setting_menu/footer_middle_bottom_holder": {
+      "leftPct": 0,
+      "topPct": 86.923,
+      "widthPct": 100,
+      "heightPct": 0
+    },
+    "setting_menu/ReminderBoard": {
+      "leftPct": 0,
+      "topPct": -28.632,
+      "widthPct": 100,
+      "heightPct": 100
+    },
+    "setting_menu/ui_block": {
+      "leftPct": 0,
+      "topPct": -28.632,
+      "widthPct": 100,
+      "heightPct": 100
+    },
+    "setting_menu/Layout": {
+      "leftPct": 6.667,
+      "topPct": 53.421,
+      "widthPct": 90.556,
+      "heightPct": 16.921
+    },
+    "setting_menu/label_holder": {
+      "leftPct": 10,
+      "topPct": 55.13,
+      "widthPct": 80,
+      "heightPct": 7.562
+    },
+    "setting_menu/Description": {
+      "leftPct": 10,
+      "topPct": 55.13,
+      "widthPct": 80,
+      "heightPct": 4.443
+    },
+    "setting_menu/Box": {
+      "leftPct": 31.379,
+      "topPct": 60.215,
+      "widthPct": 37.243,
+      "heightPct": 2.477
+    },
+    "setting_menu/Title": {
+      "leftPct": 31.379,
+      "topPct": 60.215,
+      "widthPct": 31.681,
+      "heightPct": 2.477
+    },
+    "setting_menu/OriginalBetAmount": {
+      "leftPct": 63.06,
+      "topPct": 60.215,
+      "widthPct": 5.561,
+      "heightPct": 2.477
+    },
+    "setting_menu/button_holder": {
+      "leftPct": 12.222,
+      "topPct": 63.184,
+      "widthPct": 85,
+      "heightPct": 5.47
+    },
+    "setting_menu/cancel_button": {
+      "leftPct": 12.222,
+      "topPct": 63.184,
+      "widthPct": 36.667,
+      "heightPct": 5.47
+    },
+    "setting_menu/cancel_label": {
+      "leftPct": 14.606,
+      "topPct": 63.184,
+      "widthPct": 31.898,
+      "heightPct": 5.47
+    },
+    "setting_menu/confirm_button": {
+      "leftPct": 41.667,
+      "topPct": 63.184,
+      "widthPct": 55.556,
+      "heightPct": 5.47
+    },
+    "setting_menu/confirm_label": {
+      "leftPct": 41.667,
+      "topPct": 63.184,
+      "widthPct": 55.556,
+      "heightPct": 5.47
+    },
+    "setting_menu/Arrow": {
+      "leftPct": 44.444,
+      "topPct": 70.342,
+      "widthPct": 11.111,
+      "heightPct": 1.026
+    },
+    "setting_menu/feature_buy_toast": {
+      "leftPct": 18.611,
+      "topPct": 52.051,
+      "widthPct": 64.815,
+      "heightPct": 8.547
+    },
+    "setting_menu/feature_buy_toast_bg": {
+      "leftPct": 41.944,
+      "topPct": 54.274,
+      "widthPct": 18.148,
+      "heightPct": 6.325
+    },
+    "setting_menu/layout": {
+      "leftPct": 41.019,
+      "topPct": 63.162,
+      "widthPct": 20,
+      "heightPct": 8.547
+    },
+    "setting_menu/feature_buy_toast_sprite": {
+      "leftPct": 41.019,
+      "topPct": 59.573,
+      "widthPct": 4.444,
+      "heightPct": 2.051
+    },
+    "setting_menu/feature_buy_toast_label": {
+      "leftPct": 18.611,
+      "topPct": 57.85,
+      "widthPct": 64.815,
+      "heightPct": 1.723
+    },
+    "setting_menu/setting_toast": {
+      "leftPct": 41.019,
+      "topPct": 63.162,
+      "widthPct": 20,
+      "heightPct": 8.547
+    },
+    "setting_menu/setting_toast_bg": {
+      "leftPct": 41.944,
+      "topPct": 64.274,
+      "widthPct": 18.148,
+      "heightPct": 6.325
+    },
+    "setting_menu/setting_toast_sprite": {
+      "leftPct": 41.019,
+      "topPct": 66.41,
+      "widthPct": 4.444,
+      "heightPct": 2.051
+    },
+    "setting_menu/setting_toast_label": {
+      "leftPct": 45.463,
+      "topPct": 65.821,
+      "widthPct": 15.556,
+      "heightPct": 3.231
+    },
+    "setting_menu/sub_controller_holder": {
+      "leftPct": 0,
+      "topPct": -12.564,
+      "widthPct": 100,
+      "heightPct": 149.573
+    },
+    "setting_menu/background": {
+      "leftPct": 0,
+      "topPct": -12.564,
+      "widthPct": 100,
+      "heightPct": 149.573
+    },
+    "setting_menu/loading_holder": {
+      "leftPct": 0,
+      "topPct": 87.436,
+      "widthPct": 100,
+      "heightPct": 0
+    },
+    "setting_menu/footer_bottom_holder": {
+      "leftPct": 0,
+      "topPct": 86.923,
+      "widthPct": 100,
+      "heightPct": 0
+    },
+    "setting_menu/setting_menu_ui_block": {
+      "leftPct": 0,
+      "topPct": 69.915,
+      "widthPct": 100,
+      "heightPct": 23.504
+    }
+  }
+}
