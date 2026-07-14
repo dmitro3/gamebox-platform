@@ -1,0 +1,17 @@
+{
+  "version": 18,
+  "canvas": { "width": 720, "height": 380 },
+  "bg": "bg.png",
+  "dice": "dice-{n}.png",
+  "icon": "icon-{n}.png",
+  "layout": {
+    "bgZoom": 1.22,
+    "bgFocusY": 0.74,
+    "ground": 0.92,
+    "slots": [
+      { "x": 0.26, "y": 0.86, "scale": 0.19, "rot": -0.08 },
+      { "x": 0.50, "y": 0.88, "scale": 0.21, "rot": 0.04 },
+      { "x": 0.74, "y": 0.86, "scale": 0.19, "rot": 0.10 }
+    ]
+  }
+}

@@ -2,20 +2,27 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>极速快三</title>
-  <link rel="stylesheet" href="../../client-app/assets/css/common.css">
-  <link rel="stylesheet" href="./css/k3.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>1分快三</title>
+  <link rel="stylesheet" href="/legacy/css/common.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap">
+  <link rel="stylesheet" href="./css/k3.css?v=39">
+  <script>
+    (function () {
+      if (window.parent !== window) {
+        document.documentElement.classList.add('k3-in-iframe');
+      }
+    })();
+  </script>
 </head>
 <body class="k3-body k3-bg">
 
 <div class="k3-room">
   <div class="k3-room-glow" aria-hidden="true"></div>
-  <!-- 顶：返回+标题 | 统计 2×2 -->
   <header class="k3-head">
     <div class="k3-head__brand">
       <button type="button" class="k3-head-back" id="backBtn" aria-label="返回"></button>
-      <h1 class="k3-head-title">极 速 快 三</h1>
+      <h1 class="k3-head-title">1分快三</h1>
     </div>
     <div class="k3-stats" id="statsBar">
       <div class="k3-stat"><span class="k">积分</span><span class="v" id="statBalance">0</span></div>
@@ -25,39 +32,41 @@
     </div>
   </header>
 
-  <!-- 期号卡片：左期数 · 中秒表 · 右按钮 -->
   <section class="k3-issue-card">
-    <div class="k3-issue-card__left">
-      <span class="lbl">期数</span>
-      <span class="val" id="curIssue">00000000</span>
-    </div>
-
-    <div class="k3-issue-card__mid">
-      <div class="k3-timer" id="countdownBox">
-        <svg class="k3-timer__ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
-          <rect class="k3-timer__ring-track" x="1.5" y="1.5" width="97" height="37" rx="5" ry="5" pathLength="1" />
-          <rect class="k3-timer__ring-fill" x="1.5" y="1.5" width="97" height="37" rx="5" ry="5" pathLength="1" />
-        </svg>
-        <div class="k3-timer__row">
-          <span class="k3-timer__lbl" id="cdLabel">距封盘</span>
-          <span class="k3-timer__time" id="cdTime">--:--</span>
+    <div class="k3-issue-card__top">
+      <div class="k3-issue-card__left">
+        <em class="k3-cur-issue__tag">当前期</em>
+        <span class="k3-cur-issue" id="curIssue" title="">--------</span>
+      </div>
+      <div class="k3-issue-card__mid">
+        <div class="k3-timer" id="countdownBox">
+          <div class="k3-timer__digits" id="cdDigits" aria-label="倒计时">
+            <div class="k3-timer__group">
+              <span class="k3-timer__cell">0</span>
+              <span class="k3-timer__cell">0</span>
+            </div>
+            <span class="k3-timer__sep" aria-hidden="true">:</span>
+            <div class="k3-timer__group">
+              <span class="k3-timer__cell">0</span>
+              <span class="k3-timer__cell">0</span>
+            </div>
+          </div>
+          <span class="k3-timer__prep" id="cdPrep" hidden>封盘中 · 准备开奖</span>
         </div>
       </div>
-    </div>
-
-    <div class="k3-issue-card__acts">
-      <button type="button" class="k3-issue-btn" id="btnSlip">注单</button>
-      <button type="button" class="k3-issue-btn" id="btnLong">长龙</button>
-      <button type="button" class="k3-issue-btn" id="btnPredict">预测</button>
+      <div class="k3-issue-card__acts">
+        <button type="button" class="k3-issue-btn" id="btnSlip">注单</button>
+        <button type="button" class="k3-issue-btn" id="btnLong">长龙</button>
+        <button type="button" class="k3-issue-btn" id="btnPredict">预测</button>
+      </div>
     </div>
   </section>
 
-  <!-- 开奖下拉栏 -->
   <section class="k3-draw-bar" id="drawBar">
     <button type="button" class="k3-draw-bar__main" id="drawToggle" aria-expanded="false">
-      <span class="k3-draw-bar__issue" id="barIssue">00000000</span>
+      <span class="k3-draw-bar__issue"><em class="k3-draw-bar__issue-tag">上期</em><span id="barIssue">--------</span></span>
       <span class="k3-draw-bar__balls" id="barBalls"></span>
-      <span class="k3-draw-bar__gy" id="barGy">和值 —</span>
+      <span class="k3-draw-bar__meta" id="barSummary">---</span>
       <span class="k3-draw-bar__arrow" id="drawArrow">▼</span>
     </button>
     <div class="k3-draw-panel" id="drawPanel">
@@ -83,32 +92,26 @@
     </div>
   </section>
 
-  <!-- 聊天主栏：全房间下注信息 -->
-  <main class="k3-chat" id="chatFeed" role="log" aria-live="polite"></main>
+  <div class="k3-chat-wrap">
+    <main class="k3-chat" id="chatFeed" role="log" aria-live="polite"></main>
+    <aside class="k3-rail" aria-label="快捷操作">
+      <button type="button" class="k3-rail-btn" id="btnCs" title="客服">
+        <span class="k3-rail-icon k3-rail-icon--cs"></span>
+      </button>
+      <button type="button" class="k3-rail-btn" id="btnExpand" title="玩法">
+        <span class="k3-rail-icon k3-rail-icon--expand"></span>
+      </button>
+      <button type="button" class="k3-rail-btn" id="btnRedpack" title="红包">
+        <span class="k3-rail-icon k3-rail-icon--rp"></span>
+      </button>
+    </aside>
+  </div>
 
-  <!-- 右侧浮钮 -->
-  <aside class="k3-rail" aria-label="快捷操作">
-    <button type="button" class="k3-rail-btn" id="btnCs" title="客服">
-      <span class="k3-rail-icon k3-rail-icon--cs"></span>
-      <span class="k3-rail-txt">客服</span>
-    </button>
-    <button type="button" class="k3-rail-btn" id="btnExpand" title="展开玩法">
-      <span class="k3-rail-icon k3-rail-icon--expand"></span>
-      <span class="k3-rail-txt">玩法</span>
-    </button>
-    <button type="button" class="k3-rail-btn" id="btnRedpack" title="红包">
-      <span class="k3-rail-icon k3-rail-icon--rp"></span>
-      <span class="k3-rail-txt">红包</span>
-    </button>
-  </aside>
-
-  <!-- 底部输入 -->
   <footer class="k3-composer">
-    <input type="text" class="k3-input" id="chatInput" placeholder="请输入竞猜内容" autocomplete="off" enterkeyhint="send">
+    <input type="text" class="k3-input" id="chatInput" placeholder="输入玩法/金额，如 大/100、二同3/50、长牌12/100" autocomplete="off" enterkeyhint="send">
     <button type="button" class="k3-plus-btn" id="plusBtn" aria-label="更多">+</button>
   </footer>
 
-  <!-- 投注键盘 -->
   <div class="k3-keypad" id="keypad" hidden>
     <div class="k3-keypad__tools">
       <button type="button" data-cmd="topup">上分</button>
@@ -120,7 +123,6 @@
     <div class="k3-keypad__grid" id="keyGrid"></div>
   </div>
 
-  <!-- + 菜单：2 行 × 4 列 = 8 项 -->
   <div class="k3-menu-mask" id="menuMask" hidden></div>
   <div class="k3-plus-menu" id="plusMenu" hidden>
     <button type="button" data-link="recharge">存款</button>
@@ -133,19 +135,80 @@
     <button type="button" data-link="points-log">积分账变</button>
   </div>
 
-  <!-- 玩法展开 -->
   <div class="k3-play-mask" id="playMask" hidden></div>
   <div class="k3-play-sheet" id="playSheet" hidden>
     <div class="k3-play-sheet__head">
       <span>全部玩法</span>
       <button type="button" id="playSheetClose">×</button>
     </div>
-    <div class="k3-play-sheet__body" id="playSheetBody"></div>
+    <div class="k3-play-sheet__main">
+      <nav class="k3-play-nav" id="playNav" aria-label="玩法分类"></nav>
+      <div class="k3-play-panel">
+        <p class="k3-play-panel__hint" id="playHint"></p>
+        <div class="k3-play-panel__sub" id="playSub" hidden></div>
+        <div class="k3-play-panel__grid" id="playGrid"></div>
+      </div>
+    </div>
+    <footer class="k3-play-sheet__foot">
+      <div class="k3-play-foot__sel-row">
+        <div class="k3-play-foot__sel">已选 <strong id="playSelected">—</strong> <span class="k3-play-foot__hint">（可多选）</span></div>
+        <button type="button" class="k3-play-foot__clear" id="playClearSel">清空</button>
+      </div>
+      <div class="k3-play-foot__meta">
+        <span class="k3-play-foot__bal">余额 <strong id="playFootBalance">0</strong></span>
+      </div>
+      <div class="k3-play-foot__chips" id="playAmountChips"></div>
+      <div class="k3-play-foot__row">
+        <button type="button" class="k3-play-foot__step" id="playAmountMinus" aria-label="减少">−</button>
+        <input type="number" class="k3-play-foot__input" id="playAmount" value="100" min="1" inputmode="numeric">
+        <button type="button" class="k3-play-foot__step" id="playAmountPlus" aria-label="增加">+</button>
+        <button type="button" class="k3-play-foot__allin" id="playAmountAllin">梭哈</button>
+        <button type="button" class="k3-play-foot__submit" id="playSubmit">投注</button>
+      </div>
+    </footer>
+  </div>
+
+  <div class="k3-long-mask" id="longMask" hidden></div>
+  <div class="k3-long-sheet" id="longSheet" hidden>
+    <div class="k3-long-sheet__handle" aria-hidden="true"></div>
+    <div class="k3-long-sheet__head">
+      <div class="k3-long-sheet__title-wrap">
+        <span class="k3-long-sheet__title">长龙统计</span>
+        <span class="k3-long-sheet__sub" id="longSummary">连续 2 期及以上</span>
+      </div>
+      <button type="button" id="longSheetClose" aria-label="关闭">×</button>
+    </div>
+    <div class="k3-long-sheet__tabs" id="longTabs">
+      <button type="button" class="is-active" data-tab="side">和值两面</button>
+      <button type="button" data-tab="shape">形态</button>
+      <button type="button" data-tab="sum">和值</button>
+    </div>
+    <div class="k3-long-sheet__body" id="longBody"></div>
+  </div>
+
+  <div class="k3-long-mask" id="predictMask" hidden></div>
+  <div class="k3-long-sheet k3-predict-sheet" id="predictSheet" hidden>
+    <div class="k3-long-sheet__handle" aria-hidden="true"></div>
+    <div class="k3-long-sheet__head">
+      <div class="k3-long-sheet__title-wrap">
+        <span class="k3-long-sheet__title">智能预测</span>
+        <span class="k3-predict-sheet__issue" id="predictSummary">下一期 · --------</span>
+      </div>
+      <button type="button" id="predictSheetClose" aria-label="关闭">×</button>
+    </div>
+    <div class="k3-long-sheet__tabs" id="predictTabs">
+      <button type="button" class="is-active" data-tab="side">双面</button>
+      <button type="button" data-tab="sum">和值</button>
+      <button type="button" data-tab="dice">骰点</button>
+    </div>
+    <div class="k3-long-sheet__body" id="predictBody"></div>
+    <div class="k3-predict-foot">基于近期开奖走势统计，仅供参考</div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-<script src="../../client-app/assets/js/common.js"></script>
-<script src="./js/k3.js"></script>
+<script src="/legacy/js/games-common.js"></script>
+<script src="./js/result-card.js?v=37"></script>
+<script src="./js/k3.js?v=38"></script>
 </body>
 </html>
