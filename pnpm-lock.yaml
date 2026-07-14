@@ -66,6 +66,9 @@ importers:
       '@capacitor/core':
         specifier: ^8.4.0
         version: 8.4.0
+      '@gamebox/shared':
+        specifier: workspace:*
+        version: link:../packages/shared
       axios:
         specifier: ^1.17.0
         version: 1.17.0

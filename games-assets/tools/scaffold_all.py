@@ -9,7 +9,7 @@ SRC = ROOT / 'bjsc'
 ELF_SRC = Path(r'C:\Users\pc\Desktop\精灵球')
 
 PK10_GAMES = [
-    {'dir': 'speed-boat', 'pfx': 'jsb', 'name': '极速飞艇', 'title_spaced': '极 速 飞 艇',
+    {'dir': 'speed-boat', 'pfx': 'jsb', 'name': '幸运飞艇', 'title_spaced': '幸 运 飞 艇',
      'bet': 40, 'freeze': 15, 'draw': 5, 'issue': '3405', 'accent': '#4ec8e8'},
 ]
 
@@ -24,7 +24,7 @@ CHAT_GAMES = [
      'bet': 40, 'freeze': 15, 'draw': 5, 'issue': '3409', 'type': 'baccarat'},
     {'dir': 'ffc', 'pfx': 'ffc', 'name': '分分彩', 'title_spaced': '分 分 彩',
      'bet': 40, 'freeze': 15, 'draw': 5, 'issue': '3410', 'type': 'digit5'},
-    {'dir': 'kuai3', 'pfx': 'k3', 'name': '极速快三', 'title_spaced': '极 速 快 三',
+    {'dir': 'kuai3', 'pfx': 'k3', 'name': '1分快三', 'title_spaced': '1 分 快 三',
      'bet': 40, 'freeze': 15, 'draw': 5, 'issue': '3411', 'type': 'dice3'},
     {'dir': 'ssc', 'pfx': 'ssc', 'name': '时时彩', 'title_spaced': '时 时 彩',
      'bet': 480, 'freeze': 90, 'draw': 30, 'issue': '3412', 'type': 'digit5'},

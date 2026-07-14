@@ -465,7 +465,7 @@ GAMES = [
     ('lhc', 'lhc', '六合彩', LHC_LOGIC),
     ('ffc', 'ffc', '分分彩', DIGIT_LOGIC),
     ('ssc', 'ssc', '时时彩', DIGIT_LOGIC),
-    ('kuai3', 'k3', '极速快三', DICE_LOGIC),
+    ('kuai3', 'k3', '1分快三', DICE_LOGIC),
     ('zhajinhua', 'zjh', '炸金花', CARD3_LOGIC),
     ('douniu', 'dn', '斗牛', CARD5_LOGIC),
     ('baccarat', 'bjl', '百家乐', BAC_LOGIC),
