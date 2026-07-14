@@ -41,14 +41,24 @@ export function drawCards(serverSeed: string, nonce: number): DragonTigerOutcome
   return { dragon, tiger, winner };
 }
 
-/** 结算倍率（含本金）：赢 ×2（即净赢1x），和 赔50%，买错 ×0 */
+/** 赢利抽水（对齐 WG：抽取下注盈利的 5%） */
+const COMMISSION = 0.05;
+
+/**
+ * 结算返还（含本金），对齐 WG 官方规则：
+ * - 龙/虎：赔付倍数 1:2（含本金），赢利抽 5%
+ * - 和：赔付倍数 1:9（含本金），赢利抽 5%
+ * - 开和时：龙/虎注全退
+ * - 买错：×0
+ */
 export function calcPayout(side: string, outcome: DragonTigerOutcome, amount: number): number {
   if (side === outcome.winner) {
-    if (side === 'TIE') return amount * 9; // 和 赔 8 倍（×9 含本金）
-    return amount * 2;                      // 龙/虎 赔 1 倍（×2 含本金）
+    const mult = side === 'TIE' ? 9 : 2;
+    const grossProfit = amount * (mult - 1);
+    return amount + Math.floor(grossProfit * (1 - COMMISSION));
   }
   if (outcome.winner === 'TIE' && side !== 'TIE') {
-    return Math.floor(amount * 0.5);        // 和局非TIE下注，退 50%
+    return amount; // 开和全退
   }
   return 0;
 }
