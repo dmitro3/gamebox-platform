@@ -64,3 +64,4 @@ export const bjscGame: LotteryGameDef = {
 };
 
 export const speedRacingGame: LotteryGameDef = { ...bjscGame, code: 'speed-racing' };
+export const speedBoatGame: LotteryGameDef = { ...bjscGame, code: 'speed-boat' };

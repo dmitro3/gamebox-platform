@@ -5,7 +5,7 @@ import { Injectable } from '@nestjs/common';
 import type { LotteryGameDef } from './lottery.types';
 import { ffcGame, sscGame } from './games/ffc.game';
 import { kuai3Game } from './games/kuai3.game';
-import { bjscGame, speedRacingGame } from './games/bjsc.game';
+import { bjscGame, speedRacingGame, speedBoatGame } from './games/bjsc.game';
 
 @Injectable()
 export class LotteryGameRegistry {
@@ -15,6 +15,7 @@ export class LotteryGameRegistry {
     ['kuai3',        kuai3Game],
     ['bjsc',         bjscGame],
     ['speed-racing', speedRacingGame],
+    ['speed-boat',   speedBoatGame],
   ]);
 
   get(code: string): LotteryGameDef | undefined {

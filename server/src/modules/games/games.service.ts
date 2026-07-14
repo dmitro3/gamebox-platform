@@ -73,7 +73,7 @@ export class GamesService {
         rtp: 0.95,
       },
       {
-        code: 'ffc', name: '分分彩', category: 'LOTTERY' as const,
+        code: 'ffc', name: '1分时时彩', category: 'LOTTERY' as const,
         status: 'ONLINE' as const, sortOrder: 2, drawIntervalSec: 60,
         payTable: {
           big:    { multiplier: 1.98, desc: '总和 11-18' },

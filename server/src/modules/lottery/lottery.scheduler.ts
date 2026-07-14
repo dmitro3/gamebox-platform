@@ -16,6 +16,7 @@ const GAME_INTERVALS: Record<string, number> = {
   kuai3:         60,
   bjsc:          300,
   'speed-racing': 60,
+  'speed-boat':   60,
 };
 
 @Injectable()
