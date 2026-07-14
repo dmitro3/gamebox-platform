@@ -1,0 +1,8 @@
+{
+  "version": 8,
+  "theme": "cinematic-spotlight",
+  "canvas": { "width": 720, "height": 440 },
+  "stage": "Canvas 代码绘制聚光/赛道",
+  "assets": ["rank-emblem-gold/silver/bronze.png", "race-car-01~10.png"],
+  "build": "python scripts/build_result_assets.py && python scripts/build_rank_emblems.py"
+}

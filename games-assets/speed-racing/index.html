@@ -1,11 +1,20 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>极速赛车</title>
-  <link rel="stylesheet" href="../../client-app/assets/css/common.css">
-  <link rel="stylesheet" href="./css/jsr.css">
+  <link rel="stylesheet" href="/legacy/css/common.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap">
+  <link rel="stylesheet" href="./css/jsr.css?v=79">
+  <script>
+    /* 大厅 iframe 嵌入时标记，布局用 100% 跟随容器而非外层 100dvh */
+    (function () {
+      if (window.parent !== window) {
+        document.documentElement.classList.add('jsr-in-iframe');
+      }
+    })();
+  </script>
 </head>
 <body class="jsr-body jsr-bg">
 
@@ -15,7 +24,7 @@
   <header class="jsr-head">
     <div class="jsr-head__brand">
       <button type="button" class="jsr-head-back" id="backBtn" aria-label="返回"></button>
-      <h1 class="jsr-head-title">极 速 赛 车</h1>
+      <h1 class="jsr-head-title">极速赛车</h1>
     </div>
     <div class="jsr-stats" id="statsBar">
       <div class="jsr-stat"><span class="k">积分</span><span class="v" id="statBalance">0</span></div>
@@ -25,39 +34,43 @@
     </div>
   </header>
 
-  <!-- 期号卡片：左期数 · 中秒表 · 右按钮 -->
+  <!-- 期号行：一行 · 期号 + 倒计时 + 按钮 -->
   <section class="jsr-issue-card">
-    <div class="jsr-issue-card__left">
-      <span class="lbl">期数</span>
-      <span class="val" id="curIssue">00000000</span>
-    </div>
-
-    <div class="jsr-issue-card__mid">
-      <div class="jsr-timer" id="countdownBox">
-        <svg class="jsr-timer__ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
-          <rect class="jsr-timer__ring-track" x="1.5" y="1.5" width="97" height="37" rx="5" ry="5" pathLength="1" />
-          <rect class="jsr-timer__ring-fill" x="1.5" y="1.5" width="97" height="37" rx="5" ry="5" pathLength="1" />
-        </svg>
-        <div class="jsr-timer__row">
-          <span class="jsr-timer__lbl" id="cdLabel">距封盘</span>
-          <span class="jsr-timer__time" id="cdTime">--:--</span>
+    <div class="jsr-issue-card__top">
+      <div class="jsr-issue-card__left">
+        <em class="jsr-cur-issue__tag">当前期</em>
+        <span class="jsr-cur-issue" id="curIssue" title="">--------</span>
+      </div>
+      <div class="jsr-issue-card__mid">
+        <div class="jsr-timer" id="countdownBox">
+          <div class="jsr-timer__digits" id="cdDigits" aria-label="倒计时">
+            <div class="jsr-timer__group">
+              <span class="jsr-timer__cell">0</span>
+              <span class="jsr-timer__cell">0</span>
+            </div>
+            <span class="jsr-timer__sep" aria-hidden="true">:</span>
+            <div class="jsr-timer__group">
+              <span class="jsr-timer__cell">0</span>
+              <span class="jsr-timer__cell">0</span>
+            </div>
+          </div>
+          <span class="jsr-timer__prep" id="cdPrep" hidden>封盘中 · 准备开奖</span>
         </div>
       </div>
-    </div>
-
-    <div class="jsr-issue-card__acts">
-      <button type="button" class="jsr-issue-btn" id="btnSlip">注单</button>
-      <button type="button" class="jsr-issue-btn" id="btnLong">长龙</button>
-      <button type="button" class="jsr-issue-btn" id="btnPredict">预测</button>
+      <div class="jsr-issue-card__acts">
+        <button type="button" class="jsr-issue-btn" id="btnSlip">注单</button>
+        <button type="button" class="jsr-issue-btn" id="btnLong">长龙</button>
+        <button type="button" class="jsr-issue-btn" id="btnPredict">预测</button>
+      </div>
     </div>
   </section>
 
   <!-- 开奖下拉栏 -->
   <section class="jsr-draw-bar" id="drawBar">
     <button type="button" class="jsr-draw-bar__main" id="drawToggle" aria-expanded="false">
-      <span class="jsr-draw-bar__issue" id="barIssue">00000000</span>
+      <span class="jsr-draw-bar__issue"><em class="jsr-draw-bar__issue-tag">上期</em><span id="barIssue">--------</span></span>
       <span class="jsr-draw-bar__balls" id="barBalls"></span>
-      <span class="jsr-draw-bar__gy" id="barGy">冠亚和 —</span>
+      <span class="jsr-draw-bar__meta" id="barSummary">---</span>
       <span class="jsr-draw-bar__arrow" id="drawArrow">▼</span>
     </button>
     <div class="jsr-draw-panel" id="drawPanel">
@@ -84,28 +97,25 @@
     </div>
   </section>
 
-  <!-- 聊天主栏：全房间下注信息 -->
-  <main class="jsr-chat" id="chatFeed" role="log" aria-live="polite"></main>
-
-  <!-- 右侧浮钮 -->
-  <aside class="jsr-rail" aria-label="快捷操作">
-    <button type="button" class="jsr-rail-btn" id="btnCs" title="客服">
-      <span class="jsr-rail-icon jsr-rail-icon--cs"></span>
-      <span class="jsr-rail-txt">客服</span>
-    </button>
-    <button type="button" class="jsr-rail-btn" id="btnExpand" title="展开玩法">
-      <span class="jsr-rail-icon jsr-rail-icon--expand"></span>
-      <span class="jsr-rail-txt">玩法</span>
-    </button>
-    <button type="button" class="jsr-rail-btn" id="btnRedpack" title="红包">
-      <span class="jsr-rail-icon jsr-rail-icon--rp"></span>
-      <span class="jsr-rail-txt">红包</span>
-    </button>
-  </aside>
+  <!-- 聊天区 + 右侧快捷按钮 -->
+  <div class="jsr-chat-wrap">
+    <main class="jsr-chat" id="chatFeed" role="log" aria-live="polite"></main>
+    <aside class="jsr-rail" aria-label="快捷操作">
+      <button type="button" class="jsr-rail-btn" id="btnCs" title="客服">
+        <span class="jsr-rail-icon jsr-rail-icon--cs"></span>
+      </button>
+      <button type="button" class="jsr-rail-btn" id="btnExpand" title="玩法">
+        <span class="jsr-rail-icon jsr-rail-icon--expand"></span>
+      </button>
+      <button type="button" class="jsr-rail-btn" id="btnRedpack" title="红包">
+        <span class="jsr-rail-icon jsr-rail-icon--rp"></span>
+      </button>
+    </aside>
+  </div>
 
   <!-- 底部输入 -->
   <footer class="jsr-composer">
-    <input type="text" class="jsr-input" id="chatInput" placeholder="请输入竞猜内容" autocomplete="off" enterkeyhint="send">
+    <input type="text" class="jsr-input" id="chatInput" placeholder="输入玩法/金额" autocomplete="off" enterkeyhint="send">
     <button type="button" class="jsr-plus-btn" id="plusBtn" aria-label="更多">+</button>
   </footer>
 
@@ -134,19 +144,83 @@
     <button type="button" data-link="points-log">积分账变</button>
   </div>
 
-  <!-- 玩法展开 -->
+  <!-- 玩法展开：左玩法名 · 右选项 · 底金额投注 -->
   <div class="jsr-play-mask" id="playMask" hidden></div>
   <div class="jsr-play-sheet" id="playSheet" hidden>
     <div class="jsr-play-sheet__head">
       <span>全部玩法</span>
       <button type="button" id="playSheetClose">×</button>
     </div>
-    <div class="jsr-play-sheet__body" id="playSheetBody"></div>
+    <div class="jsr-play-sheet__main">
+      <nav class="jsr-play-nav" id="playNav" aria-label="玩法分类"></nav>
+      <div class="jsr-play-panel">
+        <p class="jsr-play-panel__hint" id="playHint"></p>
+        <div class="jsr-play-panel__sub" id="playSub" hidden></div>
+        <div class="jsr-play-panel__grid" id="playGrid"></div>
+      </div>
+    </div>
+    <footer class="jsr-play-sheet__foot">
+      <div class="jsr-play-foot__sel-row">
+        <div class="jsr-play-foot__sel">已选 <strong id="playSelected">—</strong> <span class="jsr-play-foot__hint">（可多选）</span></div>
+        <button type="button" class="jsr-play-foot__clear" id="playClearSel">清空</button>
+      </div>
+      <div class="jsr-play-foot__meta">
+        <span class="jsr-play-foot__bal">余额 <strong id="playFootBalance">0</strong></span>
+      </div>
+      <div class="jsr-play-foot__chips" id="playAmountChips"></div>
+      <div class="jsr-play-foot__row">
+        <button type="button" class="jsr-play-foot__step" id="playAmountMinus" aria-label="减少">−</button>
+        <input type="number" class="jsr-play-foot__input" id="playAmount" value="100" min="1" inputmode="numeric">
+        <button type="button" class="jsr-play-foot__step" id="playAmountPlus" aria-label="增加">+</button>
+        <button type="button" class="jsr-play-foot__allin" id="playAmountAllin">梭哈</button>
+        <button type="button" class="jsr-play-foot__submit" id="playSubmit">投注</button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 长龙统计 -->
+  <div class="jsr-long-mask" id="longMask" hidden></div>
+  <div class="jsr-long-sheet" id="longSheet" hidden>
+    <div class="jsr-long-sheet__handle" aria-hidden="true"></div>
+    <div class="jsr-long-sheet__head">
+      <div class="jsr-long-sheet__title-wrap">
+        <span class="jsr-long-sheet__title">长龙统计</span>
+        <span class="jsr-long-sheet__sub" id="longSummary">连续 2 期及以上</span>
+      </div>
+      <button type="button" id="longSheetClose" aria-label="关闭">×</button>
+    </div>
+    <div class="jsr-long-sheet__tabs" id="longTabs">
+      <button type="button" class="is-active" data-tab="side">两面</button>
+      <button type="button" data-tab="lhh">龙虎</button>
+      <button type="button" data-tab="gy">冠亚</button>
+    </div>
+    <div class="jsr-long-sheet__body" id="longBody"></div>
+  </div>
+
+  <!-- 智能预测 -->
+  <div class="jsr-long-mask" id="predictMask" hidden></div>
+  <div class="jsr-long-sheet jsr-predict-sheet" id="predictSheet" hidden>
+    <div class="jsr-long-sheet__handle" aria-hidden="true"></div>
+    <div class="jsr-long-sheet__head">
+      <div class="jsr-long-sheet__title-wrap">
+        <span class="jsr-long-sheet__title">智能预测</span>
+        <span class="jsr-predict-sheet__issue" id="predictSummary">下一期 · --------</span>
+      </div>
+      <button type="button" id="predictSheetClose" aria-label="关闭">×</button>
+    </div>
+    <div class="jsr-long-sheet__tabs" id="predictTabs">
+      <button type="button" class="is-active" data-tab="side">双面</button>
+      <button type="button" data-tab="gy">冠亚</button>
+      <button type="button" data-tab="num">车号</button>
+    </div>
+    <div class="jsr-long-sheet__body" id="predictBody"></div>
+    <div class="jsr-predict-foot">基于近期开奖走势统计，仅供参考</div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-<script src="../../client-app/assets/js/common.js"></script>
-<script src="./js/jsr.js"></script>
+<script src="/legacy/js/games-common.js"></script>
+<script src="./js/result-card.js?v=79"></script>
+<script src="./js/jsr.js?v=79"></script>
 </body>
 </html>
