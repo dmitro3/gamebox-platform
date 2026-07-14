@@ -127,8 +127,8 @@ const { success: toastSuccess, error: toastError } = useToast()
 const gameCode = computed(() => route.params.gameCode as string)
 
 const GAME_LABELS: Record<string, string> = {
-  ffc: '分分彩', ssc: '快乐时时彩', kuai3: '极速快三',
-  bjsc: '北京赛车', 'speed-racing': '极速赛车',
+  ffc: '1分时时彩', ssc: '快乐时时彩', kuai3: '1分快三',
+  bjsc: '北京赛车', 'speed-racing': '极速赛车', 'speed-boat': '幸运飞艇',
 }
 
 const BET_TYPES: Record<string, Array<{ key: string; label: string; odds: number }>> = {
@@ -165,6 +165,8 @@ const BET_TYPES: Record<string, Array<{ key: string; label: string; odds: number
 }
 GAME_LABELS['speed-racing'] = '极速赛车'
 BET_TYPES['speed-racing'] = BET_TYPES['bjsc']
+GAME_LABELS['speed-boat'] = '幸运飞艇'
+BET_TYPES['speed-boat'] = BET_TYPES['bjsc']
 
 const gameLabel = computed(() => GAME_LABELS[gameCode.value] ?? gameCode.value)
 const betTypes  = computed(() => BET_TYPES[gameCode.value] ?? BET_TYPES['ffc'])
@@ -213,7 +215,7 @@ function parseNumbers(s: string | null): number[] {
 function isBigDraw(s: string | null): boolean {
   const nums = parseNumbers(s)
   if (gameCode.value === 'kuai3') return nums.reduce((a, b) => a + b, 0) >= 11
-  if (gameCode.value === 'bjsc' || gameCode.value === 'speed-racing') return (nums[0] ?? 0) + (nums[1] ?? 0) >= 12
+  if (gameCode.value === 'bjsc' || gameCode.value === 'speed-racing' || gameCode.value === 'speed-boat') return (nums[0] ?? 0) + (nums[1] ?? 0) >= 12
   return nums.reduce((a, b) => a + b, 0) >= 23
 }
 

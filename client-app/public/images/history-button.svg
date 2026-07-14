@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="hbRimGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff4c2"/>
+      <stop offset="25%" stop-color="#ffe79a"/>
+      <stop offset="55%" stop-color="#d4a040"/>
+      <stop offset="100%" stop-color="#6b4f1e"/>
+    </linearGradient>
+    <linearGradient id="hbRimGoldInner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d4a040" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#5e431b" stop-opacity="0.7"/>
+    </linearGradient>
+    <linearGradient id="hbIcon" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff4c2"/>
+      <stop offset="40%" stop-color="#ffe79a"/>
+      <stop offset="100%" stop-color="#b8862a"/>
+    </linearGradient>
+    <radialGradient id="hbInner" cx="50%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#2e1e0e" stop-opacity="0.55"/>
+      <stop offset="60%" stop-color="#0f0a05" stop-opacity="0.78"/>
+      <stop offset="100%" stop-color="#080502" stop-opacity="0.88"/>
+    </radialGradient>
+    <filter id="hbDrop" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1.2" stdDeviation="1.2" flood-color="#000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+  <g filter="url(#hbDrop)">
+    <circle cx="24" cy="24" r="22" fill="url(#hbInner)"/>
+    <circle cx="24" cy="24" r="22" fill="none" stroke="url(#hbRimGold)" stroke-width="2.2"/>
+    <circle cx="24" cy="24" r="18.6" fill="none" stroke="url(#hbRimGoldInner)" stroke-width="0.7"/>
+    <path d="M15 16.5h18v15.5H15z" fill="none" stroke="url(#hbIcon)" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M18.5 20.5h11M18.5 24.5h11M18.5 28.5h7" fill="none" stroke="url(#hbIcon)" stroke-width="2" stroke-linecap="round"/>
+  </g>
+</svg>
