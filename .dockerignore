@@ -1,0 +1,16 @@
+node_modules
+**/node_modules
+**/dist
+.git
+.pnpm-store
+bjNew
+_prototype
+结构图
+scripts
+docs
+client-app/android
+client-app/ios
+**/*.log
+.env
+.env.*
+!server/.env.example

@@ -1,0 +1,60 @@
+# 服务器测试部署：独立于 docker-compose.yml（那个是本机开发数据库）
+# 本机构建：docker compose -f docker-compose.prod.yml --env-file .env.prod build
+# 服务器运行：docker load 导入镜像后 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+#            （image 与 build 同时声明时，本地已有同名镜像就直接用，不会触发重新构建）
+# .env.prod 只需提供 DB_PASSWORD，其余后端环境变量在 server/.env.production 中配置
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: gamebox-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gamebox
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: gamebox
+    volumes:
+      - gamebox_pgdata:/var/lib/postgresql/data
+    networks: [gamebox]
+
+  redis:
+    image: redis:7-alpine
+    container_name: gamebox-redis
+    restart: unless-stopped
+    volumes:
+      - gamebox_redisdata:/data
+    networks: [gamebox]
+
+  server:
+    image: gamebox-server:latest
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: gamebox-server
+    restart: unless-stopped
+    env_file:
+      - server/.env.production
+    depends_on: [postgres, redis]
+    networks: [gamebox]
+    volumes:
+      - gamebox_uploads:/repo/server/public/uploads
+
+  web:
+    image: gamebox-web:latest
+    build:
+      context: .
+      dockerfile: client-app/Dockerfile
+    container_name: gamebox-web
+    restart: unless-stopped
+    depends_on: [server]
+    ports:
+      - "8080:80"
+    networks: [gamebox]
+
+networks:
+  gamebox:
+    driver: bridge
+
+volumes:
+  gamebox_pgdata:
+  gamebox_redisdata:
+  gamebox_uploads:
