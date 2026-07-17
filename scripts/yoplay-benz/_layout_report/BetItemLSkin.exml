@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<e:Skin class="Benz.BetItemLSkin" width="190" height="270" currentState="up" xmlns:e="http://ns.egret.com/eui" xmlns:w="http://ns.egret.com/wing" states="up,down" >
+	<e:Image id="betGlowImage0" source="yben_betboard_json.yben_vfx_glow_largebet_red" x="51.47" y="123.8"/>
+	<e:Image id="betGlowImage1" source="yben_betboard_json.yben_vfx_glow_largebet_red" x="43.89" y="83.65" rotation="45"/>
+	<e:Image id="betGlowImage2" source="yben_betboard_json.yben_vfx_glow_largebet_red" x="66.57" y="50.31" rotation="90"/>
+	<e:Image id="betGlowImage3" source="yben_betboard_json.yben_vfx_glow_largebet_red" x="106.15" y="42.82" rotation="135"/>
+	<e:Image id="betGlowImage4" source="yben_betboard_json.yben_vfx_glow_largebet_red" x="139.46" y="65.58" rotation="180"/>
+	<e:Image id="betGlowImage5" source="yben_betboard_json.yben_vfx_glow_largebet_red" x="147.07" y="105.23" rotation="225"/>
+	<e:Image id="betGlowImage6" source="yben_betboard_json.yben_vfx_glow_largebet_red" x="124" y="138.5" rotation="270"/>
+	<e:Image id="betGlowImage7" source="yben_betboard_json.yben_vfx_glow_largebet_red" x="84.81" y="146.34" rotation="315"/>
+	<e:Image id="betGlowImageMid" source="yben_betboard_json.yben_vfx_bet_glow_mid_line_red" x="18.77" y="18.17" locked="true"/>
+	<e:Image id="betGlowImageOut" source="yben_betboard_json.yben_vfx_bet_glow_out_line_red" x="95.09" y="94" anchorOffsetX="78.5" anchorOffsetY="78.5"/>
+	<e:Rect id="highlightRect" width="150" height="150" x="21" y="20" blendMode="add" fillColor="0x9e0707" anchorOffsetX="0" anchorOffsetY="0" ellipseWidth="150" ellipseHeight="150" alpha="0.5" alpha.up="0"/>
+	<e:Image id="iconImage" y="36" source="yben_betboard_json.yben_icon_bet_benz_red" x="38" smoothing="false"/>
+	<e:Image id="oddsImage" source="yben_betboard_json.yben_txt_x45" y="192" horizontalCenter="0" smoothing="false"/>
+	<e:Label id="betAmountLabel" text="2000" y="235" size="20" horizontalCenter="0"/>
+	<e:Image id="betAmountBg" horizontalCenter="0" y="219" source="yben_betboard_json.yben_ui_txtbox_active" blendMode="add"/>
+	<e:Label id="payoutLabel" text="+99" stroke="1.5" strokeColor="0x000000" size="40" bottom="80" horizontalCenter="0" visible="false"/>
+	<e:Rect left="0" right="0" top="0" bottom="0" fillAlpha="0" locked="true"/>
+</e:Skin>

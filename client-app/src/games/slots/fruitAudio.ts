@@ -86,7 +86,7 @@ function getAudio(url: string): HTMLAudioElement {
 }
 
 function playUrl(url: string, volume = 0.75): HTMLAudioElement | null {
-  if (muted) return null
+  if (sfxMuted) return null
   unlockFruitAudio()
   const a = getAudio(url).cloneNode(true) as HTMLAudioElement
   a.volume = volume
@@ -97,7 +97,7 @@ function playUrl(url: string, volume = 0.75): HTMLAudioElement | null {
 /** 播放并等到结束（带超时兜底） */
 function playUrlAndWait(url: string, volume = 0.9, maxMs = 3500): Promise<void> {
   return new Promise((resolve) => {
-    if (muted) {
+    if (sfxMuted) {
       resolve()
       return
     }
@@ -122,8 +122,22 @@ function playUrlAndWait(url: string, volume = 0.9, maxMs = 3500): Promise<void> 
 
 let unlocked = false
 let bgmEl: HTMLAudioElement | null = null
-let muted = false
+let bgmMuted = false
+let sfxMuted = false
 let goEl: HTMLAudioElement | null = null
+
+const LS_BGM = 'fruit_bgm_off'
+const LS_SFX = 'fruit_sfx_off'
+const LS_LEGACY = 'fruit_sound_off'
+
+function persistMute() {
+  if (typeof localStorage === 'undefined') return
+  if (bgmMuted) localStorage.setItem(LS_BGM, '1')
+  else localStorage.removeItem(LS_BGM)
+  if (sfxMuted) localStorage.setItem(LS_SFX, '1')
+  else localStorage.removeItem(LS_SFX)
+  localStorage.removeItem(LS_LEGACY)
+}
 
 export function unlockFruitAudio() {
   if (unlocked) return
@@ -171,13 +185,14 @@ export function stopFruitGo() {
 }
 
 export function startFruitBgm() {
-  if (muted) return
+  if (bgmMuted) return
   unlockFruitAudio()
   if (!bgmEl) {
     bgmEl = getAudio(FILES.bgm)
     bgmEl.loop = true
     bgmEl.volume = 0.32
   }
+  bgmEl.muted = false
   void bgmEl.play().catch(() => {})
 }
 
@@ -194,25 +209,53 @@ export function setFruitBgmDuck(duck: boolean) {
   bgmEl.volume = duck ? 0.12 : 0.32
 }
 
-export function setFruitMuted(v: boolean) {
-  muted = v
-  if (typeof localStorage !== 'undefined') {
-    if (v) localStorage.setItem('fruit_sound_off', '1')
-    else localStorage.removeItem('fruit_sound_off')
-  }
-  if (v) {
-    stopFruitBgm()
-    stopFruitGo()
+/** 只静音 BGM：保持进度，再开可续播 */
+export function setFruitBgmMuted(v: boolean) {
+  bgmMuted = v
+  persistMute()
+  if (bgmEl) {
+    bgmEl.muted = v
+    if (!v) {
+      bgmEl.loop = true
+      bgmEl.volume = 0.32
+      void bgmEl.play().catch(() => {})
+    }
+  } else if (!v) {
+    startFruitBgm()
   }
 }
 
+/** 静音音效：停掉进行中的循环跑灯音 */
+export function setFruitSfxMuted(v: boolean) {
+  sfxMuted = v
+  persistMute()
+  if (v) stopFruitGo()
+}
+
+export function isFruitBgmMuted() {
+  return bgmMuted
+}
+
+export function isFruitSfxMuted() {
+  return sfxMuted
+}
+
+/** 音乐与音效都关时视为总静音（兼容旧调用） */
 export function isFruitMuted() {
-  return muted
+  return bgmMuted && sfxMuted
+}
+
+/** @deprecated 请用 setFruitBgmMuted / setFruitSfxMuted */
+export function setFruitMuted(v: boolean) {
+  setFruitBgmMuted(v)
+  setFruitSfxMuted(v)
 }
 
 export function initFruitMuteFromStorage() {
   if (typeof localStorage === 'undefined') return
-  muted = localStorage.getItem('fruit_sound_off') === '1'
+  const legacy = localStorage.getItem(LS_LEGACY) === '1'
+  bgmMuted = localStorage.getItem(LS_BGM) === '1' || legacy
+  sfxMuted = localStorage.getItem(LS_SFX) === '1' || legacy
 }
 
 /** 特殊大奖开场曲（短音效，可叠加语音） */

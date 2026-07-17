@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<e:Skin class="Benz.PromotionUserInfoSkin" xmlns:e="http://ns.egret.com/eui" xmlns:Locale="Locale.*"
+        xmlns:w="http://ns.egret.com/wing" width="294">
+	<e:Group id="topGrp" y="0" anchorOffsetX="0" width="293" height="59">
+		<e:Group anchorOffsetX="0" anchorOffsetY="0" width="169" verticalCenter="-3" x="6">
+			<e:Image id="bgUserInfoImg" source="promotion_common_json.bg_event_top_txt_box" scaleX="-1" scaleY="1" verticalCenter="0" left="0" width="160" scale9Grid="18,20,109,1" smoothing="false"/>
+			<e:Label id="statusMsg" text="" size="12" textColor="0x58e2c2" horizontalCenter="-10.5" verticalCenter="0.5" width="148.33" height="40.67" textAlign="center" verticalAlign="middle" lineSpacing="3" visible="false"/>
+			<e:Group id="userInfoGrp" width="150" height="41" horizontalCenter="-11.5" verticalCenter="0.5">
+				<e:Image source="promotion_common_json.icon_benefit" verticalCenter="-8.5" y="-3" width="20" height="20" left="5" smoothing="true"/>
+				<e:Image width="20" height="20" source="promotion_common_json.icon_washchip" left="5" x="2" verticalCenter="9.5" y="19" smoothing="true"/>
+				<Locale:LocaleLabel localeKey="yoplayplaza.promotion.preferential_gold" textColor="0xeca035" size="12" text="優惠金" x="24.6" scaleX="1" scaleY="1" verticalCenter="-8.5" y="4"/>
+				<e:Label id="bonusLabel" text="0" textColor="0xECA035" size="12" right="-2" x="107" scaleX="1" scaleY="1" verticalCenter="-8.5" y="4"/>
+				<Locale:LocaleLabel localeKey="yoplayplaza.promotion.wash_chip" size="12" textColor="0x58e2c2" text="洗碼量" x="24.6" scaleX="1" scaleY="1" verticalCenter="10.5" y="23"/>
+				<e:Label id="washChipLabel" text="0/0" textColor="0x58E2C2" size="12" right="-2" x="75" scaleX="1" scaleY="1" verticalCenter="10.5" y="23"/>
+			</e:Group>
+		</e:Group>
+		<e:Image y="0" source="promotion_common_json.btn_event_top_logo" right="0" smoothing="false"/>
+	</e:Group>
+</e:Skin>

@@ -19,13 +19,13 @@ alwaysApply: true
 
 每个游戏的所有资源必须放在自己的专属文件夹内，游戏之间互不影响：
 
-- 图片：`client-app/public/images/games/<游戏名>/`（如 `mahjong/`、`captain/`、`laba/`）
+- 图片：`client-app/public/images/games/<游戏名>/`（如 `mahjong/`、`slots/`、`bcbm/`）
   - 封面、大厅图标、UI 图全部放游戏目录内，**禁止散落在 `images/games/` 根目录**
   - PG 素材统一放 `<游戏名>/pg/`（manifest.json、ui/、symbols/、sprites/）
   - 跨游戏共用的 UI 图（如通用开始按钮）放 `public/images/` 根，不放任何游戏目录
 - 音频：`client-app/public/audio/<游戏名>/`
 - 游戏逻辑与布局数据：`client-app/src/games/<游戏名>/`
-- 游戏专属组件：`client-app/src/components/<游戏名前缀>*.vue`（如 `MahjongCover.vue`、`CaptainSpinButton.vue`）
+- 游戏专属组件：`client-app/src/components/<游戏名前缀>*.vue`（如 `MahjongCover.vue`、`SlotsCover.vue`）
 
 **禁止跨游戏引用**：A 游戏的组件/素材/manifest 不得 import 或复制 B 游戏的资源。
 
@@ -46,7 +46,7 @@ alwaysApply: true
 
 - 提交说明使用**中文描述**，格式：`类型(范围): 中文摘要`
   - 例：`feat(mahjong): 补全自动旋转按钮绿色方块素材`
-  - 例：`fix(captain): 修正封面底图路径`
+  - 例：`fix(slots): 修正封面底图路径`
 - 类型：feat / fix / refactor / docs / chore
 - 一次提交只包含一个游戏或一个模块的变更，禁止把多个游戏的改动混在同一提交
 - 禁止提交：`scripts/node_modules/`、`__pycache__/`、`scripts/_*` 临时调试文件、爬取缓存目录（`scripts/麻将胡了/` 等大型 dump）

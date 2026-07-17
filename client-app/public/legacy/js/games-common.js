@@ -34,7 +34,7 @@
     const u = {
       uid: '100000001',
       name: '游客',
-      avatar: '/legacy/images/default-avatar.svg',
+      avatar: '/images/avatars/001.jpg',
     }
     App.setUser(u)
     return u

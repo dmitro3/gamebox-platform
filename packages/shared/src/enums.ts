@@ -65,7 +65,7 @@ export type ReviewStatus = (typeof ReviewStatus)[keyof typeof ReviewStatus];
  * 游戏品类 —— 决定引擎与开奖方式
  *   LOTTERY 彩票：期号 + 定时开奖（ssc/ffc/kuai3/bjsc/lhc/赛车/赛艇）
  *   TABLE   棋牌：房间→桌→局，多人实时（麻将/斗牛/炸金花/龙虎/百家乐）
- *   SLOT    电子：单机即开即结，按爆率表（slots/laba/queen）
+ *   SLOT    电子：单机即开即结，按爆率表（如麻将胡了）
  *   ARCADE  街机：多仓位即时开奖（水果机 / bcbm 等）
  */
 export const GameCategory = {

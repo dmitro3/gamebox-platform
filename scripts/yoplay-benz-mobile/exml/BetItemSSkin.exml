@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<e:Skin class="Benz.BetItemSSkin" width="60" height="80" currentState="up" xmlns:e="http://ns.egret.com/eui" xmlns:w="http://ns.egret.com/wing" states="up,down" >
+	<e:Image id="betGlowImage0" source="yben_betboard_json.yben_vfx_glow_minibet_yellow" x="1.25" y="28.37"/>
+	<e:Image id="betGlowImage1" source="yben_betboard_json.yben_vfx_glow_minibet_red" x="11.16" y="9.46" rotation="46"/>
+	<e:Image id="betGlowImage2" source="yben_betboard_json.yben_vfx_glow_minibet_green" x="30.92" y="2.37" rotation="90"/>
+	<e:Image id="betGlowImage3" source="yben_betboard_json.yben_vfx_glow_minibet_green" x="49.95" y="11.54" rotation="133.7"/>
+	<e:Image id="betGlowImage4" source="yben_betboard_json.yben_vfx_glow_minibet_red" x="57.01" y="31.87" rotation="180"/>
+	<e:Image id="betGlowImage5" source="yben_betboard_json.yben_vfx_glow_minibet_yellow" x="48.15" y="50.4" rotation="224"/>
+	<e:Image id="highlightRect" y="4" alpha="0.5" blendMode="add" alpha.up="0" source="yben_betboard_json.yben_vfx_add_yellow" scaleX="0.86" scaleY="0.86" x="3"/>
+	<e:Image id="iconImage" y="11.04" source="yben_betboard_json.yben_icon_bet_audi_red" x="11" smoothing="false"/>
+	<e:Image id="oddsImage" source="yben_betboard_json.yben_txt_x12" y="47.74" horizontalCenter="0" smoothing="false"/>
+	<e:Label id="betAmountLabel" text="2000" y="61.92" size="16" scaleX="1" scaleY="1" horizontalCenter="0"/>
+	<e:Image source="yben_main_json.yben_ui_txtbox_active" horizontalCenter="0" y="58" id="betAmountBg" scaleX="0.7" scaleY="0.7" blendMode="add"/>
+	<e:Label id="payoutLabel" text="+9999" stroke="1.5" strokeColor="0x000000" size="30" bottom="16" horizontalCenter="0" blendMode="normal" visible="false"/>
+	<e:Rect left="0" right="0" top="0" bottom="0" fillAlpha="0" locked="true"/>
+</e:Skin>

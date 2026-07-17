@@ -39,78 +39,23 @@ export const CENTER_SHEETS: Record<string, CenterSheetSpec> = {
     fps: 10,
     loop: true,
   },
+  // 猜大小仍复用 idle；下列 gamble-* 仅作历史兼容，不再参与舞台
   gamble_roll: {
     url: `${SHEETS}/gamble-roll.png`,
     cols: 4,
-    rows: 4,
+    rows: 3,
     fps: 10,
     loop: true,
   },
   gamble_win: {
     url: `${SHEETS}/gamble-win.png`,
-    cols: 3,
-    rows: 4,
+    cols: 4,
+    rows: 3,
     fps: 10,
     loop: false,
   },
   gamble_lose: {
     url: `${SHEETS}/gamble-lose.png`,
-    cols: 3,
-    rows: 4,
-    fps: 10,
-    loop: false,
-  },
-  train: {
-    url: `${SHEETS}/award-train.png`,
-    cols: 4,
-    rows: 4,
-    fps: 10,
-    loop: true,
-  },
-  big3: {
-    url: `${SHEETS}/award-big3.png`,
-    cols: 3,
-    rows: 4,
-    fps: 8,
-    loop: false,
-  },
-  small3: {
-    url: `${SHEETS}/award-small3.png`,
-    cols: 3,
-    rows: 4,
-    fps: 8,
-    loop: false,
-  },
-  four: {
-    url: `${SHEETS}/award-four.png`,
-    cols: 3,
-    rows: 4,
-    fps: 8,
-    loop: false,
-  },
-  slam: {
-    url: `${SHEETS}/award-slam.png`,
-    cols: 4,
-    rows: 4,
-    fps: 10,
-    loop: false,
-  },
-  luck_send: {
-    url: `${SHEETS}/award-luck.png`,
-    cols: 4,
-    rows: 3,
-    fps: 8,
-    loop: true,
-  },
-  luck_eat: {
-    url: `${SHEETS}/award-luck.png`,
-    cols: 4,
-    rows: 3,
-    fps: 8,
-    loop: false,
-  },
-  bar: {
-    url: `${SHEETS}/award-bar.png`,
     cols: 4,
     rows: 3,
     fps: 10,
@@ -122,15 +67,17 @@ export function centerSheetKeyForMode(
   mode: CenterStageMode,
   awardType?: string,
 ): string | null {
+  void awardType
   if (mode === 'idle') return 'idle'
-  if (mode === 'gamble_roll') return 'gamble_roll'
-  if (mode === 'gamble_win') return 'gamble_win'
-  if (mode === 'gamble_lose' || mode === 'gamble_push') return 'gamble_lose'
-  if (mode === 'award') {
-    const t = awardType || 'train'
-    if (t in CENTER_SHEETS) return t
-    if (t === 'normal') return null
-    return 'train'
+  // 猜大小 / 报奖：一律常驻金框+橙底（大奖不再播分镜图）
+  if (
+    mode === 'gamble_roll' ||
+    mode === 'gamble_win' ||
+    mode === 'gamble_lose' ||
+    mode === 'gamble_push' ||
+    mode === 'award'
+  ) {
+    return 'idle'
   }
   return null
 }
@@ -191,5 +138,64 @@ export function awardTitleForCenter(awardType: FruitAwardType | 'bar' | string):
       return '天门'
     default:
       return '大奖'
+  }
+}
+
+/** 用户抠好的 24 格纯符号图（1024×1024，真透明底） */
+export const RING_ICONS_SHEET = `${SYM}/fruit-ring-icons-clean.png`
+export const RING_ICONS_W = 1024
+export const RING_ICONS_H = 1024
+
+/** 常驻顶行：每种符号对应整格区域（避免紧裁切掉边缘） */
+export const IDLE_RING_ICON_BOX: Record<
+  FruitBetSymbolId | 'luck',
+  { x: number; y: number; w: number; h: number }
+> = {
+  orange: { x: 2, y: 2, w: 139, h: 151 },
+  bell: { x: 145, y: 2, w: 144, h: 151 },
+  bar: { x: 442, y: 2, w: 144, h: 151 },
+  apple: { x: 737, y: 2, w: 143, h: 151 },
+  lemon: { x: 145, y: 875, w: 144, h: 147 },
+  melon: { x: 884, y: 318, w: 138, h: 150 },
+  seven: { x: 590, y: 875, w: 143, h: 147 },
+  star: { x: 2, y: 591, w: 139, h: 149 },
+  luck: { x: 884, y: 472, w: 138, h: 115 },
+}
+
+/** 橙色纯色内区（相对电视屏，避开金框跑马灯；与 idle-rays 裁切对齐） */
+export const IDLE_ORANGE_BOX = {
+  leftPct: 16,
+  rightPct: 16,
+  topPct: 10.5,
+  bottomPct: 11,
+} as const
+
+/** 橙色内区四行布局 */
+export const IDLE_LAYOUT_PCT = {
+  padding: { y: 3.5, x: 4.5, bottom: 4 },
+  topFlex: 16,
+  winFlex: 30,
+  ledMaxWidthPct: 72,
+  ledAspect: 320 / 78,
+} as const
+export const IDLE_FORMULA_COLS_CH = {
+  odds: 2.4,
+  mult: 2.4,
+  units: 1.7,
+  sep: 0.42,
+} as const
+export function ringIconSpriteStyle(box: {
+  x: number
+  y: number
+  w: number
+  h: number
+}): Record<string, string> {
+  const { x, y, w, h } = box
+  return {
+    backgroundImage: `url(${RING_ICONS_SHEET})`,
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: `${(RING_ICONS_W / w) * 100}% ${(RING_ICONS_H / h) * 100}%`,
+    backgroundPosition: `${(x / (RING_ICONS_W - w)) * 100}% ${(y / (RING_ICONS_H - h)) * 100}%`,
+    aspectRatio: `${w} / ${h}`,
   }
 }

@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<e:Skin class="Benz.BetBoardPanelSkin" width="1280" height="439" xmlns:e="http://ns.egret.com/eui" xmlns:Benz="Benz.*" xmlns:w="http://ns.egret.com/wing" xmlns:Locale="Locale.*" xmlns:Common="Common.*">
+	<w:Config id="15d58fa0e29"/>
+	<e:Image smoothing="false" source="yben_betboard_json.yben_ui_panel" bottom="0"/>
+	<e:Group id="maskEffectContainer" height="439" width="1280" x="1" y="-1">
+		<e:Group id="maskEffectGroup0" width="1280" height="439" x="0" y="0" locked="true">
+			<e:Image id="bgTextureTop" source="yben_betboard_json.yben_mask_panel_ouline" y="52" x="0" scaleX="1" scaleY="1"/>
+			<e:Image id="bgTexture" source="yben_betboard_json.yben_mask_panel_pattern" y="147" x="46" scaleX="1" scaleY="1"/>
+		</e:Group>
+		<e:Image id="effectMask0" source="yben_betboard_json.yben_sfx_flash_light" x="-400" height="413" width="400" y="26" locked="true"/>
+		<e:Group id="maskEffectGroup1" width="1280" x="0" y="160" height="167" locked="true">
+			<e:Image source="yben_betboard_json.yben_mask_outline" x="227" scaleX="1" scaleY="1" y="1"/>
+			<e:Image source="yben_betboard_json.yben_mask_outline" x="888.5" scaleX="1" scaleY="1" y="0"/>
+		</e:Group>
+		<e:Image id="effectMask1" source="yben_betboard_json.yben_sfx_flash_light" height="919" width="50" y="468" rotation="90" x="1100" locked="true"/>
+		<e:Group id="maskEffectGroup2" width="1280" x="0" y="152" locked="true">
+			<e:Image source="yben_betboard_json.yben_mask_outline" x="407" width="92" height="92" scaleX="1" scaleY="1"/>
+			<e:Image source="yben_betboard_json.yben_mask_outline" x="779.5" width="92" height="92" scaleX="1" scaleY="1"/>
+		</e:Group>
+		<e:Image id="effectMask2" source="yben_betboard_json.yben_sfx_flash_light" height="919" width="50" y="450" rotation="90" x="1100" locked="true"/>
+		<e:Group id="maskEffectGroup3" width="1280" x="0" y="143" locked="true">
+			<e:Image source="yben_betboard_json.yben_mask_outline" x="531.5" y="0.5" width="92" height="92" scaleX="1" scaleY="1"/>
+			<e:Image source="yben_betboard_json.yben_mask_outline" x="655" width="92" height="92" scaleX="1" scaleY="1"/>
+		</e:Group>
+		<e:Image id="effectMask3" source="yben_betboard_json.yben_sfx_flash_light" height="919" width="50" y="454" rotation="90" x="1100" locked="true"/>
+		<e:Image id="maskEffectGroup4" source="yben_betboard_json.yben_mask_outline" x="1078" y="195" scaleX="1" scaleY="1" locked="true"/>
+		<e:Image id="effectMask4" source="yben_betboard_json.yben_sfx_flash_light" height="208" width="50" y="-63" rotation="90" x="1269" locked="true"/>
+		<e:Image id="maskEffectGroup5" source="yben_betboard_json.yben_mask_btn_vol_animat" x="534" y="243" scaleX="1" scaleY="1" smoothing="true" locked="true"/>
+		<e:Image id="effectMask5" source="yben_betboard_json.yben_mask_volume_movement" y="233" scaleX="1" scale9Grid="6,0,20,32" width="50" horizontalCenter="-64" locked="true"/>
+		<e:Image id="maskEffectGroup6" source="yben_betboard_json.yben_mask_btn_vol_animat" x="659" y="243" scaleX="1" scaleY="1" locked="true"/>
+		<e:Image id="effectMask6" source="yben_betboard_json.yben_mask_volume_movement" y="233" scaleX="1" scale9Grid="6,0,20,32" width="50" horizontalCenter="60" locked="true"/>
+		<e:Image id="maskEffectGroup7" source="yben_betboard_json.yben_mask_btn_vol_animat" x="409" y="252" scaleX="1" scaleY="1" smoothing="true" locked="true"/>
+		<e:Image id="effectMask7" source="yben_betboard_json.yben_mask_volume_movement" y="240" scaleX="1" scale9Grid="6,0,20,32" width="50" horizontalCenter="-189" locked="true"/>
+		<e:Image id="maskEffectGroup8" source="yben_betboard_json.yben_mask_btn_vol_animat" x="782" y="252" scaleX="1" scaleY="1" locked="true"/>
+		<e:Image id="effectMask8" source="yben_betboard_json.yben_mask_volume_movement" y="240" scaleX="1" scale9Grid="6,0,20,32" width="50" horizontalCenter="184" locked="true"/>
+	</e:Group>
+	<e:Group id="btnGroup" left="0" right="0" top="0" bottom="0">
+		<Common:ButtonBase id="startBtn" label="" y="166.5" scaleX="1" scaleY="1" horizontalCenter="521">
+			<e:skinName>
+			<e:Skin states="up,down,upAndSelected,disabled">
+				<e:Image width="160" height="160" alpha="0" horizontalCenter="0" verticalCenter="0" source="yben_spin_item_json.yben_bg_history_blk_circle" touchEnabled="true"/>
+				<e:Image source="yben_betboard_json.yben_vfx_start_on" alpha="0" alpha.down="1" alpha.upAndSelected="1" touchEnabled="false"/>
+				<Locale:LocaleImage localeName="yben_txt_start" horizontalCenter="0" verticalCenter="0" source="yben_lang_hans_json.yben_txt_start_hans" touchEnabled="false"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0" touchEnabled="false"/>
+			</e:Skin>
+			</e:skinName>
+		</Common:ButtonBase>
+		<Common:ButtonBase id="clearBtn" label="" x="1076.98" y="340" scaleX="1" scaleY="1">
+			<e:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image source="yben_betboard_json.yben_vfx_auto_clear_auto_on" horizontalCenter="0" scaleX="-1" anchorOffsetX="67" alpha="0" alpha.down="1" touchEnabled="true"/>
+				<Locale:LocaleImage localeName="yben_txt_clear_off" horizontalCenter="0" bottom="-5" source="yben_lang_hans_json.yben_txt_clear_off_hans" touchEnabled="false"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0" touchEnabled="false"/>
+				</e:Skin>
+			</e:skinName>
+		</Common:ButtonBase>
+		<Common:ButtonBase id="autoBetBtn" label="" x="1177.5" y="340" scaleX="1" scaleY="1">
+			<e:skinName>
+			<e:Skin states="up,down,upAndSelected,disabled">
+				<e:Image source="yben_betboard_json.yben_vfx_auto_clear_auto_on" horizontalCenter="0" alpha="0" alpha.down="1" alpha.upAndSelected="1" touchEnabled="true"/>
+				<Locale:LocaleImage localeName="yben_txt_auto_off" horizontalCenter="5" bottom="-5" source="yben_lang_hans_json.yben_txt_auto_off_hans" alpha="1" alpha.upAndSelected="0" touchEnabled="false"/>
+				<e:Label size="24" id="labelDisplay" horizontalCenter="5" verticalCenter="12" touchEnabled="false"/>
+			</e:Skin>
+			</e:skinName>
+		</Common:ButtonBase>
+		<Common:ButtonBase id="chipSettingBtn" label="" x="8.48" y="192.32" scaleX="1" scaleY="1">
+			<e:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="40" height="40" alpha="0" horizontalCenter="0" verticalCenter="0" source="yben_spin_item_json.yben_bg_history_blk_circle" touchEnabled="true"/>
+				<e:Image smoothing="false" width="100%" height="100%" source="yben_betboard_json.yben_btn_chips_change" touchEnabled="false"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0" touchEnabled="false"/>
+				</e:Skin>
+			</e:skinName>
+		</Common:ButtonBase>
+		<Common:ButtonBase id="undoBtn" label="" x="1225" y="185.32" scaleX="1" scaleY="1">
+			<e:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="40" height="40" alpha="0" horizontalCenter="0" verticalCenter="0" source="yben_spin_item_json.yben_bg_history_blk_circle" touchEnabled="true"/>
+				<e:Image smoothing="false" width="100%" height="100%" source="yben_betboard_json.yben_btn_undo" touchEnabled="false"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0" touchEnabled="false"/>
+				</e:Skin>
+			</e:skinName>
+		</Common:ButtonBase>
+		<Benz:BetOptionButton id="selectBetOptionBtn" label="" x="119" y="178.5" scaleX="1" scaleY="1" width="75" height="42">
+			<Common:skinName>
+				<e:Skin states="up,down,disabled">
+					<e:Image source="yben_betboard_json.yben_mask_common" alpha="1" horizontalCenter="0" verticalCenter="0" width="54" height="20"  touchEnabled="true"/>
+					<e:Image source="yben_betboard_json.yben_btn_select_arrow_off" source.down="yben_betboard_json.yben_btn_select_arrow_on" touchEnabled="false" smoothing="false"/>
+					<e:Image id="arrowTop" source="yben_betboard_json.yben_btn_arrow_1_on" horizontalCenter="0" verticalCenter="-2.5" touchEnabled="false" smoothing="false"  />
+					<e:Image id="arrowBottom" source="yben_betboard_json.yben_btn_arrow_1_on" horizontalCenter="0" verticalCenter="4.5" touchEnabled="false" smoothing="false"/>
+				</e:Skin>
+			</Common:skinName>
+		</Benz:BetOptionButton>
+		<Common:ButtonBase id="betAllBtn" label="" x="115" y="207.5" scaleX="1" scaleY="1" width="86" height="56">
+			<Common:skinName>
+				<e:Skin states="up,down,disabled">
+					<e:Image source="yben_betboard_json.yben_mask_common" width="67" height="37" touchEnabled="true" verticalCenter="0" horizontalCenter="0" alpha="0"/>
+					<e:Image source="yben_betboard_json.yben_btn_allbet_off" source.down="yben_betboard_json.yben_btn_allbet_on" scale9Grid="15,15,56,27" width="100%" height="100%" touchEnabled="false"/>
+					<e:Image id="iconImg" source="yben_betboard_json.yben_icon_select_benz" horizontalCenter="0" verticalCenter="0" visible="false" touchEnabled="false" smoothing="false"/>
+					<Locale:LocaleImage id="labelImg" smoothing="false" localeName.up="yben_txt_allbet_off" localeName.down="yben_txt_allbet_on" source="yben_lang_hans_json.yben_txt_allbet_off_hans" touchEnabled="false" horizontalCenter="0" verticalCenter="0"/>
+				</e:Skin>
+			</Common:skinName>
+		</Common:ButtonBase>
+		<Benz:BetItem id="betItem8" x="875.95" y="148.02" skinName="Benz.BetItemLSkin"/>
+		<Benz:BetItem id="betItem11" x="214.68" y="149.01" skinName="Benz.BetItemLSkin"/>
+		<Benz:BetItem id="betItem10" x="397.97" y="141.48" skinName="Benz.BetItemMSkin"/>
+		<Benz:BetItem id="betItem9" x="522.32" y="132.82" skinName="Benz.BetItemMSkin"/>
+		<Benz:BetItem id="betItem6" x="646.03" y="132.7" skinName="Benz.BetItemMSkin"/>
+		<Benz:BetItem id="betItem7" x="770.6" y="141.66" skinName="Benz.BetItemMSkin"/>
+		<Benz:BetItem id="betItem5" x="402.65" y="315" skinName="Benz.BetItemSSkin"/>
+		<Benz:BetItem id="betItem4" x="477.66" y="315" skinName="Benz.BetItemSSkin"/>
+		<Benz:BetItem id="betItem3" x="552.97" y="315" skinName="Benz.BetItemSSkin"/>
+		<Benz:BetItem id="betItem0" x="659.83" y="315" skinName="Benz.BetItemSSkin"/>
+		<Benz:BetItem id="betItem1" x="734.83" y="315" skinName="Benz.BetItemSSkin"/>
+		<Benz:BetItem id="betItem2" x="809.26" y="315" skinName="Benz.BetItemSSkin"/>
+		<e:ToggleButton id="chipAmountButton0" label="500" x="12.48" y="274">
+			<e:skinName>
+			<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="yben_betboard_json.yben_btn_chips_off" source.down="yben_betboard_json.yben_btn_chips_on"/>
+				<e:Label size="18" id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+			</e:Skin>
+			</e:skinName>
+		</e:ToggleButton>
+		<e:ToggleButton id="chipAmountButton1" label="500" x="83" y="254.5">
+			<e:skinName>
+			<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="yben_betboard_json.yben_btn_chips_off" source.down="yben_betboard_json.yben_btn_chips_on"/>
+				<e:Label size="18" id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+			</e:Skin>
+			</e:skinName>
+		</e:ToggleButton>
+		<e:ToggleButton id="chipAmountButton2" label="500" x="153" y="274">
+			<e:skinName>
+			<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="yben_betboard_json.yben_btn_chips_off" source.down="yben_betboard_json.yben_btn_chips_on"/>
+				<e:Label size="18" id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+			</e:Skin>
+			</e:skinName>
+		</e:ToggleButton>
+		<e:ToggleButton id="chipAmountButton3" label="500" x="12.6" y="352">
+			<e:skinName>
+			<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="yben_betboard_json.yben_btn_chips_off" source.down="yben_betboard_json.yben_btn_chips_on"/>
+				<e:Label size="18" id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+			</e:Skin>
+			</e:skinName>
+		</e:ToggleButton>
+		<e:ToggleButton id="chipAmountButton4" label="500" x="83" y="330.5">
+			<e:skinName>
+			<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="yben_betboard_json.yben_btn_chips_off" source.down="yben_betboard_json.yben_btn_chips_on"/>
+				<e:Label size="18" id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+			</e:Skin>
+			</e:skinName>
+		</e:ToggleButton>
+		<e:ToggleButton id="chipAmountButton5" label="500" x="153" y="352">
+			<e:skinName>
+			<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="yben_betboard_json.yben_btn_chips_off" source.down="yben_betboard_json.yben_btn_chips_on"/>
+				<e:Label size="18" id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+			</e:Skin>
+			</e:skinName>
+		</e:ToggleButton>
+	</e:Group>
+	<e:Label id="totalBetLabel" text="總下注 24000" y="412" scaleX="1" scaleY="1" size="16" horizontalCenter="521.5" textColor="0xffffff" locked="true"/>
+	<e:List id="historyList" width="621" height="50" x="311" y="72" itemRendererSkinName="Benz.HistoryItemRendererSkin" locked="true">
+		<e:layout>
+			<e:HorizontalLayout horizontalAlign="left" verticalAlign="middle" gap="2"/>
+		</e:layout>
+	</e:List>
+	<e:Rect id="historyListMask" width="644" height="73" y="59" x="289" locked="true"/>
+	<e:Rect id="buttonBlock" left="0" right="0" fillAlpha="0" height="800" y="-361" locked="true" visible="false"/>
+	<Common:ButtonBase id="moreBtn" label="" x="944" y="78">
+		<e:skinName>
+		<e:Skin states="up,down,disabled">
+			<Locale:LocaleImage localeName="yben_btn_more" smoothing="false" width="100%" height="100%" source="yben_lang_hans_json.yben_btn_more_hans"/>
+			<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+		</e:Skin>
+		</e:skinName>
+	</Common:ButtonBase>
+	<e:List id="autoItemList" x="1144" y="-93" itemRendererSkinName="Benz.AutoItemRendererSkin" itemRenderer="Benz.AutoItemRenderer" locked="true" visible="false">
+		<e:ArrayCollection>
+			<e:Array>
+				<e:Object round="100"/>
+				<e:Object round="50"/>
+				<e:Object round="20"/>
+				<e:Object round="10"/>
+			</e:Array>
+		</e:ArrayCollection>
+		<e:layout>
+		<e:VerticalLayout gap="-36" verticalAlign="top" horizontalAlign="left"/>
+		</e:layout>
+	</e:List>
+	<e:List id="betAllOptionItemList" x="115" y="3" itemRendererSkinName="Benz.BetAllOptionItemRendererSkin" itemRenderer="Benz.BetAllOptionItemRenderer" visible="false" locked="true">
+		<e:ArrayCollection>
+			<e:Array>
+				<e:Object option="benz"/>
+				<e:Object option="bmw"/>
+				<e:Object option="audi"/>
+				<e:Object option="volkswagen"/>
+				<e:Object option="all"/>
+			</e:Array>
+		</e:ArrayCollection>
+		<e:layout>
+			<e:VerticalLayout horizontalAlign="left" verticalAlign="top" gap="-20"/>
+		</e:layout>
+	</e:List>
+	<Common:ButtonBase id="stopAutoBtn" label="" y="165.99" scaleX="1" scaleY="1" x="1050" locked="true" visible="false">
+		<e:skinName>
+			<e:Skin states="up,down,disabled">
+			<e:Image width="160" height="160" alpha="0" horizontalCenter="0" verticalCenter="0" source="yben_spin_item_json.yben_bg_history_blk_circle" touchEnabled="true"/>
+			<e:Image source="yben_betboard_json.yben_vfx_stop_on" alpha="1" alpha.down="0" touchEnabled="false"/>
+			<Locale:LocaleImage localeName="yben_txt_stop" horizontalCenter="0" verticalCenter="5" source="yben_lang_hans_json.yben_txt_stop_hans"  touchEnabled="false"/>
+			<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0" touchEnabled="false"/>
+			</e:Skin>
+		</e:skinName>
+	</Common:ButtonBase>
+
+</e:Skin>

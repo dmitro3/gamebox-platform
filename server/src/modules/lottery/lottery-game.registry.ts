@@ -6,6 +6,7 @@ import type { LotteryGameDef } from './lottery.types';
 import { ffcGame, sscGame } from './games/ffc.game';
 import { kuai3Game } from './games/kuai3.game';
 import { bjscGame, speedRacingGame, speedBoatGame } from './games/bjsc.game';
+import { lhcGame } from './games/lhc.game';
 
 @Injectable()
 export class LotteryGameRegistry {
@@ -16,6 +17,7 @@ export class LotteryGameRegistry {
     ['bjsc',         bjscGame],
     ['speed-racing', speedRacingGame],
     ['speed-boat',   speedBoatGame],
+    ['lhc',          lhcGame],
   ]);
 
   get(code: string): LotteryGameDef | undefined {

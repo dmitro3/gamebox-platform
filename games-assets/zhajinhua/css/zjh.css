@@ -1605,17 +1605,14 @@ html.zjh-in-iframe body.zjh-body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  width: 46px;
-  height: 46px;
+  gap: 3px;
+  width: 48px;
+  height: auto;
   padding: 0;
-  border: 1px solid rgba(212, 175, 55, 0.55);
-  border-radius: 50%;
-  background:
-    radial-gradient(120% 120% at 50% 0%, rgba(58, 44, 22, 0.96) 0%, rgba(24, 18, 10, 0.96) 70%);
-  box-shadow:
-    0 3px 10px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 226, 150, 0.25);
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   color: #f2d98a;
   cursor: pointer;
   transition: transform 0.14s ease, filter 0.14s ease, border-color 0.14s ease;
@@ -1625,14 +1622,17 @@ html.zjh-in-iframe body.zjh-body {
 .zjh-rail-btn:active {
   transform: scale(0.9);
   filter: brightness(1.15);
-  border-color: rgba(255, 220, 120, 0.9);
 }
 
 .zjh-rail-ic {
-  width: 21px;
-  height: 21px;
-  fill: currentColor;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
 }
 
 .zjh-rail-lb {
@@ -1641,6 +1641,13 @@ html.zjh-in-iframe body.zjh-body {
   letter-spacing: 0.5px;
   font-family: 'Noto Serif SC', 'Songti SC', serif;
   color: rgba(240, 220, 160, 0.9);
+}
+
+@media (max-height: 640px) {
+  .zjh-rail { gap: 8px; }
+  .zjh-rail-btn { width: 44px; height: auto; }
+  .zjh-rail-ic { width: 40px; height: 40px; }
+  .zjh-rail-lb { font-size: 8px; }
 }
 
 /* ================= 通用弹层（历史/玩法/设置） ================= */
@@ -1832,7 +1839,7 @@ html.zjh-in-iframe body.zjh-body {
 
 /* 小屏幕收窄按钮 */
 @media (max-height: 640px) {
-  .zjh-rail-btn { width: 42px; height: 42px; }
-  .zjh-rail-ic { width: 19px; height: 19px; }
+  .zjh-rail-btn { width: 44px; height: auto; }
+  .zjh-rail-ic { width: 40px; height: 40px; }
   .zjh-rail { gap: 8px; }
 }

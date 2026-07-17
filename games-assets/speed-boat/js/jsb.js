@@ -5,12 +5,12 @@
  * BUILD 79 — 与 index.html ?v= 保持一致
  */
 $(function () {
-  // 1 分钟一期 = 0:56 下注 + 4s 准备开奖
+  // 总周期 60s；准备中 = 揭晓结果卡+中奖核对 ≈1.4s → 取 2s；倒计时从 00:58 起
   const INTERVAL = 60;
-  const PREP_SEC = 4;
+  const PREP_SEC = 2;
 
   function fixAvatar(url) {
-    const fallback = '/legacy/images/default-avatar.svg';
+    const fallback = '/images/avatars/001.jpg';
     if (!url) return fallback;
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
     if (url.startsWith('/')) return url;
@@ -23,7 +23,7 @@ $(function () {
     return `<div class="jsb-msg__avatar jsb-msg__avatar--gen" style="--av-hue:${hue}"><span>${ch}</span></div>`;
   }
 
-  const ROBOT = { name: '机器人', avatar: '/legacy/images/default-avatar.svg' };
+  const ROBOT = { name: '机器人', avatar: '/images/avatars/001.jpg' };
   const params = new URLSearchParams(location.search);
   const roomNo = (params.get('roomNo') || '').trim();
   const user = App.getUser();
@@ -76,7 +76,21 @@ $(function () {
       if (sum < 3 || sum > 19) return null;
       return { type: 'gySum', sum, odds: GY_SUM_ODDS[sum] || 8.91 };
     }
+    // 赛道号两面：1单 0大（0=第10道）
+    if ((m = t.match(/^([0-9])(大|小|单|双)$/))) {
+      const pos = digitToNum(m[1]) - 1;
+      if (pos < 0 || pos > 9) return null;
+      return { type: 'posSide', pos, side: m[2], odds: ODDS.side };
+    }
+    // 赛道定位：1定5 / 0定3（定后为车号，0=10号）
+    if ((m = t.match(/^([0-9])定(10|[0-9])$/))) {
+      const pos = digitToNum(m[1]) - 1;
+      const num = m[2] === '10' ? 10 : digitToNum(m[2]);
+      if (pos < 0 || pos > 9 || !num || num < 1 || num > 10) return null;
+      return { type: 'position', pos, num, odds: ODDS.position };
+    }
     for (const name of POS_NAMES) {
+
       if ((m = t.match(new RegExp('^' + name + '(大|小|单|双)$')))) return { type: 'posSide', pos: POS[name], side: m[1], odds: ODDS.side };
       if ((m = t.match(new RegExp('^' + name + '(10|[1-9])$')))) {
         const num = +m[1];
@@ -136,6 +150,12 @@ $(function () {
     if (ch === '0') return 10;
     if (ch >= '1' && ch <= '9') return +ch;
     return null;
+  }
+  function trackLabel(idx) {
+    return idx === 9 ? '0' : String(idx + 1);
+  }
+  function carLabel(num) {
+    return num === 10 ? '0' : String(num);
   }
   function parseTrackDigits(s) {
     if (!s || !/^[0-9]+$/.test(s)) return null;
@@ -209,13 +229,16 @@ $(function () {
     if (!seg) return null;
     const plays = [];
     if (/^[大小单双]$/.test(seg)) {
-      trackIndices.forEach(idx => { const play = POS_NAMES[idx] + seg; if (parsePlay(play)) plays.push(play); });
+      trackIndices.forEach(idx => {
+        const play = trackLabel(idx) + seg;
+        if (parsePlay(play)) plays.push(play);
+      });
       return plays.length ? plays : null;
     }
     const nums = parseNumberDigits(seg);
     if (nums) {
       trackIndices.forEach(idx => nums.forEach(num => {
-        const play = POS_NAMES[idx] + num;
+        const play = trackLabel(idx) + '定' + carLabel(num);
         if (parsePlay(play)) plays.push(play);
       }));
       return plays.length ? plays : null;
@@ -449,6 +472,7 @@ $(function () {
     const stats = getStats(user.uid);
     stats.winloss += profit;
     stats.turnover += turnover;
+    stats.rebate = (stats.rebate || 0) + Math.floor(turnover * 0.005);
     saveStats(user.uid, stats);
     refreshStats();
   }
@@ -480,8 +504,8 @@ $(function () {
     if (inPrep) {
       $box.addClass('is-preparing');
       $('#cdDigits').prop('hidden', true);
-      $('#cdPrep').prop('hidden', false).text(`封盘中 · ${Math.max(1, Math.ceil(r))}s 后揭晓`);
-      $box.attr('aria-label', '封盘中，准备开奖');
+      $('#cdPrep').prop('hidden', false).text('准备中');
+      $box.attr('aria-label', '准备中');
       $('#drawBar').addClass('is-holding');
       return;
     }
@@ -624,14 +648,14 @@ $(function () {
       appendMsg({ name, avatarHtml: avatarHtml(name, i), html: betText });
       recordBet(name, betText);
     }
-    appendMsg({ name: user.name, avatar: fixAvatar(user.avatar), self: true, html: '冠军大/100' });
-    recordBet(user.name, '冠军大/100');
+    appendMsg({ name: user.name, avatar: fixAvatar(user.avatar), self: true, html: '1大/100' });
+    recordBet(user.name, '1大/100');
   }
 
   function initKeypad() {
     const left = ['大', '小', '单', '双'];
     const right = ['删除', '龙', '虎', '冠亚'];
-    const mid = [['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9'], ['空格', '0', '/']];
+    const mid = [['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9'], ['和', '0', '/']];
     let html = '';
     for (let r = 0; r < 4; r++) {
       html += `<button type="button" class="jsb-key jsb-key--side" data-key="${left[r]}">${left[r]}</button>`;
@@ -660,7 +684,15 @@ $(function () {
 
   function updateComposerAction() {
     const hasText = !!$('#chatInput').val().trim();
-    $('#plusBtn').toggleClass('is-send', hasText).text(hasText ? '发送' : '+');
+    const $btn = $('#plusBtn');
+    const $img = $('#plusBtnImg');
+    if (hasText) {
+      $btn.addClass('is-send').attr('aria-label', '发送');
+      if ($img.length) $img.attr('src', '/images/chat-rail/send.png?v=1');
+    } else {
+      $btn.removeClass('is-send').attr('aria-label', '更多');
+      if ($img.length) $img.attr('src', '/images/chat-rail/plus.png?v=1');
+    }
   }
 
   function sendBetMessage() {
@@ -668,7 +700,7 @@ $(function () {
     if (!text) return;
     if (!isBettingOpen()) { App.toast('封盘中，无法下注'); return; }
     if (!parseBetInput(text)) {
-      App.toast('格式：1357913/100（默认冠军）、龙/100（默认第1组龙虎）、2龙3虎/100');
+      App.toast('格式：12345单/100、1龙/100、冠亚和12/100、12345/12345/100');
       return;
     }
     const bal = App.getBalance(user.uid);
@@ -724,12 +756,15 @@ $(function () {
       items: ['冠亚大', '冠亚小', '冠亚单', '冠亚双'].map(p => ({ play: p, label: p, odds: ODDS.side }))
     },
     {
-      id: 'posSide', title: '名次两面', hint: '6-10 为大 · 1-5 为小 · 可多选 · 赔率 1.98',
+      id: 'posSide', title: '名次两面', hint: '赛道 1234567890 · 如 12345单/100 · 赔率 1.98',
       subs: null,
-      sideGroups: POS_NAMES.map(name => ({ label: name, prefix: name, odds: ODDS.side }))
+      sideGroups: Array.from({ length: 10 }, (_, i) => {
+        const t = i === 9 ? '0' : String(i + 1);
+        return { label: '赛道' + t, prefix: t, odds: ODDS.side };
+      })
     },
     {
-      id: 'lhh', title: '龙虎', hint: '对称名次比大小 · 可多选 · 赔率 1.98',
+      id: 'lhh', title: '龙虎', hint: '1龙=第1组 · 可多选 · 赔率 1.98',
       subs: null,
       items() {
         const list = [];
@@ -838,7 +873,7 @@ $(function () {
   }
 
   function playNumItemHtml(posName, n) {
-    const play = posName + n;
+    const play = String(posName).includes('定') ? String(posName) : (String(posName) + n);
     const cls = ['jsb-play-item', 'jsb-play-item--num', isPlaySelected(play) ? 'is-active' : ''].filter(Boolean).join(' ');
     return `<button type="button" class="${cls}" data-play="${play}">${ballHtml(n, 'play')}</button>`;
   }
@@ -882,20 +917,21 @@ $(function () {
       }).join('');
     } else if (cat.id === 'lhh') {
       gridMode = 'is-lhh';
-      html = LHH_PAIRS.map(([a, b]) => {
-        const pr = (a + 1) + 'v' + (b + 1);
+      html = LHH_PAIRS.map((_, i) => {
+        const n = i + 1;
         const cells = ['龙', '虎'].map(pick =>
-          playItemHtml(pr + pick, pick, ODDS.dragon, 'jsb-play-item--lhh')
+          playItemHtml(n + pick, pick, ODDS.dragon, 'jsb-play-item--lhh')
         ).join('');
-        return `<div class="jsb-play-lhh-row"><span class="jsb-play-lhh-row__label">${pr}</span>${cells}</div>`;
+        return `<div class="jsb-play-lhh-row"><span class="jsb-play-lhh-row__label">${n}组</span>${cells}</div>`;
       }).join('');
     } else if (cat.id === 'position' && cat.mode === 'positionNum') {
       gridMode = 'is-pos-num';
-      html = POS_NAMES.map(name => {
-        const nums = Array.from({ length: 10 }, (_, d) => playNumItemHtml(name, d + 1)).join('');
+      html = Array.from({ length: 10 }, (_, i) => {
+        const t = trackLabel(i);
+        const nums = Array.from({ length: 10 }, (_, d) => playNumItemHtml(t + '定' + carLabel(d + 1), d + 1)).join('');
         return `<div class="jsb-play-pos-block">
           <div class="jsb-play-pos-block__head">
-            <span class="jsb-play-pos-block__title">${name}</span>
+            <span class="jsb-play-pos-block__title">赛道${t}</span>
             <span class="jsb-play-pos-block__hint">选该艇号 · 赔率 ${cat.odds}</span>
           </div>
           <div class="jsb-play-pos-block__nums">${nums}</div>
@@ -910,9 +946,22 @@ $(function () {
     $grid.scrollTop(0);
   }
 
+
+  /** 玩法面板顶边对齐历史开奖栏下沿，盖住聊天区、露出倒计时 */
+  function layoutPlayOverlay() {
+    const bar = document.getElementById('drawBar');
+    let top = 210;
+    if (bar) {
+      const rect = bar.getBoundingClientRect();
+      top = Math.max(120, Math.ceil(rect.bottom + 4));
+    }
+    document.documentElement.style.setProperty('--jsb-play-top', top + 'px');
+  }
   function openPlaySheet(open) {
     const $room = $('.jsb-room');
     if (open) {
+      layoutPlayOverlay();
+
       if (drawPanelOpen) setDrawPanelOpen(false);
       openLongSheet(false);
       openPredictSheet(false);
@@ -934,6 +983,10 @@ $(function () {
       $room.removeClass('has-play');
     }
   }
+
+  $(window).on('resize orientationchange', () => {
+    if ($('#playSheet').hasClass('is-open')) layoutPlayOverlay();
+  });
 
   function submitPlayBet() {
     if (!isBettingOpen()) { App.toast('封盘中，无法下注'); return; }
@@ -1299,10 +1352,10 @@ $(function () {
           <div class="jsb-predict-hero__label">核心参考</div>
           <div class="jsb-predict-hero__main">
             <div class="jsb-predict-hero__tags">
-              <span class="jsb-predict-card__tag ${predictTagClass(champBig.pick)} is-clickable" data-predict-play="冠军${champBig.pick}" role="button" tabindex="0">冠军${champBig.pick}</span>
-              <span class="jsb-predict-card__tag ${predictTagClass(champOdd.pick)} is-clickable" data-predict-play="冠军${champOdd.pick}" role="button" tabindex="0">冠军${champOdd.pick}</span>
+              <span class="jsb-predict-card__tag ${predictTagClass(champBig.pick)} is-clickable" data-predict-play="1${champBig.pick}" role="button" tabindex="0">赛道1${champBig.pick}</span>
+              <span class="jsb-predict-card__tag ${predictTagClass(champOdd.pick)} is-clickable" data-predict-play="1${champOdd.pick}" role="button" tabindex="0">赛道1${champOdd.pick}</span>
             </div>
-            <div class="jsb-predict-hero__note">冠军倾向 ${champBig.pick}${champOdd.pick}，${champBig.reason}</div>
+            <div class="jsb-predict-hero__note">赛道1倾向 ${champBig.pick}${champOdd.pick}，${champBig.reason}</div>
           </div>
         </div>`;
       $('#predictBody').html(hero + `<div class="jsb-predict-grid">${cards.join('')}</div>`);
@@ -1476,8 +1529,7 @@ $(function () {
         gy: gyMeta(newDraw).text,
         lh: lhRow(newDraw)
       };
-    }
-    if (!prepNow && pendingDrawRow) {
+      // 准备中阶段直接揭晓（开奖动画占用 PREP_SEC）
       revealPendingDraw();
     }
   }
@@ -1487,11 +1539,46 @@ $(function () {
   tick();
 
   $('#backBtn').on('click', () => App.go('../../client-app/pages/game-lobby/game-lobby.html' + q));
+  /* === chat-rail handlers (jsb) === */
+
+  function openRulesSheet(open) {
+    if (open) {
+      const tip = '格式：12345单/100、1龙/100、冠亚和12/100、12345/12345/100';
+      let rows = '';
+      if (typeof PLAY_CATEGORIES !== 'undefined' && PLAY_CATEGORIES && PLAY_CATEGORIES.length) {
+        rows = PLAY_CATEGORIES.map(c => {
+          const title = c.title || c.name || c.id || '';
+          const hint = c.hint || '';
+          return '<tr><td>' + title + '</td><td>' + hint + '</td></tr>';
+        }).join('');
+      }
+      const html =
+        '<p class="jsb-rules-intro">' + tip + '</p>' +
+        (rows
+          ? '<table class="jsb-rules-table"><thead><tr><th>玩法</th><th>说明</th></tr></thead><tbody>' + rows + '</tbody></table>'
+          : '<p class="jsb-rules-intro">点击右侧或输入栏「玩法」可点选下注；封盘后不可下注。</p>');
+      $('#rulesBody').html(html);
+      $('#rulesMask').prop('hidden', false);
+      $('#rulesSheet').prop('hidden', false).addClass('is-open');
+    } else {
+      $('#rulesSheet').removeClass('is-open');
+      $('#rulesMask').prop('hidden', true);
+      setTimeout(() => { if (!$('#rulesSheet').hasClass('is-open')) $('#rulesSheet').prop('hidden', true); }, 280);
+    }
+  }
+
+  function goBetRecords() {
+    const sep = q.includes('?') ? '&' : '?';
+    App.go('../../client-app/pages/bet-records/bet-records.html' + q + sep + 'game=speed-boat');
+  }
+
   $('#btnCs').on('click', () => App.go('../../client-app/pages/cs/cs.html' + q));
-  $('#btnExpand').on('click', () => openPlaySheet(true));
+  $('#btnExpand, #btnComposerPlay').on('click', () => openPlaySheet(true));
+  $('#btnRules').on('click', () => openRulesSheet(true));
+  $('#rulesSheetClose, #rulesMask').on('click', () => openRulesSheet(false));
+  $('#btnRecords').on('click', () => goBetRecords());
   $('#playSheetClose, #playMask').on('click', () => openPlaySheet(false));
-  $('#btnRedpack').on('click', () => App.toast('红包 · 开发中'));
-  $('#btnSlip').on('click', () => {
+$('#btnSlip').on('click', () => {
     const sep = q.includes('?') ? '&' : '?';
     App.go('../../client-app/pages/bet-records/bet-records.html' + q + sep + 'game=speed-boat');
   });
@@ -1550,13 +1637,17 @@ $(function () {
       recharge: '../../client-app/pages/recharge/recharge.html',
       withdraw: '../../client-app/pages/profile/profile.html',
       'apply-records': '../../client-app/pages/apply-records/apply-records.html',
+      welfare: '../../client-app/pages/welfare/welfare.html',
       'bet-records': '../../client-app/pages/bet-records/bet-records.html',
       flow: '../../client-app/pages/flow/flow.html',
       'points-log': '../../client-app/pages/points-log/points-log.html'
     };
     if (key === 'redpack') { App.toast('红包报表 · 开发中'); return; }
-    if (routes[key]) App.go(routes[key] + q);
-    else App.toast('即将开放');
+    if (routes[key]) {
+      let go = routes[key] + q;
+      if (key === 'bet-records') go += (go.includes('?') ? '&' : '?') + 'game=speed-boat';
+      App.go(go);
+    } else App.toast('即将开放');
   });
   $(document).on('click', function (e) {
     if (drawPanelOpen && !$(e.target).closest('#drawBar').length) {

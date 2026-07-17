@@ -7,7 +7,7 @@
   --ball-5: #5ec8e8; --ball-6: #9b4fd4; --ball-7: #a8a8b0; --ball-8: #e83838;
   --ball-9: #8b1a2e; --ball-10: #2db84a;
   --ffc-gap: 10px;
-  --rail-w: 54px;
+  --rail-w: 56px;
   --ffc-fs-xs: 11px;
   --ffc-fs-sm: 13px;
   --ffc-fs-md: 15px;
@@ -1070,7 +1070,7 @@ body.ffc-bg::after {
 .ffc-rail {
   position: absolute;
   right: 4px;
-  top: 52%;
+  top: 40%;
   transform: translateY(-50%);
   z-index: 30;
   display: flex;
@@ -1271,10 +1271,20 @@ body.ffc-bg::after {
 }
 
 /* + 菜单 & 玩法 sheet */
-.ffc-menu-mask,
-.ffc-play-mask {
+.ffc-menu-mask {
   position: fixed;
   inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(3px);
+}
+/* 玩法遮罩：从历史开奖栏下方起，倒计时/历史仍可见 */
+.ffc-play-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--ffc-play-top, 210px);
+  bottom: 0;
   z-index: 100;
   background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(3px);
@@ -1316,22 +1326,19 @@ body.ffc-bg::after {
   position: fixed;
   left: 0;
   right: 0;
+  top: var(--ffc-play-top, 210px);
   bottom: 0;
   z-index: 110;
   width: 100%;
   max-width: 100%;
   margin: 0;
-  /* 固定高度，切换玩法时弹窗不再忽大忽小 */
-  height: 72vh;
-  height: 72dvh;
-  min-height: 72vh;
-  min-height: 72dvh;
-  max-height: 72vh;
-  max-height: 72dvh;
+  height: auto;
+  min-height: 0;
+  max-height: none;
   background: linear-gradient(180deg, var(--bg-card-2), var(--bg-dark));
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  border-top: 1px solid var(--ffc-border-strong);
-  transform: translateY(100%);
+  border-radius: 12px 12px 0 0;
+  border-top: 1px solid var(--ffc-border);
+  transform: translateY(calc(100% + 8px));
   transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   display: flex;
   flex-direction: column;
@@ -1419,25 +1426,104 @@ body.ffc-bg::after {
 }
 .ffc-play-panel__sub {
   flex-shrink: 0;
+  display: block;
+  padding: 0 10px 8px;
+  overflow: visible;
+}
+.ffc-play-panel__sub.is-hidden { display: none !important; }
+.ffc-play-panel__sub[hidden] { display: none !important; }
+/* 副玩法栏：蓝胶囊 + 可选金色玩法行 */
+.ffc-lm-bar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 0 12px 8px;
+  flex-direction: column;
+  gap: 8px;
 }
-.ffc-play-panel__sub.is-hidden { display: none; }
-.ffc-play-sub__btn {
-  padding: 6px 12px;
+.ffc-lm-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.ffc-lm-row__lab {
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding-left: 2px;
+  font-weight: 600;
+}
+.ffc-lm-row__lab.is-mode { color: #7eb8e8; }
+.ffc-lm-row__lab.is-play { color: rgba(244, 211, 107, 0.9); }
+.ffc-lm-modes,
+.ffc-lm-plays {
+  display: grid;
+  gap: 4px;
+}
+.ffc-lm-modes.is-n2,
+.ffc-lm-plays.is-n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ffc-lm-modes.is-n3,
+.ffc-lm-plays.is-n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ffc-lm-modes.is-n4,
+.ffc-lm-plays.is-n4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ffc-lm-modes.is-n5,
+.ffc-lm-plays.is-n5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.ffc-lm-mode {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 7px 2px;
   border-radius: 999px;
-  border: 1px solid var(--line);
-  background: rgba(0, 0, 0, 0.25);
-  color: var(--text-dim);
-  font-size: var(--ffc-fs-xs);
+  border: 1px solid rgba(90, 150, 210, 0.35);
+  background: rgba(28, 48, 72, 0.55);
+  color: #9ec4e8;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.15;
+  text-align: center;
   cursor: pointer;
+  white-space: nowrap;
 }
-.ffc-play-sub__btn.is-active {
+.ffc-lm-mode.is-active {
+  border-color: #5eb3ff;
+  background: rgba(60, 130, 200, 0.35);
+  color: #d4ecff;
+  box-shadow: inset 0 0 0 1px rgba(94, 179, 255, 0.35);
+}
+.ffc-lm-play {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 2px 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  background: rgba(48, 36, 16, 0.65);
+  color: #e0c878;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.ffc-lm-play small {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(244, 211, 107, 0.75);
+}
+.ffc-lm-play.is-active {
   border-color: var(--gold);
-  background: var(--gold-soft);
-  color: var(--gold-bright);
+  background: rgba(212, 175, 55, 0.28);
+  color: #fff0b8;
+  box-shadow: inset 0 0 0 1px rgba(244, 211, 107, 0.4);
+}
+.ffc-lm-play.is-active small { color: #fff0b8; }
+.ffc-play-panel__empty {
+  grid-column: 1 / -1;
+  padding: 28px 12px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--ffc-fs-sm);
+  line-height: 1.5;
 }
 .ffc-play-panel__grid {
   flex: 1 1 0;
@@ -2378,4 +2464,175 @@ body.ffc-bg::after {
     border-left: 1px solid var(--ffc-border);
     border-right: 1px solid var(--ffc-border);
   }
+}
+
+/* === chat-rail ui v1 (ffc) === */
+
+/* ---------- 右侧栏（chat-rail 统一高度） ---------- */
+.ffc-rail {
+  position: absolute;
+  right: 4px;
+  top: 40%;
+  transform: translateY(-50%);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: var(--rail-w, 56px);
+  pointer-events: none;
+}
+.ffc-rail-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  pointer-events: auto;
+}
+.ffc-rail-ic {
+  width: 42px;
+  height: 42px;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.45));
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.ffc-rail-btn--play .ffc-rail-ic,
+.ffc-rail-ic--play {
+  width: 50px;
+  height: 50px;
+}
+.ffc-rail-btn:active .ffc-rail-ic {
+  transform: scale(0.92);
+}
+.ffc-rail-lb {
+  font-size: 10px;
+  color: var(--text-dim, rgba(245, 236, 214, 0.65));
+  letter-spacing: 0;
+  line-height: 1;
+}
+/* ---------- 底部输入按钮 ---------- */
+.ffc-composer-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ffc-composer-btn__img {
+  width: 40px;
+  height: 40px;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+  transition: transform 0.15s ease;
+}
+.ffc-composer-btn--play .ffc-composer-btn__img,
+.ffc-composer-btn__img--play {
+  width: 46px;
+  height: 46px;
+}
+.ffc-composer-btn--play {
+  width: 46px;
+  height: 46px;
+}
+.ffc-composer-btn:active .ffc-composer-btn__img {
+  transform: scale(0.92);
+}
+.ffc-composer-btn.is-send .ffc-composer-btn__img {
+  filter: drop-shadow(0 2px 8px rgba(212, 175, 55, 0.45));
+}
+/* ---------- 规则弹层 ---------- */
+.ffc-rules-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.55);
+}
+.ffc-rules-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 61;
+  max-height: 72%;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(34, 26, 16, 0.98), rgba(16, 12, 8, 0.99));
+  border-top: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 16px 16px 0 0;
+  transform: translateY(105%);
+  transition: transform 0.28s ease;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.ffc-rules-sheet.is-open {
+  transform: translateY(0);
+}
+.ffc-rules-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gold-bright, #f4d36b);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.18);
+}
+.ffc-rules-sheet__head button {
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #aaa);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.ffc-rules-sheet__body {
+  overflow: auto;
+  padding: 12px 16px 20px;
+  font-size: 13px;
+  color: var(--text, #f5ecd6);
+  line-height: 1.55;
+}
+.ffc-rules-intro {
+  margin: 0 0 12px;
+  color: var(--text-dim, rgba(245, 236, 214, 0.75));
+}
+.ffc-rules-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ffc-rules-table th,
+.ffc-rules-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.12);
+  text-align: left;
+  vertical-align: top;
+}
+.ffc-rules-table th {
+  color: var(--gold-bright, #f4d36b);
+  font-weight: 600;
+  font-size: 12px;
+}
+.ffc-rules-table td:last-child {
+  color: var(--text-dim, rgba(245, 236, 214, 0.7));
+  font-size: 12px;
+}
+
+.ffc-rail-icon { display: none !important; }
+.ffc-plus-btn {
+  /* legacy class kept for selectors; visual via composer-btn */
+  border: none !important;
+  background: transparent !important;
+  font-size: 0 !important;
+  color: transparent !important;
 }

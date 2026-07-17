@@ -1,14 +1,15 @@
 /**
  * 1分快三 · 聊天投注房
- * 3 颗骰子 · 1 分钟一期（56s 下注 + 4s 封盘准备）
- * BUILD 38 — 与 index.html ?v= 保持一致
+ * 3 颗骰子 · 55s 一期（51s 下注倒计时 + 4s 准备中）
+ * BUILD 40 — 与 index.html ?v= 保持一致
  */
 $(function () {
-  const INTERVAL = 60;
+  // 总周期 55s；准备中 = 3 骰滚停实测占满约 4s；倒计时从 00:51 起
+  const INTERVAL = 55;
   const PREP_SEC = 4;
 
   function fixAvatar(url) {
-    const fallback = '/legacy/images/default-avatar.svg';
+    const fallback = '/images/avatars/001.jpg';
     if (!url) return fallback;
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
     if (url.startsWith('/')) return url;
@@ -21,7 +22,7 @@ $(function () {
     return `<div class="k3-msg__avatar k3-msg__avatar--gen" style="--av-hue:${hue}"><span>${ch}</span></div>`;
   }
 
-  const ROBOT = { name: '机器人', avatar: '/legacy/images/default-avatar.svg' };
+  const ROBOT = { name: '机器人', avatar: '/images/avatars/001.jpg' };
   const params = new URLSearchParams(location.search);
   const roomNo = (params.get('roomNo') || '').trim();
   const user = App.getUser();
@@ -41,14 +42,19 @@ $(function () {
 
   const ODDS = {
     side: 1.98,
-    sum: 6.5,
-    dice: 2.0,
+    sum: 6.5, // 兜底；实际按 SUM_ODDS 分档
+    dice: 2.0, // 出现 1 次基准；结算按出现次数 2/3/4
     pairN: 10,
     tripletN: 150,
     tripletAny: 24,
     straight: 8,
     alldiff: 1.95,
     long: 5.8,
+  };
+  /** 和值分档赔率（含本返还） */
+  const SUM_ODDS = {
+    4: 50, 5: 18, 6: 14, 7: 12, 8: 8, 9: 6.5, 10: 6,
+    11: 6, 12: 6.5, 13: 8, 14: 12, 15: 14, 16: 18, 17: 50,
   };
   const SUOHA_WORDS = new Set(['梭哈', '全下', 'allin']);
   const SIDE_CHARS = '大小单双';
@@ -122,12 +128,13 @@ $(function () {
     if ((m = t.match(/^(大|小|单|双)$/))) return { type: 'side', side: m[1], odds: ODDS.side };
     if ((m = t.match(/^和(?:值)?([4-9]|1[0-7])$/))) {
       const sum = +m[1];
-      return { type: 'sum', sum, odds: ODDS.sum };
+      return { type: 'sum', sum, odds: SUM_ODDS[sum] || ODDS.sum };
     }
     if ((m = t.match(/^三军([1-6])$/))) return { type: 'dice', num: +m[1], odds: ODDS.dice };
     if ((m = t.match(/^独([1-6])$/))) return { type: 'dice', num: +m[1], odds: ODDS.dice };
     if ((m = t.match(/^二同([1-6])$/))) return { type: 'pairN', num: +m[1], odds: ODDS.pairN };
     if ((m = t.match(/^三同([1-6])$/))) return { type: 'tripletN', num: +m[1], odds: ODDS.tripletN };
+    if ((m = t.match(/^三同号([1-6])$/))) return { type: 'tripletN', num: +m[1], odds: ODDS.tripletN };
     if (t === '三同号' || t === '豹子' || t === '豹') {
       return { type: 'tripletAny', odds: ODDS.tripletAny };
     }
@@ -161,9 +168,13 @@ $(function () {
       case 'sum':
         win = meta.sum === p.sum;
         break;
-      case 'dice':
-        win = nums.includes(p.num);
-        break;
+      case 'dice': {
+        const c = countOf(nums, p.num);
+        if (c <= 0) return { winAmount: 0, profit: -amount, hit: '' };
+        const diceOdds = c === 1 ? 2 : (c === 2 ? 3 : 4);
+        const winAmount = Math.round(amount * diceOdds);
+        return { winAmount, profit: winAmount - amount, hit: play };
+      }
       case 'pairN':
         win = countOf(nums, p.num) === 2;
         break;
@@ -247,6 +258,20 @@ $(function () {
       return plays.length ? plays : null;
     }
 
+    m = t.match(/^三同号([1-6]+)$/);
+    if (m && m[1].length >= 1) {
+      const plays = [];
+      const seen = new Set();
+      for (const c of m[1]) {
+        if (DICE_CHARS.includes(c) && !seen.has(c)) {
+          seen.add(c);
+          const play = '三同' + c;
+          if (parsePlay(play)) plays.push(play);
+        }
+      }
+      return plays.length ? plays : null;
+    }
+
     m = t.match(/^长牌?([1-6]{2,})$/);
     if (m && m[1].length >= 2 && m[1].length % 2 === 0) {
       const plays = [];
@@ -276,13 +301,16 @@ $(function () {
       return plays.length ? plays : null;
     }
 
+    // 合法和值（和10~和17 等）优先整注
+    if (parsePlay(t)) return [t];
+
     m = t.match(/^和([0-9]+)$/);
     if (m && m[1].length >= 2) {
       const plays = [];
       const seen = new Set();
       for (const c of m[1]) {
         const n = +c;
-        if (n >= 4 && n <= 17 && !seen.has(n)) {
+        if (n >= 4 && n <= 9 && !seen.has(n)) {
           seen.add(n);
           const play = '和' + n;
           if (parsePlay(play)) plays.push(play);
@@ -291,7 +319,6 @@ $(function () {
       return plays.length ? plays : null;
     }
 
-    if (parsePlay(t)) return [t];
     return null;
   }
 
@@ -543,6 +570,7 @@ $(function () {
       const stats = getStats(user.uid);
       stats.winloss += profit;
       stats.turnover += turnover;
+      stats.rebate = (stats.rebate || 0) + Math.floor(turnover * 0.005);
       saveStats(user.uid, stats);
       refreshStats();
     }
@@ -570,8 +598,8 @@ $(function () {
     if (inPrep) {
       $box.addClass('is-preparing');
       $('#cdDigits').prop('hidden', true);
-      $('#cdPrep').prop('hidden', false).text(`封盘中 · ${Math.max(1, Math.ceil(r))}s 后揭晓`);
-      $box.attr('aria-label', '封盘中，准备开奖');
+      $('#cdPrep').prop('hidden', false).text('准备中');
+      $box.attr('aria-label', '准备中');
       $('#drawBar').addClass('is-holding');
       return;
     }
@@ -770,8 +798,8 @@ $(function () {
 
   function initKeypad() {
     const left = ['大', '小', '单', '双'];
-    const right = ['删除', '和', '三同', '三军'];
-    const mid = [['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9'], ['空格', '0', '/']];
+    const right = ['删除', '二同', '三同', '长牌'];
+    const mid = [['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9'], ['和', '三军', '/']];
     let html = '';
     for (let r = 0; r < 4; r++) {
       html += `<button type="button" class="k3-key k3-key--side" data-key="${left[r]}">${left[r]}</button>`;
@@ -779,11 +807,16 @@ $(function () {
       const rk = right[r];
       let cls = ' k3-key--side';
       if (rk === '删除') cls = ' k3-key--del';
-      else if (rk === '和') cls = ' k3-key--sum';
-      else if (rk === '三同') cls = ' k3-key--tri';
-      else if (rk === '三军') cls = ' k3-key--dice';
+      else if (rk === '二同' || rk === '三同') cls = ' k3-key--tri';
+      else if (rk === '长牌') cls = ' k3-key--dice';
       html += `<button type="button" class="k3-key${cls}" data-key="${rk}">${rk}</button>`;
     }
+    // 第五行：三连号（玩法/金额）
+    html += `<button type="button" class="k3-key k3-key--side" data-key="三连">三连</button>`;
+    html += `<button type="button" class="k3-key" data-key="0">0</button>`;
+    html += `<button type="button" class="k3-key k3-key--side" data-key="三不同">三不同</button>`;
+    html += `<button type="button" class="k3-key" data-key="空格">空格</button>`;
+    html += `<button type="button" class="k3-key k3-key--side" data-key="豹子">豹子</button>`;
     $('#keyGrid').html(html);
   }
 
@@ -796,17 +829,26 @@ $(function () {
   function insertInput(text) {
     const $in = $('#chatInput');
     const v = $in.val();
-    if (text === '删除') { $in.val(v.slice(0, -1)); return; }
-    if (text === '空格') { $in.val(v + ' '); return; }
-    if (text === '和') { $in.val(v + '和'); return; }
-    if (text === '三同') { $in.val(v + '三同号'); return; }
-    if (text === '三军') { $in.val(v + '三军'); return; }
+    if (text === '删除') { $in.val(v.slice(0, -1)); updateComposerAction(); return; }
+    if (text === '空格') { $in.val(v + ' '); updateComposerAction(); return; }
+    if (text === '三连') { $in.val(v + '三连号'); updateComposerAction(); return; }
+    if (text === '三不同') { $in.val(v + '三不同号'); updateComposerAction(); return; }
+    if (text === '豹子') { $in.val(v + '三同号'); updateComposerAction(); return; }
     $in.val(v + text);
+    updateComposerAction();
   }
 
   function updateComposerAction() {
     const hasText = !!$('#chatInput').val().trim();
-    $('#plusBtn').toggleClass('is-send', hasText).text(hasText ? '发送' : '+');
+    const $btn = $('#plusBtn');
+    const $img = $('#plusBtnImg');
+    if (hasText) {
+      $btn.addClass('is-send').attr('aria-label', '发送');
+      if ($img.length) $img.attr('src', '/images/chat-rail/send.png?v=1');
+    } else {
+      $btn.removeClass('is-send').attr('aria-label', '更多');
+      if ($img.length) $img.attr('src', '/images/chat-rail/plus.png?v=1');
+    }
   }
 
   function sendBetMessage() {
@@ -814,7 +856,7 @@ $(function () {
     if (!text) return;
     if (!isBettingOpen()) { App.toast('封盘中，无法下注'); return; }
     if (!parseBetInput(text)) {
-      App.toast('格式：玩法/金额，如 大/100、和11/50、二同3/100、长牌12/50');
+      App.toast('格式：大/100、和11/50、三同号/100、三同1/100、二同3/100、长牌12/100、三连号/100');
       return;
     }
     const bal = App.getBalance(user.uid);
@@ -868,7 +910,7 @@ $(function () {
       sideItems: ['大', '小', '单', '双'].map(p => ({ play: p, label: p, odds: ODDS.side })),
       sumItems: Array.from({ length: 14 }, (_, i) => {
         const sum = i + 4;
-        return { play: '和' + sum, label: String(sum), odds: ODDS.sum };
+        return { play: '和' + sum, label: String(sum), odds: SUM_ODDS[sum] || ODDS.sum };
       }),
     },
     {
@@ -1058,9 +1100,22 @@ $(function () {
     $grid.scrollTop(0);
   }
 
+
+  /** 玩法面板顶边对齐历史开奖栏下沿，盖住聊天区、露出倒计时 */
+  function layoutPlayOverlay() {
+    const bar = document.getElementById('drawBar');
+    let top = 210;
+    if (bar) {
+      const rect = bar.getBoundingClientRect();
+      top = Math.max(120, Math.ceil(rect.bottom + 4));
+    }
+    document.documentElement.style.setProperty('--k3-play-top', top + 'px');
+  }
   function openPlaySheet(open) {
     const $room = $('.k3-room');
     if (open) {
+      layoutPlayOverlay();
+
       if (drawPanelOpen) setDrawPanelOpen(false);
       openLongSheet(false);
       openPredictSheet(false);
@@ -1086,6 +1141,10 @@ $(function () {
       $room.removeClass('has-play');
     }
   }
+
+  $(window).on('resize orientationchange', () => {
+    if ($('#playSheet').hasClass('is-open')) layoutPlayOverlay();
+  });
 
   function submitPlayBet() {
     if (!isBettingOpen()) { App.toast('封盘中，无法下注'); return; }
@@ -1614,11 +1673,46 @@ $(function () {
   tick();
 
   $('#backBtn').on('click', () => App.go('../../client-app/pages/game-lobby/game-lobby.html' + q));
+  /* === chat-rail handlers (k3) === */
+
+  function openRulesSheet(open) {
+    if (open) {
+      const tip = '格式：玩法/金额，如 大/100、二同3/50、长牌12/100';
+      let rows = '';
+      if (typeof PLAY_CATEGORIES !== 'undefined' && PLAY_CATEGORIES && PLAY_CATEGORIES.length) {
+        rows = PLAY_CATEGORIES.map(c => {
+          const title = c.title || c.name || c.id || '';
+          const hint = c.hint || '';
+          return '<tr><td>' + title + '</td><td>' + hint + '</td></tr>';
+        }).join('');
+      }
+      const html =
+        '<p class="k3-rules-intro">' + tip + '</p>' +
+        (rows
+          ? '<table class="k3-rules-table"><thead><tr><th>玩法</th><th>说明</th></tr></thead><tbody>' + rows + '</tbody></table>'
+          : '<p class="k3-rules-intro">点击右侧或输入栏「玩法」可点选下注；封盘后不可下注。</p>');
+      $('#rulesBody').html(html);
+      $('#rulesMask').prop('hidden', false);
+      $('#rulesSheet').prop('hidden', false).addClass('is-open');
+    } else {
+      $('#rulesSheet').removeClass('is-open');
+      $('#rulesMask').prop('hidden', true);
+      setTimeout(() => { if (!$('#rulesSheet').hasClass('is-open')) $('#rulesSheet').prop('hidden', true); }, 280);
+    }
+  }
+
+  function goBetRecords() {
+    const sep = q.includes('?') ? '&' : '?';
+    App.go('../../client-app/pages/bet-records/bet-records.html' + q + sep + 'game=kuai3');
+  }
+
   $('#btnCs').on('click', () => App.go('../../client-app/pages/cs/cs.html' + q));
-  $('#btnExpand').on('click', () => openPlaySheet(true));
+  $('#btnExpand, #btnComposerPlay').on('click', () => openPlaySheet(true));
+  $('#btnRules').on('click', () => openRulesSheet(true));
+  $('#rulesSheetClose, #rulesMask').on('click', () => openRulesSheet(false));
+  $('#btnRecords').on('click', () => goBetRecords());
   $('#playSheetClose, #playMask').on('click', () => openPlaySheet(false));
-  $('#btnRedpack').on('click', () => App.toast('红包 · 开发中'));
-  $('#btnSlip').on('click', () => {
+$('#btnSlip').on('click', () => {
     const sep = q.includes('?') ? '&' : '?';
     App.go('../../client-app/pages/bet-records/bet-records.html' + q + sep + 'game=kuai3');
   });
@@ -1686,8 +1780,11 @@ $(function () {
       'points-log': '../../client-app/pages/points-log/points-log.html'
     };
     if (key === 'redpack') { App.toast('红包报表 · 开发中'); return; }
-    if (routes[key]) App.go(routes[key] + q);
-    else App.toast('即将开放');
+    if (routes[key]) {
+      let go = routes[key] + q;
+      if (key === 'bet-records') go += (go.includes('?') ? '&' : '?') + 'game=kuai3';
+      App.go(go);
+    } else App.toast('即将开放');
   });
   $(document).on('click', function (e) {
     if (drawPanelOpen && !$(e.target).closest('#drawBar').length) {

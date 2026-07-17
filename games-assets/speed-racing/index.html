@@ -6,7 +6,7 @@
   <title>极速赛车</title>
   <link rel="stylesheet" href="/legacy/css/common.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap">
-  <link rel="stylesheet" href="./css/jsr.css?v=79">
+  <link rel="stylesheet" href="./css/jsr.css?v=80">
   <script>
     /* 大厅 iframe 嵌入时标记，布局用 100% 跟随容器而非外层 100dvh */
     (function () {
@@ -100,23 +100,38 @@
   <!-- 聊天区 + 右侧快捷按钮 -->
   <div class="jsr-chat-wrap">
     <main class="jsr-chat" id="chatFeed" role="log" aria-live="polite"></main>
-    <aside class="jsr-rail" aria-label="快捷操作">
-      <button type="button" class="jsr-rail-btn" id="btnCs" title="客服">
-        <span class="jsr-rail-icon jsr-rail-icon--cs"></span>
-      </button>
-      <button type="button" class="jsr-rail-btn" id="btnExpand" title="玩法">
-        <span class="jsr-rail-icon jsr-rail-icon--expand"></span>
-      </button>
-      <button type="button" class="jsr-rail-btn" id="btnRedpack" title="红包">
-        <span class="jsr-rail-icon jsr-rail-icon--rp"></span>
-      </button>
-    </aside>
-  </div>
+      </div>
 
-  <!-- 底部输入 -->
+  <!-- 右侧浮钮：客服 / 规则 / 记录 / 玩法 -->
+  <aside class="jsr-rail" aria-label="快捷操作">
+    <button type="button" class="jsr-rail-btn" id="btnCs" title="客服">
+      <img class="jsr-rail-ic" src="/images/chat-rail/cs.png?v=1" alt="" draggable="false">
+      <span class="jsr-rail-lb">客服</span>
+    </button>
+    <button type="button" class="jsr-rail-btn" id="btnRules" title="规则">
+      <img class="jsr-rail-ic" src="/images/chat-rail/rules.png?v=1" alt="" draggable="false">
+      <span class="jsr-rail-lb">规则</span>
+    </button>
+    <button type="button" class="jsr-rail-btn" id="btnRecords" title="记录">
+      <img class="jsr-rail-ic" src="/images/chat-rail/records.png?v=1" alt="" draggable="false">
+      <span class="jsr-rail-lb">记录</span>
+    </button>
+    <button type="button" class="jsr-rail-btn jsr-rail-btn--play" id="btnExpand" title="玩法">
+      <img class="jsr-rail-ic jsr-rail-ic--play" src="/images/chat-rail/play.png?v=1" alt="" draggable="false">
+      <span class="jsr-rail-lb">玩法</span>
+    </button>
+  </aside>
+
+
+    <!-- 底部输入：输入框 + / 玩法 -->
   <footer class="jsr-composer">
     <input type="text" class="jsr-input" id="chatInput" placeholder="输入玩法/金额" autocomplete="off" enterkeyhint="send">
-    <button type="button" class="jsr-plus-btn" id="plusBtn" aria-label="更多">+</button>
+    <button type="button" class="jsr-composer-btn" id="plusBtn" aria-label="更多">
+      <img class="jsr-composer-btn__img" id="plusBtnImg" src="/images/chat-rail/plus.png?v=1" alt="" draggable="false">
+    </button>
+    <button type="button" class="jsr-composer-btn jsr-composer-btn--play" id="btnComposerPlay" title="玩法" aria-label="玩法">
+      <img class="jsr-composer-btn__img jsr-composer-btn__img--play" src="/images/chat-rail/play.png?v=1" alt="" draggable="false">
+    </button>
   </footer>
 
   <!-- 投注键盘 -->
@@ -178,7 +193,18 @@
     </footer>
   </div>
 
-  <!-- 长龙统计 -->
+  
+  <!-- 游戏规则 -->
+  <div class="jsr-rules-mask" id="rulesMask" hidden></div>
+  <div class="jsr-rules-sheet" id="rulesSheet" hidden>
+    <div class="jsr-rules-sheet__head">
+      <span>游戏规则</span>
+      <button type="button" id="rulesSheetClose" aria-label="关闭">×</button>
+    </div>
+    <div class="jsr-rules-sheet__body" id="rulesBody"></div>
+  </div>
+
+<!-- 长龙统计 -->
   <div class="jsr-long-mask" id="longMask" hidden></div>
   <div class="jsr-long-sheet" id="longSheet" hidden>
     <div class="jsr-long-sheet__handle" aria-hidden="true"></div>
@@ -220,7 +246,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 <script src="/legacy/js/games-common.js"></script>
-<script src="./js/result-card.js?v=79"></script>
-<script src="./js/jsr.js?v=79"></script>
+<script src="./js/result-card.js?v=5"></script>
+<script src="./js/jsr.js?v=85"></script>
 </body>
 </html>

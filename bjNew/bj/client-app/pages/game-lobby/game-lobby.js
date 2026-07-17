@@ -166,7 +166,7 @@ $(function () {
                   stroke="currentColor" stroke-width="1.2" fill="none" opacity="0.5"/>`
     },
     {
-      key: 'lhc', name: '六合彩', desc: '49 选 7 · 1 分一期',
+      key: 'lhc', name: '幸运六合彩', desc: '49 选 7 · 1 分一期',
       type: 'lottery', intervalSec: 60,
       iconImg: '../../assets/images/games/hk-mark6.png',
       svg: `<circle cx="12" cy="14" r="5"
@@ -317,31 +317,6 @@ $(function () {
             <path d="M8 18 H16 M32 18 H40"
                   stroke="currentColor" stroke-width="1.5" opacity="0.7"/>
             <circle cx="24" cy="10" r="2.2" fill="currentColor" opacity="0.8"/>`
-    },
-    {
-      key: 'laba', name: '经典拉霸', desc: '3 轴 1 线 · 777 水果机', tag: '新 品',
-      type: 'instant',
-      iconImg: '../../assets/images/games/laba.png',
-      svg: `<rect x="5" y="10" width="38" height="30" rx="4"
-                  fill="rgba(244,211,107,0.12)"
-                  stroke="currentColor" stroke-width="1.6"/>
-            <rect x="9" y="14" width="9" height="22" rx="2"
-                  fill="rgba(244,211,107,0.28)"
-                  stroke="currentColor" stroke-width="1.2"/>
-            <rect x="19.5" y="14" width="9" height="22" rx="2"
-                  fill="rgba(244,211,107,0.38)"
-                  stroke="currentColor" stroke-width="1.2"/>
-            <rect x="30" y="14" width="9" height="22" rx="2"
-                  fill="rgba(244,211,107,0.28)"
-                  stroke="currentColor" stroke-width="1.2"/>
-            <text x="14" y="28" font-size="10" font-weight="900"
-                  fill="currentColor" text-anchor="middle">7</text>
-            <text x="24" y="28" font-size="10" font-weight="900"
-                  fill="currentColor" text-anchor="middle">7</text>
-            <text x="34" y="28" font-size="10" font-weight="900"
-                  fill="currentColor" text-anchor="middle">7</text>
-            <line x1="5" y1="25" x2="43" y2="25"
-                  stroke="currentColor" stroke-width="1.5" opacity="0.6"/>`
     },
     {
       key: 'longhu', name: '龙虎斗', desc: '龙 虎 比 牌 · 押 中 即 赢', tag: '新 品',
@@ -609,7 +584,6 @@ $(function () {
     queen: '../../../games-assets/queen/index.html',
     slots: '../../../games-assets/slots/index.html',
     bcbm: '../../../games-assets/bcbm/index.html',
-    laba: '../../../games-assets/laba/index.html',
     longhu: '../../../games-assets/longhu/index.html'
   };
   $('#gamesList').on('click', '.game-card', function () {

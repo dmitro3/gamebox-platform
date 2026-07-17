@@ -6,7 +6,7 @@
   <title>快乐时时彩</title>
   <link rel="stylesheet" href="/legacy/css/common.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap">
-  <link rel="stylesheet" href="./css/ssc.css">
+  <link rel="stylesheet" href="./css/ssc.css?v=3">
   <script>
     /* 大厅 iframe 嵌入时标记，布局用 100% 跟随容器而非外层 100dvh */
     (function () {
@@ -98,23 +98,35 @@
   <!-- 聊天主栏：全房间下注信息 -->
   <main class="ssc-chat" id="chatFeed" role="log" aria-live="polite"></main>
 
-  <!-- 右侧浮钮（参考图：一列圆形图标） -->
+    <!-- 右侧浮钮：客服 / 规则 / 记录 / 玩法 -->
   <aside class="ssc-rail" aria-label="快捷操作">
     <button type="button" class="ssc-rail-btn" id="btnCs" title="客服">
-      <span class="ssc-rail-icon ssc-rail-icon--cs"></span>
+      <img class="ssc-rail-ic" src="/images/chat-rail/cs.png?v=1" alt="" draggable="false">
+      <span class="ssc-rail-lb">客服</span>
     </button>
-    <button type="button" class="ssc-rail-btn" id="btnExpand" title="玩法">
-      <span class="ssc-rail-icon ssc-rail-icon--expand"></span>
+    <button type="button" class="ssc-rail-btn" id="btnRules" title="规则">
+      <img class="ssc-rail-ic" src="/images/chat-rail/rules.png?v=1" alt="" draggable="false">
+      <span class="ssc-rail-lb">规则</span>
     </button>
-    <button type="button" class="ssc-rail-btn" id="btnRedpack" title="红包">
-      <span class="ssc-rail-icon ssc-rail-icon--rp"></span>
+    <button type="button" class="ssc-rail-btn" id="btnRecords" title="记录">
+      <img class="ssc-rail-ic" src="/images/chat-rail/records.png?v=1" alt="" draggable="false">
+      <span class="ssc-rail-lb">记录</span>
+    </button>
+    <button type="button" class="ssc-rail-btn ssc-rail-btn--play" id="btnExpand" title="玩法">
+      <img class="ssc-rail-ic ssc-rail-ic--play" src="/images/chat-rail/play.png?v=1" alt="" draggable="false">
+      <span class="ssc-rail-lb">玩法</span>
     </button>
   </aside>
 
-  <!-- 底部输入 -->
+    <!-- 底部输入：输入框 + / 玩法 -->
   <footer class="ssc-composer">
     <input type="text" class="ssc-input" id="chatInput" placeholder="玩法/金额，如 十百59/100、万单/梭哈" autocomplete="off" enterkeyhint="send">
-    <button type="button" class="ssc-plus-btn" id="plusBtn" aria-label="更多">+</button>
+    <button type="button" class="ssc-composer-btn" id="plusBtn" aria-label="更多">
+      <img class="ssc-composer-btn__img" id="plusBtnImg" src="/images/chat-rail/plus.png?v=1" alt="" draggable="false">
+    </button>
+    <button type="button" class="ssc-composer-btn ssc-composer-btn--play" id="btnComposerPlay" title="玩法" aria-label="玩法">
+      <img class="ssc-composer-btn__img ssc-composer-btn__img--play" src="/images/chat-rail/play.png?v=1" alt="" draggable="false">
+    </button>
   </footer>
 
   <!-- 投注键盘 -->
@@ -169,7 +181,18 @@
     </footer>
   </div>
 
-  <!-- 长龙统计 -->
+  
+  <!-- 游戏规则 -->
+  <div class="ssc-rules-mask" id="rulesMask" hidden></div>
+  <div class="ssc-rules-sheet" id="rulesSheet" hidden>
+    <div class="ssc-rules-sheet__head">
+      <span>游戏规则</span>
+      <button type="button" id="rulesSheetClose" aria-label="关闭">×</button>
+    </div>
+    <div class="ssc-rules-sheet__body" id="rulesBody"></div>
+  </div>
+
+<!-- 长龙统计 -->
   <div class="ssc-long-mask" id="longMask" hidden></div>
   <div class="ssc-long-sheet" id="longSheet" hidden>
     <div class="ssc-long-sheet__handle" aria-hidden="true"></div>
@@ -211,7 +234,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 <script src="/legacy/js/games-common.js"></script>
-<script src="./js/result-card.js"></script>
-<script src="./js/ssc.js"></script>
+<script src="./js/result-card.js?v=5"></script>
+<script src="./js/ssc.js?v=10"></script>
 </body>
 </html>

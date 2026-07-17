@@ -3,8 +3,11 @@
   if (window.__bjlBooted) return;
   window.__bjlBooted = true;
 
-  var TOTAL = 15;
+  /* 总周期 60s：下注 + 开奖流程(发牌翻牌报点≈12s) + 派奖 4s */
+  var ROUND_SEC = 60;
+  var DRAW_EST_SEC = 12;
   var PAYOUT_SECS = 4;
+  var TOTAL = ROUND_SEC - DRAW_EST_SEC - PAYOUT_SECS;
   var BANNER_MS = 1500;
   var FLY_MS = 360;
   var GAP_MS = 140;
@@ -445,10 +448,31 @@
 
   function uid() { return (user && user.uid) ? user.uid : '100000001'; }
 
+  function getStats() {
+    try {
+      return JSON.parse(localStorage.getItem('bjl_stats_' + uid())) || { turnover: 0, winloss: 0, rebate: 0 };
+    } catch (e) {
+      return { turnover: 0, winloss: 0, rebate: 0 };
+    }
+  }
+  function saveStats(s) {
+    localStorage.setItem('bjl_stats_' + uid(), JSON.stringify(s));
+  }
   function refreshBalance() {
     var el = qs('#statBalance');
     if (!el || !window.App || !App.getBalance) return;
     try { el.textContent = Number(App.getBalance(uid())).toLocaleString('en-US'); } catch (e) {}
+    var s = getStats();
+    var wl = qs('#statWinloss');
+    var to = qs('#statTurnover');
+    var rb = qs('#statRebate');
+    if (wl) {
+      wl.textContent = (s.winloss >= 0 ? '+' : '') + Math.round(s.winloss).toLocaleString('en-US');
+      wl.classList.toggle('is-plus', s.winloss > 0);
+      wl.classList.toggle('is-minus', s.winloss < 0);
+    }
+    if (to) to.textContent = Math.round(s.turnover).toLocaleString('en-US');
+    if (rb) rb.textContent = Math.round(s.rebate || 0).toLocaleString('en-US');
   }
 
   function debitBalance(amount) {
@@ -908,6 +932,11 @@
   function applySettlement(settlement) {
     if (!settlement) return;
     if (settlement.returnTotal > 0) creditBalance(settlement.returnTotal);
+    var s = getStats();
+    s.turnover = (s.turnover || 0) + (settlement.stakeTotal || 0);
+    s.winloss = (s.winloss || 0) + (settlement.profit || 0);
+    s.rebate = (s.rebate || 0) + Math.floor((settlement.stakeTotal || 0) * 0.005);
+    saveStats(s);
     refreshBalance();
     if (settlement.returnTotal > 0) showScorePop(settlement.returnTotal);
   }

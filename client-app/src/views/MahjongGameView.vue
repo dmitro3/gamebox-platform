@@ -1018,6 +1018,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useWalletStore } from '@/stores/wallet'
 import MahjongTile from '@/components/MahjongTile.vue'
 import MahjongSymbolInfo, { type TileAnchor } from '@/components/MahjongSymbolInfo.vue'
 import MahjongInfoSheet from '@/components/MahjongInfoSheet.vue'
@@ -2404,8 +2405,9 @@ const setMaxBet = () => applyComboByTotal(validTotals[validTotals.length - 1])
 const increaseBet = () => selectTotalByOffset(1)
 const decreaseBet = () => selectTotalByOffset(-1)
 
-// 金额状态
-const balance = ref(10000.00)
+// 金额状态：进页同步服务端余额；局内本地演示扣派，离页再拉真余额
+const walletStore = useWalletStore()
+const balance = ref(0)
 const winAmount = ref(0.00)
 
 // 历史记录数据结构
@@ -2777,6 +2779,8 @@ onUnmounted(() => {
   window.removeEventListener('keydown', onFsPreviewKeydown)
   window.removeEventListener('resize', refreshAdMsgState)
   window.removeEventListener('resize', syncViewportSize)
+  // 本地演示账不回写服务端
+  void walletStore.fetchBalance()
 })
 
 onMounted(() => {
@@ -2786,6 +2790,9 @@ onMounted(() => {
   nextTick(refreshAdMsgState)
   window.addEventListener('resize', refreshAdMsgState)
   window.addEventListener('resize', syncViewportSize)
+  void walletStore.fetchBalance().then(() => {
+    balance.value = walletStore.balance
+  })
   if (import.meta.env.DEV) {
     window.addEventListener('keydown', onFsPreviewKeydown)
     console.info(

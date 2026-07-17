@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<e:Skin class="Benz.ProfileGroupSkin" xmlns:Locale="Locale.*"  currentState="profile" xmlns:e="http://ns.egret.com/eui" xmlns:w="http://ns.egret.com/wing" states="profile,login,promotion" >
+	<e:Group id="loginGroup" height="40" visible.profile="false" visible.promotion="false" verticalCenter.login="0" verticalCenter="0" left="0" locked="true">
+		<e:Image width="40" top="0" bottom="0" left="0" source="yoplaycommon_json.icon_login"/>
+		<Locale:LocaleLabel localeKey="common.login" text="登陸" left="40" top="0" bottom="0" textAlign="left" verticalAlign="middle" size="22" bold="true" strokeColor="0x000000" stroke="1"/>
+	</e:Group>
+	<e:Group top="0" bottom="0" visible.login="false" left="0" right="0">
+		<e:Image source="yben_main_json.yben_icon_user"/>
+		<e:Rect id="bgRect" strokeWeight="2" left="0" right="0" top="0" bottom="0" ellipseWidth="60" strokeColor="0xFDC069" visible="false"/>
+		<e:Image id="bgImage" left="0" right="0" top="0" bottom="0" visible="false"/>
+		<e:Group x="64" y="15">
+			<e:Rect id="nicknameBg" fillColor="0xD1577D" left="0" right="0" top="0" ellipseWidth="32" scaleX="1" scaleY="1" bottom="0" fillAlpha="0"/>
+			<e:Label id="nicknameLabel" text="nickname" size="13" touchEnabled="false" y="1"/>
+		</e:Group>
+		<e:Group id="amountGroup" x="61" verticalCenter="1">
+			<e:Rect id="balanceBg" left="0" right="0" top="0" ellipseWidth="32" scaleX="1" scaleY="1" bottom="0" fillColor="0x25CED8" fillColor.promotion="0x1a364e" strokeColor.promotion="0x55a4c8" strokeWeight.promotion="3" fillAlpha="0" strokeAlpha="0"/>
+			<e:Label id="balanceLabel" text="1234567.12" size="13" touchEnabled="false" textColor="0xFFFFFF" textColor.promotion="0xFDC12C" verticalCenter="0.5" anchorOffsetY="6.5" left="19"/>
+			<e:Image id="coinImage" scaleX="1" scaleY="1" touchEnabled="false" source="yben_main_json.yben_icon_money" verticalCenter="0"/>
+			<e:Group id="bonusIconGrp" width="19" height="19"/>
+		</e:Group>
+		<e:Image id="profilePicImage" width="46" fillMode="scale" cacheAsBitmap="false" height="46" source="" x="15" y="15"/>
+		<e:Rect id="profilePicMask" width="46" height="46" fillColor="0xff0000" ellipseWidth="156" ellipseHeight="156" x="15" y="15"/>
+		<e:Image id="profilePicOverlayImage" x="16" height="45" y="16" width="45" source="yben_main_json.yben_icon_money" alpha="0"/>
+		<e:Group id="userIconGrp" width="78" height="78" left="1" top="3" visible="false"/>
+	</e:Group>
+	<e:Image id="washIcon" width="89" height="41" anchorOffsetX="0" left="3" top="-4" anchorOffsetY="0" includeIn="promotion" touchEnabled="false" scaleX="0.7" scaleY="0.7"/>
+</e:Skin>

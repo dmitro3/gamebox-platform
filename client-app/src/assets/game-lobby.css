@@ -11,6 +11,17 @@
        仅在 <body class="lobby-bg"> 下生效；其他页面无影响
    ===================================================================== */
 body.lobby-bg {
+  /* 大厅统一字号阶梯（正文基线 13px，避免卡片里忽大忽小） */
+  --lobby-font: 'Noto Serif SC', 'Songti SC', 'STSong', 'STZhongsong', 'SimSun', 'Microsoft YaHei', serif;
+  --lobby-font-num: 'Roboto Mono', 'SF Mono', Menlo, Consolas, ui-monospace, monospace;
+  --lobby-fs-title: 22px;       /* 页标题「游戏大厅」 */
+  --lobby-fs-name: 17px;        /* 卡片游戏名 */
+  --lobby-fs-body: 13px;        /* 跑马灯 / 期号 / 底条正文 */
+  --lobby-fs-timer: 17px;       /* 倒计时与「实时进行」同级，不再夸张放大 */
+  --lobby-fs-num: 12px;         /* 开奖号码球 */
+  --lobby-fs-tag: 11px;         /* 热门/新品角标 */
+  --lobby-fs-tab: 12px;         /* 底栏文案 */
+
   background-color: var(--bg-dark);
   background-image:
     radial-gradient(ellipse 700px 400px at 50% -6%, rgba(212, 175, 55, 0.16), transparent 65%),
@@ -19,6 +30,8 @@ body.lobby-bg {
   background-position: center, center;
   background-repeat: no-repeat, no-repeat;
   overflow-x: hidden;
+  font-family: var(--lobby-font);
+  font-size: var(--lobby-fs-body);
 }
 /* 关掉 common.css 默认 body::before 那层暗膜（仅大厅页生效） */
 body.lobby-bg::before { display: none; }
@@ -119,10 +132,10 @@ body.lobby-bg::before { display: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Noto Serif SC', 'Songti SC', 'STSong', 'STZhongsong', 'SimSun', 'Microsoft YaHei', serif;
-  font-size: 24px;                    /* 放大：17 → 24 */
-  font-weight: 900;                   /* 加粗：700 → 900（黑体级粗细） */
-  letter-spacing: 6px;                /* 字距同步加大，让 4 个字更舒展 */
+  font-family: var(--lobby-font);
+  font-size: var(--lobby-fs-title);
+  font-weight: 900;
+  letter-spacing: 5px;
   line-height: 1;
   /* 金色渐变文字（与「输入房间号」用户卡名字同款配方） */
   background: linear-gradient(180deg, #fff7e2 0%, var(--gold-bright) 48%, var(--gold) 80%, var(--gold-deep) 100%);
@@ -223,7 +236,7 @@ body.lobby-bg::before { display: none; }
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 12px;
+  font-size: var(--lobby-fs-body);
   line-height: 1;
   letter-spacing: 0.5px;
   color: var(--text-dim);
@@ -232,11 +245,11 @@ body.lobby-bg::before { display: none; }
 }
 .lobby-marquee .lm-item:active { opacity: 0.6; }
 .lobby-marquee .lm-item .lm-emoji {
-  font-size: 13px;
+  font-size: var(--lobby-fs-body);
   line-height: 1;
 }
 .lobby-marquee .lm-item .lm-text {
-  font-family: 'Noto Serif SC', serif;
+  font-family: var(--lobby-font);
 }
 
 /* 不同类型用不同高亮色 */
@@ -245,7 +258,8 @@ body.lobby-bg::before { display: none; }
 }
 .lobby-marquee .lm-item[data-type="win"] .lm-text .num {
   color: #ffe78a;
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-family: var(--lobby-font-num);
+  font-size: inherit;
   font-weight: 700;
   text-shadow: 0 0 4px rgba(245, 200, 66, 0.45);
 }
@@ -262,7 +276,7 @@ body.lobby-bg::before { display: none; }
 .lobby-marquee .lm-sep {
   display: inline-block;
   margin: 0 12px;
-  font-size: 8px;
+  font-size: 10px;
   line-height: 1;
   color: var(--gold);
   opacity: 0.45;
@@ -734,20 +748,16 @@ body.lobby-bg::before { display: none; }
   flex: 1;
   min-width: 0;
   text-align: center;
-  font-family: 'Noto Serif SC', 'Songti SC', serif;
-  font-size: 19px;
+  font-family: var(--lobby-font);
+  font-size: var(--lobby-fs-name);
   font-weight: 800;
   color: var(--gold-bright);
-  letter-spacing: 3px;
+  letter-spacing: 2px;
+  line-height: 1.2;
 }
-/* 5 字以上长名字（如「香港六合彩」）单独缩字号 + 字距，避免被省略号截断
-   1 个游戏单独受影响，其它 13 个仍保持舒展的 19/3 视觉 */
+/* 长名字只收字距，不改字号，保持卡片内字号一致 */
 .game-card .gc-name.gc-name-tight {
-  font-size: 16px;
-  letter-spacing: 1px;
-  text-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.7),
-    0 0 10px rgba(212, 175, 55, 0.35);
+  letter-spacing: 0.5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -756,36 +766,48 @@ body.lobby-bg::before { display: none; }
 /* —— 右侧：当前期号（上）+ 倒计时 / 封盘 / 开奖（下） —— */
 .game-card .gc-status {
   flex-shrink: 0;
-  min-width: 78px;                      /* 92 → 78：能容纳「第 000000 期 / 00:00 / 封盘中」最长状态即可，给名字更多空间 */
+  min-width: 84px;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 6px;
   text-align: right;
+  font-family: var(--lobby-font);
 }
 .game-card .gc-issue {
-  font-size: 11px;
+  font-size: var(--lobby-fs-body);
   letter-spacing: 0.5px;
   color: var(--text-muted);
   white-space: nowrap;
+  line-height: 1.2;
 }
 .game-card .gc-issue .gc-issue-no {
   color: var(--gold);
+  font-family: var(--lobby-font-num);
+  font-size: inherit;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 .game-card .gc-countdown {
-  font-family: 'Bebas Neue', 'Oswald', 'Roboto Mono', 'Menlo', monospace;
-  font-size: 22px;
+  font-family: var(--lobby-font-num);
+  font-size: var(--lobby-fs-timer);
   font-weight: 700;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   color: var(--gold-bright);
   font-variant-numeric: tabular-nums;
   text-shadow:
     0 1px 0 rgba(0, 0, 0, 0.7),
     0 0 8px rgba(244, 211, 107, 0.35);
-  line-height: 1;
+  line-height: 1.15;
+}
+/* 中文状态（封盘/开奖/实时）与倒计时同字号，换回大厅正文字体 */
+.game-card .gc-countdown.is-freeze,
+.game-card .gc-countdown.is-drawing,
+.game-card .gc-countdown.is-instant {
+  font-family: var(--lobby-font);
+  font-size: var(--lobby-fs-timer);
+  letter-spacing: 2px;
 }
 .game-card .gc-countdown.is-freeze   { color: #b48a2a; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7); }
 .game-card .gc-countdown.is-drawing  {
@@ -795,46 +817,294 @@ body.lobby-bg::before { display: none; }
 }
 .game-card .gc-countdown.is-instant  {
   color: var(--text-muted);
-  font-size: 16px;
-  letter-spacing: 2px;
-  font-family: 'Noto Serif SC', serif;
+}
+/* 即时游戏：状态区垂直居中，只留「实时进行」一行 */
+.game-card .gc-status:has(.gc-countdown.is-instant:only-child) {
+  justify-content: center;
+  min-height: 48px;
 }
 @keyframes drawPulse {
   0%, 100% { opacity: 1; }
   50%      { opacity: 0.55; }
 }
 
-/* —— 底条：颜色加深小条（已加大），左 = 上一期期号，右 = 中奖号码（先留空） —— */
+/* —— 底条：左 = 上一期期号，右 = 开奖号码 —— */
 .game-card .gc-foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 10px 24px;                   /* 18 → 24：与上方 .gc-main 同样左右 24，整列对齐 */
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.82) 100%);  /* 颜色再深一档 */
+  padding: 10px 24px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.82) 100%);
   border-top: 1px solid rgba(244, 211, 107, 0.22);
-  font-size: 13px;                      /* 12 → 13 */
-  letter-spacing: 1px;
+  font-family: var(--lobby-font);
+  font-size: var(--lobby-fs-body);
+  letter-spacing: 0.5px;
   color: var(--text-muted);
-  min-height: 38px;                     /* 28 → 38，明显更厚 */
+  min-height: 38px;
+}
+.game-card .gc-foot--instant {
+  justify-content: center;
+}
+.game-card .gc-foot-instant-label {
+  font-size: var(--lobby-fs-body);
+  letter-spacing: 2px;
+  color: rgba(244, 211, 107, 0.45);
 }
 .game-card .gc-foot-issue {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
-  font-size: 12px;                      /* 副信息略小，主信息（号码）后期更突出 */
+  font-size: var(--lobby-fs-body);
+  flex-shrink: 0;
 }
 .game-card .gc-foot-issue .gc-foot-issue-no {
   color: var(--gold);
+  font-family: var(--lobby-font-num);
   font-weight: 700;
-  letter-spacing: 1px;
-  font-size: 14px;                      /* 期号本身更粗更大 */
+  letter-spacing: 0.5px;
+  font-size: inherit;
 }
-.game-card .gc-foot-numbers {
+.game-card .gc-foot-numbers,
+.game-card .gc-foot-detail {
   flex: 1;
   min-width: 0;
-  text-align: right;
-  color: rgba(244, 211, 107, 0.7);
-  letter-spacing: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 3px;
+}
+.game-card .gc-foot-detail {
+  gap: 4px;
+  row-gap: 4px;
+}
+.game-card .gc-foot-empty {
+  font-size: var(--lobby-fs-body);
+  letter-spacing: 1px;
+  color: rgba(244, 211, 107, 0.35);
+}
+
+/* 牌类详细结果：方/闲/龙虎 + 牌面 + 胜负 */
+.game-card .gc-sep {
+  color: rgba(244, 211, 107, 0.4);
+  font-size: 11px;
+  padding: 0 1px;
+  line-height: 1;
+}
+.game-card .gc-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 18px;
+  padding: 0 6px;
+  border-radius: 5px;
+  font-family: var(--lobby-font);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+  color: #f6e9b8;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(244, 211, 107, 0.28);
+  white-space: nowrap;
+}
+.game-card .gc-chip--side {
+  min-width: 22px;
+  font-weight: 800;
+}
+.game-card .gc-chip--card {
+  font-family: var(--lobby-font-num);
+  font-size: 12px;
+  font-weight: 800;
+  min-width: 28px;
+  background: linear-gradient(180deg, #fff8e8 0%, #e8d49a 100%);
+  color: #1a1208;
+  border-color: rgba(180, 140, 40, 0.55);
+}
+.game-card .gc-chip--card.gc-chip--red { color: #b91c1c; }
+.game-card .gc-chip--card.gc-chip--black { color: #111827; }
+.game-card .gc-chip--point,
+.game-card .gc-chip--hand {
+  color: #ffe9a0;
+  background: rgba(244, 211, 107, 0.1);
+}
+.game-card .gc-chip--result {
+  font-weight: 900;
+  letter-spacing: 1px;
+  border-width: 1px;
+}
+.game-card .gc-chip--tag {
+  font-size: 10px;
+  opacity: 0.95;
+}
+
+.game-card .gc-chip--dragon,
+.game-card .gc-chip--banker {
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.55);
+  background: rgba(185, 28, 28, 0.28);
+}
+.game-card .gc-chip--tiger,
+.game-card .gc-chip--player {
+  color: #bfdbfe;
+  border-color: rgba(96, 165, 250, 0.55);
+  background: rgba(29, 78, 216, 0.28);
+}
+.game-card .gc-chip--tie {
+  color: #bbf7d0;
+  border-color: rgba(74, 222, 128, 0.5);
+  background: rgba(21, 128, 61, 0.28);
+}
+.game-card .gc-chip--result.gc-chip--dragon,
+.game-card .gc-chip--result.gc-chip--banker {
+  background: linear-gradient(180deg, #f87171 0%, #b91c1c 100%);
+  color: #fff5f5;
+  border-color: rgba(254, 202, 202, 0.65);
+  box-shadow: 0 0 8px rgba(248, 113, 113, 0.35);
+}
+.game-card .gc-chip--result.gc-chip--tiger,
+.game-card .gc-chip--result.gc-chip--player {
+  background: linear-gradient(180deg, #60a5fa 0%, #1d4ed8 100%);
+  color: #eff6ff;
+  border-color: rgba(191, 219, 254, 0.65);
+  box-shadow: 0 0 8px rgba(96, 165, 250, 0.35);
+}
+.game-card .gc-chip--result.gc-chip--tie {
+  background: linear-gradient(180deg, #4ade80 0%, #15803d 100%);
+  color: #f0fdf4;
+  border-color: rgba(187, 247, 208, 0.65);
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.3);
+}
+.game-card .gc-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  font-family: var(--lobby-font-num);
+  font-size: var(--lobby-fs-num);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: #1a1208;
+  background: linear-gradient(180deg, #f6e09a 0%, #d4af37 55%, #9a7a1c 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+.game-card .gc-num--small {
+  background: linear-gradient(180deg, #cfe8ff 0%, #6aa8e8 55%, #3a6fa8 100%);
+  color: #0b1a2a;
+}
+.game-card .gc-num--big {
+  background: linear-gradient(180deg, #ffd0d0 0%, #e86a6a 55%, #a83838 100%);
+  color: #2a0b0b;
+}
+.game-card .gc-num--sep {
+  min-width: 10px;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  color: rgba(244, 211, 107, 0.75);
+  font-weight: 700;
+}
+.game-card .gc-num--special {
+  background: linear-gradient(180deg, #ffe08a 0%, #f0a020 55%, #b86a00 100%);
+  color: #2a1800;
+  outline: 1px solid rgba(255, 220, 120, 0.65);
+}
+.game-card .gc-num--label {
+  min-width: 36px;
+  padding: 0 8px;
+  border-radius: 6px;
+  letter-spacing: 1px;
+  font-family: var(--lobby-font);
+  font-size: var(--lobby-fs-num);
+}
+/* PK10：游戏内原版赛道号图 */
+.game-card .gc-foot-numbers--pk10 {
+  gap: 2px;
+}
+.game-card .gc-lane {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* 时时彩：对齐游戏内 .ssc-ball-digit 金色圆球 */
+.game-card .gc-foot-numbers--ssc {
+  gap: 4px;
+}
+.game-card .gc-ssc-ball {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, #fff5c8 0%, #f0c848 38%, #c99820 72%, #8a6f1f 100%);
+  color: #1a1408;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums lining-nums;
+  line-height: 1;
+  letter-spacing: 0;
+  box-shadow:
+    0 0 0 1px rgba(212, 175, 55, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+}
+
+/* 快三：游戏内原版骰子图标 */
+.game-card .gc-foot-numbers--dice {
+  gap: 3px;
+}
+.game-card .gc-dice {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+  border-radius: 4px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* 幸运六合彩：游戏内原版色波球 */
+.game-card .gc-foot-numbers--lhc {
+  gap: 2px;
+}
+.game-card .gc-lhc-ball {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.game-card .gc-lhc-sep {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 10px;
+  height: 20px;
+  padding: 0 1px;
+  flex-shrink: 0;
+  color: rgba(244, 211, 107, 0.85);
+  font-family: var(--lobby-font-num);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 /* —— 右上角"热门"丝带 —— */
@@ -842,7 +1112,8 @@ body.lobby-bg::before { display: none; }
   position: absolute;
   top: 7px; right: -24px;
   padding: 2px 28px;
-  font-size: 10px;
+  font-family: var(--lobby-font);
+  font-size: var(--lobby-fs-tag);
   letter-spacing: 2px;
   color: var(--bg-dark);
   font-weight: 700;
@@ -852,4 +1123,12 @@ body.lobby-bg::before { display: none; }
   z-index: 2;
 }
 
-/* 底部 tabbar 样式已迁移到 common.css（所有页面共用） */
+/* 大厅页底栏字号与正文阶梯对齐（不影响其它页） */
+body.lobby-bg .lobby-tabbar .tab-item {
+  font-family: var(--lobby-font);
+  font-size: var(--lobby-fs-tab);
+  letter-spacing: 2px;
+}
+body.lobby-bg .lobby-tabbar .tab-item .t-icon {
+  font-size: 17px;
+}

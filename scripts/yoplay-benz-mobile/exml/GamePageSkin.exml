@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<e:Skin class="Benz.GamePageSkin" width="480" height="715" xmlns:e="http://ns.egret.com/eui"  xmlns:Benz="Benz.*" xmlns:Locale="Locale.*" xmlns:w="http://ns.egret.com/wing" xmlns:YP="YPUi.*">
+	<e:Image source="yben_main_json.yben_bg" locked="true"/>
+	<e:Group id="speedEffectGroup" width="480" x="0" height="715" y="0">
+		<e:Rect id="speedEffectMask" scaleX="1" scaleY="1" width="480" x="0" height="715" y="0" fillAlpha="1" alpha="0" locked="true"/>
+	</e:Group>
+	<Benz:SpinPanelV2 id="spinPanel" skinName="Benz.SpinPanelV2Skin" width="0" height="0" horizontalCenter="0" y="168"/>
+	<e:Group id="payoutGroup" width="480" x="0" height="715" y="0">
+	</e:Group>
+	<Benz:BetBoardPanelV2 id="betBoardPanel" x="0" y="276" skinName="Benz.BetBoardPanelSkin"/>
+	<YP:SPUserProfile id="userProfile" x="60" skinName="YPSkins.UserProfileSkin" y="20"/>
+	<e:Group id="notifyGrp" anchorOffsetY="0" touchThrough="true" touchChildren="false" touchEnabled="false" width="480" x="0" height="300" y="0" visible="false" locked="true"/>
+	<e:Label id="billNumLabel" text="" right="2" top="2" size="10"/>
+	<!--<e:Button id="menuBtn" label="" top="10" right="0">
+		<e:skinName>
+		<e:Skin states="up,down,disabled">
+			<e:Image width="100%" height="100%" source="yben_main_json.yben_btn_menu"/>
+			<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+		</e:Skin>
+		</e:skinName>
+	</e:Button>-->
+	<e:Rect id="loadingMask" left="0" right="0" top="0" bottom="0" fillAlpha="0.8" visible="false" locked="true"/>
+	<YP:YoPlayLoadingGroup id="loadingGroup" left="0" right="0" top="0" bottom="0" visible="false" locked="true"/>
+	<!--<e:Button id="backBtn" label="" left="0" top="10">
+		<e:skinName>
+		<e:Skin states="up,down,disabled">
+			<e:Image width="100%" height="100%" source="yben_main_json.yben_btn_back"/>
+			<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+		</e:Skin>
+		</e:skinName>
+	</e:Button>-->
+</e:Skin>

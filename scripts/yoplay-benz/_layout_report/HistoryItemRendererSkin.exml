@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<e:Skin class="Benz.HistoryItemRendererSkin" width="50" height="50" currentState="normal" xmlns:e="http://ns.egret.com/eui" xmlns:w="http://ns.egret.com/wing" states="normal,latest,new"  width.latest="50">
+	<e:Image id="icon" verticalCenter="0" maxHeight="50" maxWidth="50" source="yben_main_json.yben_icon_history_s_benz_green" smoothing="false" maxWidth.latest="70" maxHeight.latest="70" y.latest="0" right.latest="0" source.latest="yben_main_json.yben_icon_history_l_benz_green" x="0" horizontalCenter.normal="0"/>
+	<e:Group id="smallIconGroup" x.latest="-19" y.latest="-5">
+		<e:Image source="yben_spin_item_json.yben_bg_history_blk_circle" horizontalCenter.latest="0" verticalCenter.latest="0" width="30" height="30"/>
+		<e:Image id="smallIcon" source="yben_spin_item_json.yben_icon_large_benz_yellow" verticalCenter="0" horizontalCenter="0" width="30" height="30"/>
+	</e:Group>
+	<e:Image source="yben_main_json.yben_txt_new" y="-24" horizontalCenter="0" visible.latest="false" visible.normal="false" locked="true"/>
+</e:Skin>

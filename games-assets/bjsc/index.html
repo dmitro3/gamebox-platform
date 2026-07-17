@@ -6,7 +6,7 @@
   <title>北京赛车</title>
   <link rel="stylesheet" href="/legacy/css/common.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap">
-  <link rel="stylesheet" href="./css/bjsc.css?v=2">
+  <link rel="stylesheet" href="./css/bjsc.css?v=3">
   <script>
     /* 大厅 iframe 嵌入时标记，布局用 100% 跟随容器而非外层 100dvh */
     (function () {
@@ -100,23 +100,38 @@
   <!-- 聊天区 + 右侧快捷按钮 -->
   <div class="bjsc-chat-wrap">
     <main class="bjsc-chat" id="chatFeed" role="log" aria-live="polite"></main>
-    <aside class="bjsc-rail" aria-label="快捷操作">
-      <button type="button" class="bjsc-rail-btn" id="btnCs" title="客服">
-        <span class="bjsc-rail-icon bjsc-rail-icon--cs"></span>
-      </button>
-      <button type="button" class="bjsc-rail-btn" id="btnExpand" title="玩法">
-        <span class="bjsc-rail-icon bjsc-rail-icon--expand"></span>
-      </button>
-      <button type="button" class="bjsc-rail-btn" id="btnRedpack" title="红包">
-        <span class="bjsc-rail-icon bjsc-rail-icon--rp"></span>
-      </button>
-    </aside>
-  </div>
+      </div>
 
-  <!-- 底部输入 -->
+  <!-- 右侧浮钮：客服 / 规则 / 记录 / 玩法 -->
+  <aside class="bjsc-rail" aria-label="快捷操作">
+    <button type="button" class="bjsc-rail-btn" id="btnCs" title="客服">
+      <img class="bjsc-rail-ic" src="/images/chat-rail/cs.png?v=1" alt="" draggable="false">
+      <span class="bjsc-rail-lb">客服</span>
+    </button>
+    <button type="button" class="bjsc-rail-btn" id="btnRules" title="规则">
+      <img class="bjsc-rail-ic" src="/images/chat-rail/rules.png?v=1" alt="" draggable="false">
+      <span class="bjsc-rail-lb">规则</span>
+    </button>
+    <button type="button" class="bjsc-rail-btn" id="btnRecords" title="记录">
+      <img class="bjsc-rail-ic" src="/images/chat-rail/records.png?v=1" alt="" draggable="false">
+      <span class="bjsc-rail-lb">记录</span>
+    </button>
+    <button type="button" class="bjsc-rail-btn bjsc-rail-btn--play" id="btnExpand" title="玩法">
+      <img class="bjsc-rail-ic bjsc-rail-ic--play" src="/images/chat-rail/play.png?v=1" alt="" draggable="false">
+      <span class="bjsc-rail-lb">玩法</span>
+    </button>
+  </aside>
+
+
+    <!-- 底部输入：输入框 + / 玩法 -->
   <footer class="bjsc-composer">
     <input type="text" class="bjsc-input" id="chatInput" placeholder="输入玩法/金额" autocomplete="off" enterkeyhint="send">
-    <button type="button" class="bjsc-plus-btn" id="plusBtn" aria-label="更多">+</button>
+    <button type="button" class="bjsc-composer-btn" id="plusBtn" aria-label="更多">
+      <img class="bjsc-composer-btn__img" id="plusBtnImg" src="/images/chat-rail/plus.png?v=1" alt="" draggable="false">
+    </button>
+    <button type="button" class="bjsc-composer-btn bjsc-composer-btn--play" id="btnComposerPlay" title="玩法" aria-label="玩法">
+      <img class="bjsc-composer-btn__img bjsc-composer-btn__img--play" src="/images/chat-rail/play.png?v=1" alt="" draggable="false">
+    </button>
   </footer>
 
   <!-- 投注键盘 -->
@@ -178,7 +193,18 @@
     </footer>
   </div>
 
-  <!-- 长龙统计 -->
+  
+  <!-- 游戏规则 -->
+  <div class="bjsc-rules-mask" id="rulesMask" hidden></div>
+  <div class="bjsc-rules-sheet" id="rulesSheet" hidden>
+    <div class="bjsc-rules-sheet__head">
+      <span>游戏规则</span>
+      <button type="button" id="rulesSheetClose" aria-label="关闭">×</button>
+    </div>
+    <div class="bjsc-rules-sheet__body" id="rulesBody"></div>
+  </div>
+
+<!-- 长龙统计 -->
   <div class="bjsc-long-mask" id="longMask" hidden></div>
   <div class="bjsc-long-sheet" id="longSheet" hidden>
     <div class="bjsc-long-sheet__handle" aria-hidden="true"></div>
@@ -220,7 +246,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 <script src="/legacy/js/games-common.js"></script>
-<script src="./js/result-card.js?v=2"></script>
-<script src="./js/bjsc.js?v=2"></script>
+<script src="./js/result-card.js?v=5"></script>
+<script src="./js/bjsc.js?v=8"></script>
 </body>
 </html>

@@ -1,98 +1,44 @@
-# 中心舞台：可播「分镜动画」精灵表（不是纯粒子特效）
-#
-# 目标：像一小段能播放的过场动画——有场景、构图、灯光节奏、道具舞台。
-# 精灵表 = 动画分镜连续帧；数字/水果/文案仍由代码叠加（不能画死在图里）。
+# 中心舞台素材说明
 #
 # 目录：client-app/public/images/games/slots/center/sheets/
 
 ## 文件命名
 
 idle.png
-gamble-roll.png
+gamble-roll.png   （历史兼容，舞台已不播）
 gamble-win.png
 gamble-lose.png
-award-train.png
-award-big3.png
-award-small3.png
-award-four.png
-award-slam.png
-award-luck.png
-award-bar.png
 
-## 统一规格
+大奖分镜（award-train / big3 / small3 / four / slam / luck / bar）已移除：
+报奖只播语音+环灯，算账一律走常驻 idle 四行。
 
-```
-SPRITE SHEET for Chinese classic fruit-machine (玛丽机) CRT TV screen.
-Exact equal grid, left→right then top→bottom. Dark/black stage background.
-Art direction: designed miniature STAGE SCENE with set dressing, props, lighting cues —
-NOT abstract particle rings floating alone. Think game-show reveal / arcade attract mode.
-Reserve EMPTY dark area in center (or center+lower) for live HTML overlay (digits / fruit icons / titles).
-NO readable text, NO Chinese characters, NO digits, NO score, NO watermark, NO logos.
-Premium glossy gold / cyan / red arcade neon, cinematic lighting, refined not childish.
-```
+## A. idle.png — 4×3=12 · 常驻闪灯金框 + 橙色纯色底板（循环）
 
-## A. idle.png — 4×3=12 · 完整「常驻记分牌 UI」分镜（循环）
+整屏：外圈金框跑马灯循环；内侧橙色纯色底板。
+独立图层（不要画进 idle.png）：
+- `center/idle-rays.png` 放射线（透明底，舞台内旋转）
+- `center/idle-led-box.png` 数字黑框（倍数/总额各叠一张）
+代码再叠：图标、赢分、倍数/总额红字。
+禁止在 idle.png 里画放射线、数字黑窗、中文、数字、水印。
 
-整屏就是倍数/总投注记分牌：上 LED 窗叠倍数、下 LED 窗叠总投注；
-「倍数」「总投注」牌面画进精灵表。跑马灯循环。禁止 CSS 大段文案布局。
+## B–D. 猜大小
 
-## B. gamble-roll.png — 4×4=16 · 完整「猜大小 UI」分镜（循环）
+猜大小直接复用 `idle.png`（金框+橙底）。
+不叠放射线、不叠四行字；在橙色上用 HTML 画金圈，圈内滚 1–13。
+猜中/猜错只改圈的明暗与数字颜色。
 
-整屏就是猜大小界面：左「小」牌、右「大」牌、中央金圈空心留给跳动数字。
-不是 CSS 写字 + 另加特效底图。
+## 报奖（无分镜图）
 
-## C. gamble-win.png — 3×4=12 · 猜中揭幕 UI 分镜
-
-幕布/庆祝与小大牌一体设计；中央空心叠最终点数。
-
-## D. gamble-lose.png — 3×4=12 · 未中熄灯 UI 分镜
-
-舞台熄灭合幕一体设计；中央空心叠最终点数。
-
-## E. award-train — 4×4=16 · 循环「开火车」
-
-微型火车头/车厢灯光沿椭圆轨道绕中央展示台飞驰（可不画写实火车，用灯条车厢剪影），
-中央空台留给水果图标。像开火车报奖过场。
-
-## F. award-big3 — 4×3=12 · 「大三元」三台点亮
-
-豪华金舞台，左中右三座空置奖台依次点亮聚光，最后三束汇合。
-空台留给代码叠水果。
-
-## G. award-small3 — 4×3=12 · 「小三元」三台点亮
-
-同大三元构图，银青冷色调、更精巧的小型奖台。
-
-## H. award-four — 4×3=12 · 「大四喜」四角点亮
-
-四角空置奖台依次点亮再汇到中央空台。翠绿+金。
-
-## I. award-slam — 4×4=16 · 「大满贯」盛大揭幕
-
-全幕拉开、金雨、多层追光、中央巨型空展示台留给分数。
-
-## J. award-luck — 4×3=12 · 「运气」神秘灯台
-
-四叶草/幸运灯笼舞台氛围，中央空台留给 luck 图标。
-
-## K. award-bar — 4×3=12 · 「天门/BAR」撞击揭幕
-
-红金霓虹舞台冲击，中央空位留给 BAR 图标，两侧灯柱点亮。
-
-## 接入
-
-文件放入 sheets/ 同名即播；cols/rows/fps 见 fruitCenterAssets.ts。
+开火车 / 大三元 / 小三元 / 大四喜 / 大满贯 / 送灯 / 吃灯 / 天门：
+停灯后语音+闪灯揭晓，中心仍用 idle 四行显示图标算式与赢分。
 
 ---
 
-# 中奖符号展示（不是盘面裁切！）
-
-中了哪个符号，中间要显示「重新设计的符号本体 + 环绕特效」的 2×2 分镜动画。
-禁止直接裁 24 格按钮图；倍率/赢分由 HTML 叠加。
+# 中奖符号展示（预览用 / 可选）
 
 目录：`center/symbols/`
 
 apple.png / orange.png / lemon.png / melon.png
 bell.png / star.png / seven.png / bar.png / luck.png
 
-规格：2 列 × 2 行，透明底，循环光效。同名 `_big` / `_small` 可共用同一张。
+规格：2 列 × 2 行，透明底，循环光效。常驻四行当前用环图标裁切，不强制播此分镜。

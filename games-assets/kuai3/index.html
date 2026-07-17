@@ -6,7 +6,7 @@
   <title>1分快三</title>
   <link rel="stylesheet" href="/legacy/css/common.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&display=swap">
-  <link rel="stylesheet" href="./css/k3.css?v=39">
+  <link rel="stylesheet" href="./css/k3.css?v=40">
   <script>
     (function () {
       if (window.parent !== window) {
@@ -94,22 +94,38 @@
 
   <div class="k3-chat-wrap">
     <main class="k3-chat" id="chatFeed" role="log" aria-live="polite"></main>
-    <aside class="k3-rail" aria-label="快捷操作">
-      <button type="button" class="k3-rail-btn" id="btnCs" title="客服">
-        <span class="k3-rail-icon k3-rail-icon--cs"></span>
-      </button>
-      <button type="button" class="k3-rail-btn" id="btnExpand" title="玩法">
-        <span class="k3-rail-icon k3-rail-icon--expand"></span>
-      </button>
-      <button type="button" class="k3-rail-btn" id="btnRedpack" title="红包">
-        <span class="k3-rail-icon k3-rail-icon--rp"></span>
-      </button>
-    </aside>
-  </div>
+      </div>
 
+  <!-- 右侧浮钮：客服 / 规则 / 记录 / 玩法 -->
+  <aside class="k3-rail" aria-label="快捷操作">
+    <button type="button" class="k3-rail-btn" id="btnCs" title="客服">
+      <img class="k3-rail-ic" src="/images/chat-rail/cs.png?v=1" alt="" draggable="false">
+      <span class="k3-rail-lb">客服</span>
+    </button>
+    <button type="button" class="k3-rail-btn" id="btnRules" title="规则">
+      <img class="k3-rail-ic" src="/images/chat-rail/rules.png?v=1" alt="" draggable="false">
+      <span class="k3-rail-lb">规则</span>
+    </button>
+    <button type="button" class="k3-rail-btn" id="btnRecords" title="记录">
+      <img class="k3-rail-ic" src="/images/chat-rail/records.png?v=1" alt="" draggable="false">
+      <span class="k3-rail-lb">记录</span>
+    </button>
+    <button type="button" class="k3-rail-btn k3-rail-btn--play" id="btnExpand" title="玩法">
+      <img class="k3-rail-ic k3-rail-ic--play" src="/images/chat-rail/play.png?v=1" alt="" draggable="false">
+      <span class="k3-rail-lb">玩法</span>
+    </button>
+  </aside>
+
+
+    <!-- 底部输入：输入框 + / 玩法 -->
   <footer class="k3-composer">
     <input type="text" class="k3-input" id="chatInput" placeholder="输入玩法/金额，如 大/100、二同3/50、长牌12/100" autocomplete="off" enterkeyhint="send">
-    <button type="button" class="k3-plus-btn" id="plusBtn" aria-label="更多">+</button>
+    <button type="button" class="k3-composer-btn" id="plusBtn" aria-label="更多">
+      <img class="k3-composer-btn__img" id="plusBtnImg" src="/images/chat-rail/plus.png?v=1" alt="" draggable="false">
+    </button>
+    <button type="button" class="k3-composer-btn k3-composer-btn--play" id="btnComposerPlay" title="玩法" aria-label="玩法">
+      <img class="k3-composer-btn__img k3-composer-btn__img--play" src="/images/chat-rail/play.png?v=1" alt="" draggable="false">
+    </button>
   </footer>
 
   <div class="k3-keypad" id="keypad" hidden>
@@ -206,9 +222,20 @@
   </div>
 </div>
 
+
+  <!-- 游戏规则 -->
+  <div class="k3-rules-mask" id="rulesMask" hidden></div>
+  <div class="k3-rules-sheet" id="rulesSheet" hidden>
+    <div class="k3-rules-sheet__head">
+      <span>游戏规则</span>
+      <button type="button" id="rulesSheetClose" aria-label="关闭">×</button>
+    </div>
+    <div class="k3-rules-sheet__body" id="rulesBody"></div>
+  </div>
+
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 <script src="/legacy/js/games-common.js"></script>
-<script src="./js/result-card.js?v=37"></script>
-<script src="./js/k3.js?v=38"></script>
+<script src="./js/result-card.js?v=5"></script>
+<script src="./js/k3.js?v=44"></script>
 </body>
 </html>

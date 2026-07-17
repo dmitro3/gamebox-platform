@@ -61,14 +61,107 @@
             <div :class="['gc-name', g.name.length >= 5 ? 'gc-name-tight' : '']">{{ g.name }}</div>
 
             <div class="gc-status">
-              <div class="gc-issue">第 <span class="gc-issue-no">{{ cardState[g.key]?.issue ?? '000000' }}</span> 期</div>
-              <div :class="['gc-countdown', cardState[g.key]?.cdClass]">{{ cardState[g.key]?.cdText ?? '--:--' }}</div>
+              <!-- 即时游戏只显示「实时进行」，不显示第 -- 期 -->
+              <div v-if="g.type === 'lottery'" class="gc-issue">
+                第 <span class="gc-issue-no">{{ cardState[g.key]?.issue ?? '000000' }}</span> 期
+              </div>
+              <div :class="['gc-countdown', cardState[g.key]?.cdClass]">
+                {{ cardState[g.key]?.cdText ?? (g.type === 'instant' ? '实时进行' : '--:--') }}
+              </div>
             </div>
           </div>
 
-          <div class="gc-foot">
-            <div class="gc-foot-issue"><span class="gc-foot-issue-no">{{ cardState[g.key]?.prevIssue ?? '000000' }}</span> 期</div>
-            <div class="gc-foot-numbers"></div>
+          <div v-if="g.type === 'lottery'" class="gc-foot">
+            <div class="gc-foot-issue">
+              <span class="gc-foot-issue-no">{{ cardState[g.key]?.prevIssue ?? '— —' }}</span> 期
+            </div>
+            <!-- 牌类：龙/虎/庄闲 详细结果 -->
+            <div
+              v-if="(cardState[g.key]?.parts?.length ?? 0) > 0"
+              class="gc-foot-detail"
+            >
+              <template v-for="(p, i) in cardState[g.key]!.parts" :key="`${g.key}-p-${i}`">
+                <span v-if="p.kind === 'sep'" class="gc-sep">{{ p.text }}</span>
+                <span
+                  v-else
+                  class="gc-chip"
+                  :class="[
+                    `gc-chip--${p.kind}`,
+                    p.tone ? `gc-chip--${p.tone}` : '',
+                  ]"
+                >{{ p.text }}</span>
+              </template>
+            </div>
+            <!-- PK10 赛车/飞艇：游戏内原版赛道号图 -->
+            <div v-else-if="isPk10Game(g.key)" class="gc-foot-numbers gc-foot-numbers--pk10">
+              <template v-if="(cardState[g.key]?.nums?.length ?? 0) > 0">
+                <img
+                  v-for="(n, i) in cardState[g.key]!.nums"
+                  :key="`${g.key}-lane-${i}`"
+                  class="gc-lane"
+                  :src="pk10BallUrl(g.key, n)"
+                  :alt="n"
+                  draggable="false"
+                />
+              </template>
+              <span v-else class="gc-foot-empty">等待开奖</span>
+            </div>
+            <!-- 快三：游戏内原版骰子图 -->
+            <div v-else-if="isDice3Game(g.key)" class="gc-foot-numbers gc-foot-numbers--dice">
+              <template v-if="(cardState[g.key]?.nums?.length ?? 0) > 0">
+                <img
+                  v-for="(n, i) in cardState[g.key]!.nums"
+                  :key="`${g.key}-dice-${i}`"
+                  class="gc-dice"
+                  :src="kuai3DiceUrl(n)"
+                  :alt="n"
+                  draggable="false"
+                />
+              </template>
+              <span v-else class="gc-foot-empty">等待开奖</span>
+            </div>
+            <!-- 时时彩：与游戏内同款金色号码球 -->
+            <div v-else-if="isDigit5Game(g.key)" class="gc-foot-numbers gc-foot-numbers--ssc">
+              <template v-if="(cardState[g.key]?.nums?.length ?? 0) > 0">
+                <span
+                  v-for="(n, i) in cardState[g.key]!.nums"
+                  :key="`${g.key}-ssc-${i}`"
+                  class="gc-ssc-ball"
+                >{{ n }}</span>
+              </template>
+              <span v-else class="gc-foot-empty">等待开奖</span>
+            </div>
+            <!-- 幸运六合彩：游戏内原版色波号码球 -->
+            <div v-else-if="isLhcGame(g.key)" class="gc-foot-numbers gc-foot-numbers--lhc">
+              <template v-if="(cardState[g.key]?.nums?.length ?? 0) > 0">
+                <template v-for="(n, i) in lhcFootNums(cardState[g.key]!.nums)" :key="`${g.key}-lhc-${i}`">
+                  <span v-if="n === '+'" class="gc-lhc-sep">+</span>
+                  <img
+                    v-else
+                    class="gc-lhc-ball"
+                    :src="lhcBallUrl(n)"
+                    :alt="n"
+                    draggable="false"
+                  />
+                </template>
+              </template>
+              <span v-else class="gc-foot-empty">等待开奖</span>
+            </div>
+            <!-- 其它数字彩兜底 -->
+            <div v-else class="gc-foot-numbers">
+              <template v-if="(cardState[g.key]?.nums?.length ?? 0) > 0">
+                <span
+                  v-for="(n, i) in cardState[g.key]!.nums"
+                  :key="`${g.key}-n-${i}`"
+                  class="gc-num"
+                  :class="numClass(g.key, n, i)"
+                >{{ n }}</span>
+              </template>
+              <span v-else class="gc-foot-empty">等待开奖</span>
+            </div>
+          </div>
+          <div v-else class="gc-foot gc-foot--instant">
+            <div class="gc-foot-instant-label">实时开奖 · 即开即玩</div>
           </div>
         </div>
       </div>
@@ -80,14 +173,9 @@
   <TabBar />
   
   <PgLoader v-if="showMahjongPgLoader" @done="onMahjongPgLoaderDone" />
-  <PgLoader v-if="showCaptainPgLoader" @done="onCaptainPgLoaderDone" />
-  <PgLoading v-if="showPgLoading" :progress="pgLoadingProgress" :show-progress="pgLoadingShowProgress" />
   <MahjongCover v-if="showMahjongCover" @start="enterMahjongGame" />
-  <CaptainCover v-if="showCaptainCover" @start="enterCaptainGame" />
-  <LabaCover v-if="showLabaCover" @start="enterLabaGame" />
   <SlotsCover v-if="showSlotsCover" @start="enterSlotsGame" />
   <BcbmCover v-if="showBcbmCover" @start="enterBcbmGame" />
-  <WheelCover v-if="showWheelCover" @start="enterWheelGame" />
 </template>
 
 <script setup lang="ts">
@@ -97,15 +185,12 @@ import { useUserStore } from '@/stores/user'
 import { useToast } from '@/composables/useToast'
 import { useBodyClass } from '@/composables/useBodyClass'
 import { gamesApi } from '@/api/games'
+import { lotteryApi } from '@/api/lottery'
 import TabBar from '@/components/TabBar.vue'
-import PgLoading from '@/components/PgLoading.vue'
 import PgLoader from '@/components/PgLoader.vue'
 import MahjongCover from '@/components/MahjongCover.vue'
-import CaptainCover from '@/components/CaptainCover.vue'
-import LabaCover from '@/components/LabaCover.vue'
 import SlotsCover from '@/components/SlotsCover.vue'
 import BcbmCover from '@/components/BcbmCover.vue'
-import WheelCover from '@/components/WheelCover.vue'
 import '@/assets/game-lobby.css'
 
 useBodyClass('lobby-bg')
@@ -123,7 +208,10 @@ interface LobbyGame {
   name: string
   tag?: string
   type: 'lottery' | 'instant'
+  /** 一整期总秒数 */
   intervalSec?: number
+  /** 准备中 / 开奖流程秒数（从倒计时中扣掉） */
+  prepSec?: number
   iconImg?: string
   svg?: string
   route?: string
@@ -132,71 +220,68 @@ interface LobbyGame {
   assetGame?: boolean
 }
 
+/** 大厅排序：时时彩 → 赛车飞艇 → 快三/六合 → 牌桌 → 街机电子（麻将靠后） */
 const GAMES: LobbyGame[] = [
+  // —— 时时彩 ——
   {
-    key: 'mahjong', name: '麻将胡了', tag: '热 门', type: 'instant',
-    iconImg: '/images/games/mahjong/mahjong.webp',
-    route: '/game/slot/slots-mahjong', backendCode: 'slots-mahjong',
-  },
-  {
-    key: 'captain', name: '赏金船长', tag: '维护中', type: 'instant',
-    iconImg: '/images/games/captain/captain.webp',
-    // 素材整理中，暂不开放
-  },
-  {
-    key: 'ssc', name: '快乐时时彩', type: 'lottery', intervalSec: 120,
+    key: 'ssc', name: '快乐时时彩', type: 'lottery', intervalSec: 90, prepSec: 4,
     iconImg: '/images/games/ssc/ssc.png',
     route: '/game/lottery/ssc', backendCode: 'ssc', assetGame: true,
   },
   {
-    key: 'ffc', name: '1分时时彩', type: 'lottery', intervalSec: 60,
+    key: 'ffc', name: '1分时时彩', type: 'lottery', intervalSec: 60, prepSec: 4,
     iconImg: '/images/games/ffc/ffc.png',
     route: '/game/lottery/ffc', backendCode: 'ffc', assetGame: true,
   },
+  // —— 赛车 / 飞艇 ——
   {
-    key: 'speed-racing', name: '极速赛车', type: 'lottery', intervalSec: 60,
+    key: 'speed-racing', name: '极速赛车', type: 'lottery', intervalSec: 55, prepSec: 2,
     iconImg: '/images/games/speed-racing/speed-racing.png',
     route: '/game/lottery/speed-racing', backendCode: 'speed-racing', assetGame: true,
   },
   {
-    key: 'bjsc', name: '北京赛车', type: 'lottery', intervalSec: 60,
+    key: 'bjsc', name: '北京赛车', type: 'lottery', intervalSec: 60, prepSec: 2,
     iconImg: '/images/games/bjsc/bjsc.png',
     route: '/game/lottery/bjsc', backendCode: 'bjsc', assetGame: true,
   },
   {
-    key: 'speed-boat', name: '幸运飞艇', type: 'lottery', intervalSec: 60,
+    key: 'speed-boat', name: '幸运飞艇', type: 'lottery', intervalSec: 60, prepSec: 2,
     iconImg: '/images/games/speed-boat/speed-boat.png',
     route: '/game/lottery/speed-boat', backendCode: 'speed-boat', assetGame: true,
   },
+  // —— 快三 / 六合 ——
   {
-    key: 'lhc', name: '六合彩', type: 'lottery', intervalSec: 60,
-    iconImg: '/images/games/hk-mark6/hk-mark6.png',
-  },
-  {
-    key: 'kuai3', name: '1分快三', type: 'lottery', intervalSec: 60,
+    key: 'kuai3', name: '1分快三', type: 'lottery', intervalSec: 55, prepSec: 4,
     iconImg: '/images/games/kuai3/kuai3.png',
     route: '/game/lottery/kuai3', backendCode: 'kuai3',
   },
   {
-    key: 'zhajinhua', name: '炸金花', tag: '热 门', type: 'lottery', intervalSec: 60,
+    key: 'lhc', name: '幸运六合彩', type: 'lottery', intervalSec: 60, prepSec: 4,
+    iconImg: '/images/games/hk-mark6/hk-mark6.png',
+    route: '/game/lottery/lhc', backendCode: 'lhc', assetGame: true,
+  },
+  // —— 牌桌（prep = 开奖流程 + 派奖） ——
+  {
+    key: 'zhajinhua', name: '炸金花', tag: '热 门', type: 'lottery', intervalSec: 60, prepSec: 17,
     iconImg: '/images/games/zhajinhua/zhajinhua.png',
     route: '/game/lottery/zhajinhua', assetGame: true,
   },
   {
-    key: 'douniu', name: '斗牛', type: 'lottery', intervalSec: 63,
+    key: 'douniu', name: '斗牛', type: 'lottery', intervalSec: 60, prepSec: 21,
     iconImg: '/images/games/douniu/douniu.png',
     route: '/game/lottery/douniu', assetGame: true,
   },
   {
-    key: 'baccarat', name: '百家乐', tag: '热 门', type: 'lottery', intervalSec: 60,
+    key: 'baccarat', name: '百家乐', tag: '热 门', type: 'lottery', intervalSec: 60, prepSec: 16,
     iconImg: '/images/games/baccarat/baccarat.png',
     route: '/game/lottery/baccarat', assetGame: true,
   },
   {
-    key: 'longhu', name: '龙虎斗', tag: '新 品', type: 'lottery', intervalSec: 60,
+    key: 'longhu', name: '龙虎斗', tag: '新 品', type: 'lottery', intervalSec: 60, prepSec: 13,
     iconImg: '/images/games/longhu/longhu-icon.png',
     route: '/game/lottery/longhu', assetGame: true,
   },
+  // —— 街机 / 电子 ——
   {
     key: 'slots', name: '水果机', type: 'instant',
     iconImg: '/images/games/slots/slots.png',
@@ -208,14 +293,9 @@ const GAMES: LobbyGame[] = [
     route: '/game/arcade/bcbm', backendCode: 'bcbm',
   },
   {
-    key: 'laba', name: '经典拉霸', tag: '新 品', type: 'instant',
-    iconImg: '/images/games/laba/laba-icon.png',
-    route: '/game/laba', backendCode: 'slots-classic',
-  },
-  {
-    key: 'lucky-wheel', name: '幸运转盘', type: 'instant',
-    iconImg: '/images/games/wheel/lucky-wheel-icon.png',
-    route: '/game/lucky-wheel', backendCode: 'lucky-wheel',
+    key: 'mahjong', name: '麻将胡了', tag: '热 门', type: 'instant',
+    iconImg: '/images/games/mahjong/mahjong.png',
+    route: '/game/slot/slots-mahjong', backendCode: 'slots-mahjong',
   },
 ]
 
@@ -254,12 +334,92 @@ function buildMarquee() {
   marqueeItems.value = items
 }
 
-/* ===== 期号 / 倒计时滴答（与原型规则一致） ===== */
-const DRAW_SEC = 2
-const FREEZE_SEC = 5
+/* ===== 期号 / 倒计时滴答：倒计时显示 = 总时间 − 准备中 ===== */
 
-interface CardState { issue: string; prevIssue: string; cdText: string; cdClass: string }
+/** 开奖号码形态：大厅底条展示用 */
+type DrawKind = 'digit5' | 'dice3' | 'pk10' | 'lhc' | 'table'
+
+const DRAW_KIND: Record<string, DrawKind> = {
+  ssc: 'digit5',
+  ffc: 'digit5',
+  kuai3: 'dice3',
+  bjsc: 'pk10',
+  'speed-racing': 'pk10',
+  'speed-boat': 'pk10',
+  lhc: 'lhc',
+  zhajinhua: 'table',
+  douniu: 'table',
+  baccarat: 'table',
+  longhu: 'table',
+}
+
+/** 各 PK10 游戏自带赛道号素材目录（与游戏内 ballHtml 一致） */
+const PK10_BALL_BASE: Record<string, string> = {
+  bjsc: '/games-assets/bjsc/assets/balls',
+  'speed-racing': '/games-assets/speed-racing/assets/balls',
+  'speed-boat': '/games-assets/speed-boat/assets/balls',
+}
+
+function isPk10Game(key: string) {
+  return DRAW_KIND[key] === 'pk10'
+}
+function isDice3Game(key: string) {
+  return DRAW_KIND[key] === 'dice3'
+}
+function isDigit5Game(key: string) {
+  return DRAW_KIND[key] === 'digit5'
+}
+function isLhcGame(key: string) {
+  return DRAW_KIND[key] === 'lhc'
+}
+
+function pk10BallUrl(gameKey: string, n: string) {
+  const base = PK10_BALL_BASE[gameKey] || PK10_BALL_BASE['speed-racing']
+  const num = Math.max(1, Math.min(10, Number(n) || 1))
+  return `${base}/ball-${String(num).padStart(2, '0')}.png`
+}
+
+/** 快三大厅用游戏内 xs/tbl 同款扁平骰子图标 */
+function kuai3DiceUrl(n: string) {
+  const num = Math.max(1, Math.min(6, Number(n) || 1))
+  return `/games-assets/kuai3/assets/result/icon-${String(num).padStart(2, '0')}.png`
+}
+
+/** 六合彩：与游戏内 ballHtml 同路径 ball_01.png … ball_49.png */
+function lhcBallUrl(n: string) {
+  const num = Math.max(1, Math.min(49, Number(n) || 1))
+  return `/games-assets/lhc/assets/balls/ball_${String(num).padStart(2, '0')}.png`
+}
+
+/** 大厅底条：正码 6 + 「+」+ 特码（接口若无加号则补上） */
+function lhcFootNums(nums: string[]): string[] {
+  const raw = nums.filter((n) => n !== '+')
+  if (raw.length < 7) return nums
+  const mains = raw.slice(0, 6).map((n) => String(n).padStart(2, '0'))
+  const special = String(raw[6]).padStart(2, '0')
+  return [...mains, '+', special]
+}
+
+interface DrawPart {
+  kind: 'side' | 'card' | 'point' | 'hand' | 'result' | 'tag' | 'sep'
+  text: string
+  tone?: 'dragon' | 'tiger' | 'banker' | 'player' | 'tie' | 'win' | 'red' | 'black'
+}
+
+interface CardState {
+  issue: string
+  prevIssue: string
+  cdText: string
+  cdClass: string
+  /** 数字彩开奖号 */
+  nums: string[]
+  /** 牌类详细结果（优先展示） */
+  parts: DrawPart[]
+}
+
 const cardState = reactive<Record<string, CardState>>({})
+/** 后端历史开奖缓存（优先于本地种子结果） */
+const apiDrawCache = reactive<Record<string, { issueNo: string; nums: string[] }>>({})
 
 function todayStartMs() {
   const d = new Date()
@@ -272,31 +432,276 @@ function fmtMmss(sec: number) {
   return pad(Math.floor(s / 60), 2) + ':' + pad(s % 60, 2)
 }
 
+/** 稳定种子：同一游戏同一期号始终同一组号码（大厅无人进房也会轮换） */
+function hashSeed(str: string) {
+  let h = 2166136261
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return h >>> 0
+}
+function mulberry32(seed: number) {
+  let a = seed >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0
+    let t = a
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+const SUITS = ['♠', '♥', '♣', '♦'] as const
+const RANKS_LHD = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'] as const
+/** 龙虎比牌：A=1 … K=13 */
+function rankValueLhd(r: string) {
+  return RANKS_LHD.indexOf(r as (typeof RANKS_LHD)[number]) + 1
+}
+function pickCard(rnd: () => number) {
+  const suit = SUITS[Math.floor(rnd() * SUITS.length)]
+  const rank = RANKS_LHD[Math.floor(rnd() * RANKS_LHD.length)]
+  const tone = suit === '♥' || suit === '♦' ? 'red' as const : 'black' as const
+  return { text: `${suit}${rank}`, tone, rank }
+}
+/** 百家乐点数：A=1，2-9 面值，10/J/Q/K=0，只取个位 */
+function baccaratPoint(rank: string) {
+  if (rank === 'A') return 1
+  if (rank === '10' || rank === 'J' || rank === 'Q' || rank === 'K') return 0
+  return Number(rank)
+}
+
+function seededTableParts(gameKey: string, rnd: () => number): DrawPart[] {
+  const sep = (): DrawPart => ({ kind: 'sep', text: '·' })
+
+  if (gameKey === 'longhu') {
+    const d = pickCard(rnd)
+    const t = pickCard(rnd)
+    const dv = rankValueLhd(d.rank)
+    const tv = rankValueLhd(t.rank)
+    const result =
+      dv > tv ? { text: '龙赢', tone: 'dragon' as const }
+      : tv > dv ? { text: '虎赢', tone: 'tiger' as const }
+      : { text: '和局', tone: 'tie' as const }
+    return [
+      { kind: 'side', text: '龙', tone: 'dragon' },
+      { kind: 'card', text: d.text, tone: d.tone },
+      sep(),
+      { kind: 'side', text: '虎', tone: 'tiger' },
+      { kind: 'card', text: t.text, tone: t.tone },
+      sep(),
+      { kind: 'result', text: result.text, tone: result.tone },
+    ]
+  }
+
+  if (gameKey === 'baccarat') {
+    const b1 = pickCard(rnd)
+    const b2 = pickCard(rnd)
+    const p1 = pickCard(rnd)
+    const p2 = pickCard(rnd)
+    const bp = (baccaratPoint(b1.rank) + baccaratPoint(b2.rank)) % 10
+    const pp = (baccaratPoint(p1.rank) + baccaratPoint(p2.rank)) % 10
+    const result =
+      bp > pp ? { text: '庄赢', tone: 'banker' as const }
+      : pp > bp ? { text: '闲赢', tone: 'player' as const }
+      : { text: '和局', tone: 'tie' as const }
+    const parts: DrawPart[] = [
+      { kind: 'side', text: '庄', tone: 'banker' },
+      { kind: 'card', text: b1.text, tone: b1.tone },
+      { kind: 'card', text: b2.text, tone: b2.tone },
+      { kind: 'point', text: `${bp}点`, tone: 'banker' },
+      sep(),
+      { kind: 'side', text: '闲', tone: 'player' },
+      { kind: 'card', text: p1.text, tone: p1.tone },
+      { kind: 'card', text: p2.text, tone: p2.tone },
+      { kind: 'point', text: `${pp}点`, tone: 'player' },
+      sep(),
+      { kind: 'result', text: result.text, tone: result.tone },
+    ]
+    if (b1.rank === b2.rank) parts.push({ kind: 'tag', text: '庄对', tone: 'banker' })
+    if (p1.rank === p2.rank) parts.push({ kind: 'tag', text: '闲对', tone: 'player' })
+    return parts
+  }
+
+  if (gameKey === 'zhajinhua') {
+    const hands = ['豹子', '顺金', '金花', '顺子', '对子', '散牌']
+    // 权重：散牌/对子更常见
+    const weights = [3, 4, 10, 12, 22, 49]
+    const pickHand = () => {
+      const total = weights.reduce((a, b) => a + b, 0)
+      let x = rnd() * total
+      for (let i = 0; i < hands.length; i++) {
+        x -= weights[i]
+        if (x <= 0) return hands[i]
+      }
+      return '散牌'
+    }
+    const bh = pickHand()
+    const ph = pickHand()
+    const bi = hands.indexOf(bh)
+    const pi = hands.indexOf(ph)
+    const result =
+      bi < pi ? { text: '庄赢', tone: 'banker' as const }
+      : pi < bi ? { text: '闲赢', tone: 'player' as const }
+      : { text: '和局', tone: 'tie' as const }
+    return [
+      { kind: 'side', text: '庄', tone: 'banker' },
+      { kind: 'hand', text: bh, tone: 'banker' },
+      sep(),
+      { kind: 'side', text: '闲', tone: 'player' },
+      { kind: 'hand', text: ph, tone: 'player' },
+      sep(),
+      { kind: 'result', text: result.text, tone: result.tone },
+    ]
+  }
+
+  if (gameKey === 'douniu') {
+    const hands = ['五小牛', '炸弹牛', '五花牛', '牛牛', '牛9', '牛8', '牛7', '牛6', '牛5', '牛4', '牛3', '牛2', '牛1', '无牛']
+    const pickHand = () => hands[Math.floor(rnd() * hands.length)]
+    const bh = pickHand()
+    const ph = pickHand()
+    const bi = hands.indexOf(bh)
+    const pi = hands.indexOf(ph)
+    const result =
+      bi < pi ? { text: '庄赢', tone: 'banker' as const }
+      : pi < bi ? { text: '闲赢', tone: 'player' as const }
+      : { text: '庄赢', tone: 'banker' as const } // 同级默认庄赢（与玩法一致）
+    return [
+      { kind: 'side', text: '庄', tone: 'banker' },
+      { kind: 'hand', text: bh, tone: 'banker' },
+      sep(),
+      { kind: 'side', text: '闲', tone: 'player' },
+      { kind: 'hand', text: ph, tone: 'player' },
+      sep(),
+      { kind: 'result', text: result.text, tone: result.tone },
+    ]
+  }
+
+  return [{ kind: 'result', text: '已开奖', tone: 'tie' }]
+}
+
+function seededDraw(gameKey: string, issue: string): { nums: string[]; parts: DrawPart[] } {
+  const kind = DRAW_KIND[gameKey] ?? 'digit5'
+  const rnd = mulberry32(hashSeed(`${gameKey}:${issue}`))
+  if (kind === 'table') {
+    return { nums: [], parts: seededTableParts(gameKey, rnd) }
+  }
+  if (kind === 'digit5') {
+    return { nums: Array.from({ length: 5 }, () => String(Math.floor(rnd() * 10))), parts: [] }
+  }
+  if (kind === 'dice3') {
+    return { nums: Array.from({ length: 3 }, () => String(1 + Math.floor(rnd() * 6))), parts: [] }
+  }
+  if (kind === 'pk10') {
+    const arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1))
+      ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    }
+    return { nums: arr.map(String), parts: [] }
+  }
+  if (kind === 'lhc') {
+    const pool = Array.from({ length: 49 }, (_, i) => i + 1)
+    const pick: number[] = []
+    for (let i = 0; i < 7; i++) {
+      const j = Math.floor(rnd() * pool.length)
+      pick.push(pool.splice(j, 1)[0])
+    }
+    const special = pick.pop()!
+    return {
+      nums: [...pick.sort((a, b) => a - b).map((n) => pad(n, 2)), '+', pad(special, 2)],
+      parts: [],
+    }
+  }
+  return { nums: Array.from({ length: 5 }, () => String(Math.floor(rnd() * 10))), parts: [] }
+}
+
+function parseApiDrawNumbers(raw: string | null | undefined): string[] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) return parsed.map((n) => String(n))
+  } catch {
+    /* ignore */
+  }
+  return []
+}
+
+function resolveDraw(gameKey: string, prevIssue: string): { nums: string[]; parts: DrawPart[] } {
+  if (!prevIssue || prevIssue === '— —') return { nums: [], parts: [] }
+  // 牌类始终用详细本地结果（后端暂无结构化牌面）
+  if (DRAW_KIND[gameKey] === 'table') {
+    return seededDraw(gameKey, prevIssue)
+  }
+  const cached = apiDrawCache[gameKey]
+  if (cached?.nums?.length) {
+    return { nums: cached.nums, parts: [] }
+  }
+  return seededDraw(gameKey, prevIssue)
+}
+
+function numClass(gameKey: string, n: string, index: number) {
+  const kind = DRAW_KIND[gameKey] ?? 'digit5'
+  if (n === '+') return 'gc-num--sep'
+  if (kind === 'lhc' && index === 7) return 'gc-num--special'
+  const v = Number(n)
+  if (!Number.isFinite(v)) return ''
+  if (v >= 5) return 'gc-num--big'
+  return 'gc-num--small'
+}
+
+async function refreshLotteryDraws() {
+  const tasks = GAMES.filter((g) => g.type === 'lottery').map(async (g) => {
+    const code = g.backendCode || g.key
+    try {
+      const list = await lotteryApi.history(code, 1)
+      const row = list?.[0]
+      if (!row) return
+      const nums = parseApiDrawNumbers(row.drawNumbers)
+      if (!nums.length) return
+      apiDrawCache[g.key] = { issueNo: row.issueNo, nums }
+    } catch {
+      // 后端无此彩种或未开奖：用本地种子结果
+    }
+  })
+  await Promise.all(tasks)
+}
+
 function tickAll() {
   for (const g of GAMES) {
     if (g.type !== 'lottery' || !g.intervalSec) {
-      cardState[g.key] = { issue: '— —', prevIssue: '— —', cdText: '实时进行', cdClass: 'is-instant' }
+      cardState[g.key] = {
+        issue: '',
+        prevIssue: '',
+        cdText: '实时进行',
+        cdClass: 'is-instant',
+        nums: [],
+        parts: [],
+      }
       continue
     }
     const interval = g.intervalSec
+    const prep = Math.max(1, g.prepSec ?? 4)
     const elapsed = (Date.now() - todayStartMs()) / 1000
     const seq = Math.floor(elapsed / interval) + 1
     const r = interval - (elapsed % interval)
 
     let cdText: string
     let cdClass = ''
-    if (r > interval - DRAW_SEC) {
-      cdText = '开奖中'; cdClass = 'is-drawing'
-    } else if (r <= FREEZE_SEC) {
-      cdText = '封盘中'; cdClass = 'is-freeze'
+    if (r <= prep) {
+      cdText = '准备中'; cdClass = 'is-drawing'
     } else {
-      cdText = fmtMmss(r)
+      cdText = fmtMmss(r - prep)
     }
+    const prevIssue = seq > 1 ? fmtIssue6(seq - 1) : '— —'
+    const draw = resolveDraw(g.key, prevIssue)
     cardState[g.key] = {
       issue: fmtIssue6(seq),
-      prevIssue: seq > 1 ? fmtIssue6(seq - 1) : '— —',
+      prevIssue,
       cdText,
       cdClass,
+      nums: draw.nums,
+      parts: draw.parts,
     }
   }
 }
@@ -305,22 +710,12 @@ function tickAll() {
 const onlineCodes = ref<Set<string>>(new Set())
 
 const showMahjongPgLoader = ref(false)
-const showPgLoading = ref(false)
-const pgLoadingProgress = ref(0)
-const pgLoadingShowProgress = ref(true)
 const showMahjongCover = ref(false)
 let currentMahjongRoute = ''
-const showCaptainPgLoader = ref(false)
-const showCaptainCover = ref(false)
-let currentCaptainRoute = ''
-const showLabaCover = ref(false)
-let currentLabaRoute = ''
 const showSlotsCover = ref(false)
 let currentSlotsRoute = ''
 const showBcbmCover = ref(false)
 let currentBcbmRoute = ''
-const showWheelCover = ref(false)
-let currentWheelRoute = ''
 
 function onMahjongPgLoaderDone() {
   showMahjongCover.value = true
@@ -331,25 +726,6 @@ function enterMahjongGame() {
   showMahjongCover.value = false
   if (currentMahjongRoute) {
     router.push(currentMahjongRoute)
-  }
-}
-
-function onCaptainPgLoaderDone() {
-  showCaptainCover.value = true
-  showCaptainPgLoader.value = false
-}
-
-function enterCaptainGame() {
-  showCaptainCover.value = false
-  if (currentCaptainRoute) {
-    router.push(currentCaptainRoute)
-  }
-}
-
-function enterLabaGame() {
-  showLabaCover.value = false
-  if (currentLabaRoute) {
-    router.push(currentLabaRoute)
   }
 }
 
@@ -367,16 +743,6 @@ function enterBcbmGame() {
   }
 }
 
-function enterWheelGame() {
-  showWheelCover.value = false
-  if (currentWheelRoute) {
-    router.push(currentWheelRoute)
-  }
-}
-
-const pgAnimatedGames = ['mahjong', 'bcbm', 'laba', 'lucky-wheel']
-
-
 function onGameClick(g: LobbyGame) {
   const isPlayable =
     g.route &&
@@ -390,66 +756,31 @@ function onGameClick(g: LobbyGame) {
     return
   }
 
-  // 麻将胡了：正版 PG 开屏（黑底 + 青点 + PG SVG）→ 专属封面
+  // 麻将胡了：正版 PG 开屏 → 专属封面
   if (g.key === 'mahjong') {
     currentMahjongRoute = g.route || ''
     showMahjongPgLoader.value = true
     return
   }
 
-  // 赏金船长：素材隔离整理中，暂不开放
-  if (g.key === 'captain') {
-    toast('赏金船长 · 素材整理中')
-    return
-  }
-
-  // 水果机：不走 PG 动画，直接专属封面
+  // 水果机 / 奔驰宝马：专属封面
   if (g.key === 'slots') {
     currentSlotsRoute = g.route || ''
     showSlotsCover.value = true
     return
   }
-
-  // 如果是需要展示 PG 动画的游戏
-  if (pgAnimatedGames.includes(g.key)) {
-    pgLoadingShowProgress.value = true
-    showPgLoading.value = true
-    pgLoadingProgress.value = 0
-    
-    // 模拟加载进度
-    const interval = setInterval(() => {
-      pgLoadingProgress.value += Math.random() * 15
-      if (pgLoadingProgress.value >= 100) {
-        pgLoadingProgress.value = 100
-        clearInterval(interval)
-        
-        // 加载完成后延迟一小段时间
-        setTimeout(() => {
-          showPgLoading.value = false
-          if (g.key === 'laba') {
-            currentLabaRoute = g.route || ''
-            showLabaCover.value = true
-          } else if (g.key === 'bcbm') {
-            currentBcbmRoute = g.route || ''
-            showBcbmCover.value = true
-          } else if (g.key === 'lucky-wheel') {
-            currentWheelRoute = g.route || ''
-            showWheelCover.value = true
-          } else {
-            // 其他游戏直接跳转
-            router.push(g.route!)
-          }
-        }, 500)
-      }
-    }, 300)
+  if (g.key === 'bcbm') {
+    currentBcbmRoute = g.route || ''
+    showBcbmCover.value = true
     return
   }
 
-  // 其他不需要 PG 动画的游戏（如彩票类）直接跳转
+  // 彩票类等直接跳转
   router.push(g.route)
 }
 
 let timer: ReturnType<typeof setInterval>
+let drawTimer: ReturnType<typeof setInterval>
 
 onMounted(async () => {
   buildMarquee()
@@ -461,9 +792,18 @@ onMounted(async () => {
   } catch {
     // 后端不可达时不阻断大厅渲染
   }
+  // 拉取各彩种最近开奖；失败则用期号种子结果，保证底条始终有号
+  await refreshLotteryDraws()
+  tickAll()
+  drawTimer = setInterval(() => {
+    refreshLotteryDraws().then(() => tickAll())
+  }, 15000)
 })
 
-onUnmounted(() => clearInterval(timer))
+onUnmounted(() => {
+  clearInterval(timer)
+  clearInterval(drawTimer)
+})
 
 function openLogout() {
   if (window.confirm('确定要退出当前账号吗？')) {

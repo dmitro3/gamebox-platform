@@ -47,6 +47,22 @@ export interface FruitGambleResult {
   balance: number
 }
 
+export interface BcbmSpinResult {
+  gameCode: string
+  awardType: string
+  stopIndex: number
+  hitIndexes: number[]
+  freeStopIndex: number | null
+  winner: string
+  winnerKind: string
+  multiplier: number
+  wins: Array<{ position: string; mult: number; amount: number; cellIndex: number }>
+  bets: Array<{ position: string; amount: number; payout: number; won: boolean }>
+  totalBet: number
+  totalPayout: number
+  balance: number
+}
+
 export const gamesApi = {
   list: () => http.get<GameItem[], GameItem[]>('/games'),
 
@@ -62,6 +78,13 @@ export const gamesApi = {
 
   fruitGamble: (amount: number, choice: 'big' | 'small') =>
     http.post<FruitGambleResult, FruitGambleResult>('/bet/fruit/gamble', { amount, choice }),
+
+  bcbmSpin: (bets: Record<string, number>, clientSeed?: string) =>
+    http.post<BcbmSpinResult, BcbmSpinResult>('/bet/bcbm', {
+      gameCode: 'bcbm',
+      bets,
+      clientSeed,
+    }),
 
   betHistory: () =>
     http.get<any[], any[]>('/bet/history'),

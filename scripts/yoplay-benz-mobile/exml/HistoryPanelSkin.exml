@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<e:Skin class="Benz.HistoryPanelSkin" width="480" height="715" xmlns:e="http://ns.egret.com/eui" xmlns:Locale="Locale.*" xmlns:w="http://ns.egret.com/wing" xmlns:YP="YPUi.*" xmlns:Benz="Benz.*">
+	<e:Rect left="0" right="0" top="0" bottom="0" fillAlpha="0.5" locked="true"/>
+	<e:Group width="480" top="0" bottom="0" x="0">
+		<e:Image source="yben_main_json.yben_ui_geniric_border" scale9Grid="52,48,70,43" scaleX="1" scaleY="1" left="0" right="0" top="0" bottom="0" locked="true"/>
+		<Locale:LocaleImage localeName="yben_txt_history" source="yben_lang_hans_json.yben_txt_history_hans" horizontalCenter="0" x="164" scaleX="1" scaleY="1" top="10" smoothing="false"/>
+		<e:Image source="yben_main_json.yben_ui_geniric_border2" scale9Grid="19,18,87,75" scaleX="1" scaleY="1" top="103" bottom="83" width="440" horizontalCenter="0"/>
+		<e:Button id="closeBtn" label="" scaleX="1" scaleY="1" bottom="9" horizontalCenter="0">
+			<e:skinName>
+			<e:Skin states="up,down,disabled">
+				<e:Image source="yben_main_json.yben_btn_geniric_blue"/>
+				<Locale:LocaleImage localeName="yben_txt_confirm" horizontalCenter="0" verticalCenter="0" source="yben_lang_hans_json.yben_txt_confirm_hans"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+			</e:Skin>
+			</e:skinName>
+		</e:Button>
+		<e:Group id="listGroup" horizontalCenter="0" width="420" top="113" bottom="92">
+			<e:Group id="roadGroup0" left="0" right="0" top="0" bottom="0">
+				<YP:ScrollerBase anchorOffsetX="0" anchorOffsetY="0" top="0" bottom="0" scaleX="1" scaleY="1" verticalScrollBar="false" left="0" right="0" x="0" y="0">
+					<e:List id="historyList" itemRendererSkinName="Benz.HistoryItemRendererSkin" anchorOffsetX="0" anchorOffsetY="0" horizontalCenter="0" x="26" scaleX="1" scaleY="1">
+					<e:layout>
+						<e:TileLayout horizontalGap="2" paddingLeft="6" paddingTop="20" verticalGap="18"/>
+					</e:layout>
+					</e:List>
+				</YP:ScrollerBase>
+			</e:Group>
+			<e:Group id="roadGroup1" left="0" right="0" top="0" bottom="0">
+				<e:Group width="420" height="60" left="0" top="0">
+					<e:Group left="0" right="0" top="0" bottom="0" x="-109" y="-368" scaleX="1" scaleY="1">
+					<e:Rect width="2.5" x="59" y="-167" scaleX="1" scaleY="1" strokeWeight="1.5" strokeColor="0x5BA2EF" fillColor="0x08487d"/>
+					<e:Rect width="3" x="59" y="-167" scaleX="1" scaleY="1" strokeWeight="1.5" strokeColor="0x5BA2EF" fillColor="0x08487d"/>
+					<e:Rect width="3" x="59" y="-167" scaleX="1" scaleY="1" strokeWeight="1.5" strokeColor="0x5BA2EF" fillColor="0x08487d"/>
+					<e:Rect width="3" x="59" y="-167" scaleX="1" scaleY="1" strokeWeight="1.5" strokeColor="0x5BA2EF" fillColor="0x08487d"/>
+					<e:Rect width="3" x="59" y="-167" scaleX="1" scaleY="1" strokeWeight="1.5" strokeColor="0x5BA2EF" fillColor="0x08487d"/>
+					<e:layout>
+						<e:HorizontalLayout gap="0" verticalAlign="justify" horizontalAlign="justify"/>
+					</e:layout>
+					</e:Group>
+					<e:Group left="0" right="0" top="0" bottom="0" x="-109" y="-368" scaleX="1" scaleY="1">
+					<e:Group width="2.5" height="200" x="135" y="193">
+						<Locale:LocaleLabel localeKey="Benz.history_round" scaleX="1" scaleY="1" verticalCenter="0" horizontalCenter="0" size="26" textColor="0x8CCFFD" text="局数"/>
+					</e:Group>
+					<e:Group width="3" height="200" x="350" y="110">
+						<e:Image source="yben_betboard_json.yben_icon_history_volkswagen" horizontalCenter="0" verticalCenter="0"/>
+					</e:Group>
+					<e:Group width="3" height="200" x="-48" y="86">
+						<e:Image source="yben_betboard_json.yben_icon_history_audi" verticalCenter="0" horizontalCenter="0"/>
+					</e:Group>
+					<e:Group width="3" height="200" x="-4" y="-24" scaleX="1" scaleY="1">
+						<e:Image source="yben_betboard_json.yben_icon_history_bmw" verticalCenter="0" horizontalCenter="0"/>
+					</e:Group>
+					<e:Group width="3" height="200" x="6" y="-14" scaleX="1" scaleY="1">
+						<e:Image source="yben_betboard_json.yben_icon_history_benz" verticalCenter="0" horizontalCenter="0"/>
+					</e:Group>
+					<e:layout>
+						<e:HorizontalLayout gap="0" verticalAlign="justify" horizontalAlign="justify"/>
+					</e:layout>
+					</e:Group>
+				</e:Group>
+				<YP:ScrollerBase width="420" anchorOffsetX="0" anchorOffsetY="0" horizontalCenter="0" top="60" bottom="0" x="0" y="0" scaleX="1" scaleY="1" verticalScrollBar="false">
+					<YP:HistoryRoadList id="carRoadList" anchorOffsetX="0" anchorOffsetY="0" horizontalCenter="0" x="26" scaleX="1" scaleY="1" itemRenderer="Benz.HistoryCarRoadItemRenderer" itemRendererSkinName="Benz.HistoryCarRoadItemRendererSkin">
+					<YP:layout>
+						<e:VerticalLayout gap="0" horizontalAlign="left" verticalAlign="top"/>
+					</YP:layout>
+					</YP:HistoryRoadList>
+				</YP:ScrollerBase>
+			</e:Group>
+			<e:Group id="roadGroup2" left="0" right="0" top="0" bottom="0">
+				<e:Group width="420" height="60" left="0" top="0">
+					<e:Group left="0" right="0" top="0" bottom="0" x="-47" y="-267" scaleX="1" scaleY="1">
+					<e:Rect width="2" x="59" y="-167" scaleX="1" scaleY="1" strokeWeight="1.5" strokeColor="0x5BA2EF" fillColor="0x08487d"/>
+					<e:Rect width="3" x="59" y="-167" scaleX="1" scaleY="1" strokeWeight="1.5" strokeColor="0x5BA2EF" fillColor="0x08487d"/>
+					<e:Rect width="3" x="59" y="-167" scaleX="1" scaleY="1" strokeWeight="1.5" strokeColor="0x5BA2EF" fillColor="0x08487d"/>
+					<e:Rect width="3" x="59" y="-167" scaleX="1" scaleY="1" strokeWeight="1.5" strokeColor="0x5BA2EF" fillColor="0x08487d"/>
+					<e:layout>
+						<e:HorizontalLayout gap="0" verticalAlign="justify" horizontalAlign="justify"/>
+					</e:layout>
+					</e:Group>
+					<e:Group left="0" right="0" top="0" bottom="0" x="-47" y="-267" scaleX="1" scaleY="1">
+					<e:Group width="2" height="200" x="135" y="193">
+						<Locale:LocaleLabel localeKey="Benz.history_round" text="局数" scaleX="1" scaleY="1" verticalCenter="0" horizontalCenter="0" size="26" textColor="0x8CCFFD"/>
+					</e:Group>
+					<e:Group width="3" height="200" x="350" y="110">
+						<e:Image source="yben_betboard_json.yben_icon_history_yellow" verticalCenter="0" horizontalCenter="0"/>
+					</e:Group>
+					<e:Group width="3" height="200" x="-48" y="86">
+						<e:Image source="yben_betboard_json.yben_icon_history_green" verticalCenter="0" horizontalCenter="0"/>
+					</e:Group>
+					<e:Group width="3" height="200" x="-4" y="-24" scaleX="1" scaleY="1">
+						<e:Image source="yben_betboard_json.yben_icon_history_red" verticalCenter="0" horizontalCenter="0"/>
+					</e:Group>
+					<e:layout>
+						<e:HorizontalLayout gap="0" verticalAlign="justify" horizontalAlign="justify"/>
+					</e:layout>
+					</e:Group>
+				</e:Group>
+				<YP:ScrollerBase width="420" anchorOffsetX="0" anchorOffsetY="0" horizontalCenter="0" top="60" bottom="0" x="0" y="0" scaleX="1" scaleY="1" verticalScrollBar="false">
+					<YP:HistoryRoadList id="colorRoadList" anchorOffsetX="0" anchorOffsetY="0" horizontalCenter="0" x="26" scaleX="1" scaleY="1" itemRendererSkinName="Benz.HistoryColorRoadItemRendererSkin" itemRenderer="Benz.HistoryColorRoadItemRenderer">
+					<e:layout>
+						<e:VerticalLayout gap="0" horizontalAlign="left" verticalAlign="top"/>
+					</e:layout>
+					</YP:HistoryRoadList>
+				</YP:ScrollerBase>
+			</e:Group>
+		</e:Group>
+		<e:Rect id="listMask" width="418" horizontalCenter="0" top="114" bottom="93" ellipseWidth="22"/>
+		<e:ToggleButton id="roadButton0" x="20" top="52" selected="true">
+			<e:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="yben_betboard_json.yben_ui_geniric_border3" source.down="yben_betboard_json.yben_ui_geniric_border3_selected"/>
+				<Locale:LocaleLabel localeKey="Benz.history_road_classic" horizontalCenter="0" verticalCenter="0" size="24" textColor="0x5BA2EF" textColor.down="0xffffff" />
+				</e:Skin>
+			</e:skinName>
+		</e:ToggleButton>
+		<e:ToggleButton id="roadButton1" x="165" top="52">
+			<e:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="yben_betboard_json.yben_ui_geniric_border3" source.down="yben_betboard_json.yben_ui_geniric_border3_selected"/>
+				<Locale:LocaleLabel localeKey="Benz.history_road_car" horizontalCenter="0" verticalCenter="0" size="24" textColor="0x5BA2EF" textColor.down="0xffffff" />
+				</e:Skin>
+			</e:skinName>
+		</e:ToggleButton>
+		<e:ToggleButton id="roadButton2" x="310" top="52">
+			<e:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="yben_betboard_json.yben_ui_geniric_border3" source.down="yben_betboard_json.yben_ui_geniric_border3_selected"/>
+				<Locale:LocaleLabel localeKey="Benz.history_road_color" horizontalCenter="0" verticalCenter="0" size="24" textColor="0x5BA2EF" textColor.down="0xffffff" />
+				</e:Skin>
+			</e:skinName>
+		</e:ToggleButton>
+	</e:Group>
+	
+	
+</e:Skin>
+
+<!--<?xml version="1.0" encoding="utf-8"?>
+<e:Skin class="Benz.HistoryPanelSkin" width="480" height="715" xmlns:e="http://ns.egret.com/eui" xmlns:Locale="Locale.*" xmlns:w="http://ns.egret.com/wing">
+	<e:Rect left="0" right="0" top="0" bottom="0" fillAlpha="0.5"/>
+	<e:Image source="yben_main_json.yben_ui_geniric_border" scale9Grid="23,23,134,118" height="480" width="480" x="0" verticalCenter="0"/>
+	<Locale:LocaleImage localeName="yben_txt_history" source="yben_lang_hans_json.yben_txt_history_hans" y="160" horizontalCenter="0"/>
+	<e:Image source="yben_main_json.yben_ui_geniric_border2" scale9Grid="19,18,87,75" height="300" width="450" y="207" x="15"/>
+	<e:List id="historyList" width="428" height="279" x="26" y="218" itemRendererSkinName="Benz.HistoryItemRendererSkin" anchorOffsetX="0" anchorOffsetY="0">
+		<e:layout>
+			<e:TileLayout horizontalGap="2" paddingLeft="6" paddingTop="14" verticalGap="18"/>
+		</e:layout>
+	</e:List>
+	
+	<e:Button id="closeBtn" label="" y="496" horizontalCenter="0">
+		<e:skinName>
+			<e:Skin states="up,down,disabled">
+            <e:Image source="yben_main_json.yben_btn_geniric_blue"/>
+			<Locale:LocaleImage localeName="yben_txt_confirm" horizontalCenter="0" verticalCenter="0" source="yben_lang_hans_json.yben_txt_confirm_hans"/>
+			<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+			</e:Skin>
+		</e:skinName>
+	</e:Button>
+</e:Skin>-->

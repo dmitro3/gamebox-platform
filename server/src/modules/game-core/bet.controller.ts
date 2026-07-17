@@ -101,20 +101,118 @@ export class BetController {
     });
   }
 
-  /** GET /api/bet/history — 下注历史 */
+  /** GET /api/bet/history — 下注历史（街机按局聚合，含明细供展开） */
   @Get('history')
   async history(@CurrentUser() u: { id: string }) {
     const list = await this.prisma.bet.findMany({
       where: { playerId: u.id },
       orderBy: { createdAt: 'desc' },
-      take: 50,
+      take: 200,
       select: {
-        id: true, betNo: true, amount: true, payout: true, status: true,
-        betType: true, settledAt: true, createdAt: true,
+        id: true,
+        betNo: true,
+        amount: true,
+        payout: true,
+        status: true,
+        betType: true,
+        multiplier: true,
+        odds: true,
+        validFlow: true,
+        settledAt: true,
+        createdAt: true,
+        roundId: true,
         game: { select: { name: true, code: true } },
+        round: {
+          select: {
+            id: true,
+            roundNo: true,
+            outcome: true,
+            startedAt: true,
+            endedAt: true,
+          },
+        },
       },
     });
-    return list;
+
+    /** 有 roundId 的按局合并；无 round 的单条保留 */
+    type Agg = {
+      id: string
+      betNo: string
+      amount: number
+      payout: number
+      validBet: number
+      status: string
+      createdAt: Date
+      game: { name: string; code: string }
+      roundId: string | null
+      roundNo: string | null
+      outcome: unknown
+      details: Array<{
+        position: string
+        amount: number
+        payout: number
+        multiplier: number
+        won: boolean
+      }>
+    }
+
+    const byRound = new Map<string, Agg>()
+    const singles: Agg[] = []
+
+    for (const b of list) {
+      const detail = {
+        position: b.betType || '',
+        amount: b.amount,
+        payout: b.payout,
+        multiplier: Number(b.multiplier || b.odds || 0),
+        won: b.payout > 0,
+      }
+      if (b.roundId && b.round) {
+        const existing = byRound.get(b.roundId)
+        if (existing) {
+          existing.amount += b.amount
+          existing.payout += b.payout
+          existing.validBet += b.validFlow || b.amount
+          existing.details.push(detail)
+          if (b.createdAt > existing.createdAt) existing.createdAt = b.createdAt
+        } else {
+          byRound.set(b.roundId, {
+            id: b.roundId,
+            betNo: b.round.roundNo || b.betNo,
+            amount: b.amount,
+            payout: b.payout,
+            validBet: b.validFlow || b.amount,
+            status: b.status,
+            createdAt: b.createdAt,
+            game: b.game,
+            roundId: b.roundId,
+            roundNo: b.round.roundNo,
+            outcome: b.round.outcome,
+            details: [detail],
+          })
+        }
+      } else {
+        singles.push({
+          id: b.id,
+          betNo: b.betNo,
+          amount: b.amount,
+          payout: b.payout,
+          validBet: b.validFlow || b.amount,
+          status: b.status,
+          createdAt: b.createdAt,
+          game: b.game,
+          roundId: null,
+          roundNo: null,
+          outcome: null,
+          details: detail.position ? [detail] : [],
+        })
+      }
+    }
+
+    const rows = [...byRound.values(), ...singles].sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    )
+    return rows.slice(0, 50)
   }
 
   /** GET /api/bet/round/:id — 查单局详情（可证明公平验证用） */

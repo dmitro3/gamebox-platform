@@ -831,7 +831,7 @@ window.App = {
   // ========= 假数据（用于本地原型预览） =========
   fakeData: {
     rooms: [
-      { roomNo: '628391', name: '黄金一号厅', games: ['lucky-wheel', 'fishing'] }
+      { roomNo: '628391', name: '黄金一号厅', games: ['fishing'] }
     ],
     applications: [
       { id: 'a001', roomNo: '628391', status: 'pending', appliedAt: '2026-05-28 18:30' }

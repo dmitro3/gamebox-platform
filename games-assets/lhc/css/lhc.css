@@ -1,5 +1,5 @@
 /* ========================================================
-   六合彩 · 聊天投注房（黑金至尊 · 与主界面 common.css 同调）
+   幸运六合彩 · 聊天投注房（黑金至尊 · 与主界面 common.css 同调）
    ======================================================== */
 
 :root {
@@ -7,7 +7,7 @@
   --ball-5: #5ec8e8; --ball-6: #9b4fd4; --ball-7: #a8a8b0; --ball-8: #e83838;
   --ball-9: #8b1a2e; --ball-10: #2db84a;
   --lhc-gap: 10px;
-  --rail-w: 54px;
+  --rail-w: 56px;
   --lhc-fs-xs: 11px;
   --lhc-fs-sm: 13px;
   --lhc-fs-md: 15px;
@@ -93,7 +93,7 @@ body.lhc-bg::after {
   height: 36px;
   flex-shrink: 0;
   border: none;
-  background: transparent url('../../../client-app/assets/images/back-button.svg') center / contain no-repeat;
+  background: transparent url('/images/back-button.svg') center / contain no-repeat;
   cursor: pointer;
   transition: transform 0.15s, filter 0.15s;
 }
@@ -361,10 +361,11 @@ body.lhc-bg::after {
 .lhc-draw-bar__main {
   width: 100%;
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: minmax(56px, auto) 1fr auto auto;
   align-items: center;
-  gap: 8px;
-  padding: 11px 12px;
+  column-gap: 12px;
+  row-gap: 4px;
+  padding: 10px 12px;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -377,25 +378,45 @@ body.lhc-bg::after {
   font-family: ui-monospace, Consolas, monospace;
   color: var(--gold-bright);
   font-weight: 600;
-  font-size: var(--lhc-fs-sm);
-  min-width: 72px;
+  font-size: 12px;
+  line-height: 1.2;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
 }
 .lhc-draw-bar__balls {
-  flex: 1;
   display: flex;
-  gap: 0;
-  overflow: hidden;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 4px;
   min-width: 0;
+  width: 100%;
+  padding: 0 2px;
+}
+.lhc-draw-bar__balls .ball-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 1 1 0;
+  min-width: 0;
+  line-height: 1.1;
 }
 .lhc-draw-bar__balls .lhc-ball-img {
-  width: 19px;
-  height: 19px;
+  width: 22px;
+  height: 22px;
+}
+.lhc-draw-bar__balls .zx {
+  font-size: 10px;
+  color: var(--gold-bright);
 }
 .lhc-draw-bar__gy {
   flex-shrink: 0;
   color: var(--text-dim);
-  font-size: var(--lhc-fs-xs);
-  max-width: 96px;
+  font-size: 11px;
+  max-width: 52px;
+  white-space: nowrap;
+  text-align: right;
+  letter-spacing: 0.5px;
 }
 .lhc-draw-bar__arrow {
   flex-shrink: 0;
@@ -425,10 +446,9 @@ body.lhc-bg::after {
   font-size: clamp(11px, 3vw, 14px);
   color: var(--text-dim);
 }
-.lhc-draw-table col.col-issue { width: 13%; }
-.lhc-draw-table col.col-ball { width: 4%; }
-.lhc-draw-table col.col-gy { width: 14%; }
-.lhc-draw-table col.col-lh { width: 13%; }
+.lhc-draw-table col.col-issue { width: 12%; }
+.lhc-draw-table col.col-ball { width: 9%; }
+.lhc-draw-table col.col-meta { width: 7%; }
 .lhc-draw-table th,
 .lhc-draw-table td {
   padding: 3px 0;
@@ -443,7 +463,7 @@ body.lhc-bg::after {
   color: var(--gold);
   font-weight: 600;
   letter-spacing: 0;
-  font-size: clamp(11px, 2.9vw, 14px);
+  font-size: clamp(10px, 2.6vw, 12px);
   z-index: 1;
   box-shadow: 0 1px 0 var(--line);
 }
@@ -453,14 +473,30 @@ body.lhc-bg::after {
   letter-spacing: -0.2px;
   color: var(--gold-bright);
 }
-.lhc-draw-table .cell-gy {
-  font-size: clamp(10px, 2.75vw, 13px);
-  letter-spacing: 0;
+.lhc-draw-table .cell-ball .ball-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  line-height: 1.1;
 }
-.lhc-draw-table .cell-lh {
-  font-size: clamp(10px, 2.75vw, 13px);
-  letter-spacing: -0.2px;
+.lhc-draw-table .cell-ball .zx {
+  font-size: clamp(9px, 2.2vw, 11px);
+  color: var(--gold-bright);
 }
+.lhc-draw-table .cell-size,
+.lhc-draw-table .cell-oe {
+  font-size: clamp(10px, 2.75vw, 13px);
+  font-weight: 600;
+  color: var(--gold);
+}
+.lhc-draw-table .cell-wave {
+  font-size: clamp(10px, 2.75vw, 13px);
+  font-weight: 600;
+}
+.lhc-draw-table .cell-wave.is-red { color: #ff6b6b; }
+.lhc-draw-table .cell-wave.is-blue { color: #5eb3ff; }
+.lhc-draw-table .cell-wave.is-green { color: #5fd68a; }
 .lhc-draw-table .lhc-ball-img.tbl {
   width: clamp(16px, 3.6vw, 20px);
   height: clamp(16px, 3.6vw, 20px);
@@ -545,6 +581,13 @@ body.lhc-bg::after {
   font-size: var(--lhc-fs-xs);
   color: var(--text-muted);
 }
+.lhc-msg__bubble:has(.lhc-result-card) {
+  max-width: min(380px, 98%);
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
 .lhc-msg__bubble {
   display: inline-block;
   max-width: 92%;
@@ -596,126 +639,134 @@ body.lhc-bg::after {
   letter-spacing: 2px;
 }
 
-/* 开奖结果卡 */
+/* 开奖结果卡：七球 + 正下方生肖，无舞台底图 */
 .lhc-result-card {
-  width: min(320px, 100%);
+  width: min(340px, 100%);
   border-radius: var(--radius-sm);
   overflow: hidden;
-  border: 1px solid rgba(80, 140, 220, 0.35);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 20px rgba(60, 140, 255, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  background: #120e0a;
   font-size: 11px;
-  background: #0a0c14;
 }
 .lhc-result-card__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 10px;
-  background: linear-gradient(90deg, rgba(20, 40, 80, 0.85), rgba(10, 12, 20, 0.95));
-  border-bottom: 1px solid rgba(80, 140, 220, 0.25);
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.22);
 }
 .lhc-result-card__title {
   font-weight: 700;
   font-size: 15px;
-  color: #7ec8ff;
+  color: #f4d36b;
   letter-spacing: 2px;
   font-family: 'Noto Serif SC', serif;
-  text-shadow: 0 0 12px rgba(80, 160, 255, 0.45);
-  flex-shrink: 0;
 }
-.lhc-result-card__order {
+.lhc-result-card__issue {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+  color: rgba(245, 236, 214, 0.75);
+}
+.lhc-result-card__body {
+  padding: 14px 10px 10px;
+}
+.lhc-result-card__rolls {
   display: flex;
-  gap: 2px;
-  flex-wrap: nowrap;
-  justify-content: flex-end;
-  min-width: 0;
-}
-.lhc-result-card__stage {
-  position: relative;
-  min-height: 200px;
-  overflow: hidden;
-}
-.lhc-result-card__stage-bg {
-  position: absolute;
-  inset: 0;
-  background:
-    url('../assets/draw-result-stage.png') center top / cover no-repeat,
-    linear-gradient(180deg, #0a1838 0%, #06080e 100%);
-}
-.lhc-result-card__podium {
-  position: absolute;
-  z-index: 1;
-  left: 0;
-  right: 0;
-  top: 38%;
-  display: flex;
+  justify-content: space-between;
   align-items: flex-start;
-  justify-content: center;
-  gap: 0;
-  padding: 0 6%;
-  pointer-events: none;
+  gap: 4px;
 }
-.lhc-podium-slot {
-  position: absolute;
+.lhc-roll-slot {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
 }
-.lhc-podium-slot.is-r2 { left: 14%; top: 6%; }
-.lhc-podium-slot.is-r1 { left: 50%; top: 0; transform: translateX(-50%); }
-.lhc-podium-slot.is-r3 { right: 14%; top: 8%; }
-.lhc-podium-slot__label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
-  opacity: 0.95;
+.lhc-roll-slot__ball {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
 }
-.lhc-podium-slot.is-r1 .lhc-podium-slot__label { color: #ffe08a; }
-.lhc-podium-slot.is-r2 .lhc-podium-slot__label { color: #e8ecf8; }
-.lhc-podium-slot.is-r3 .lhc-podium-slot__label { color: #e8a878; }
-.lhc-podium-slot__shield {
+.lhc-roll-slot.is-te .lhc-roll-slot__ball {
+  filter: drop-shadow(0 0 6px rgba(255, 120, 140, 0.45));
+}
+.lhc-roll-slot.is-rolling .lhc-roll-slot__ball {
+  animation: lhc-ball-blur 0.08s linear infinite;
+}
+.lhc-roll-slot.is-settled .lhc-roll-slot__ball {
+  animation: lhc-ball-pop 0.3s ease-out;
+}
+.lhc-zx-cell {
+  width: 18px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(2px);
+  font-size: 12px;
+  font-weight: 700;
+  color: transparent;
+  font-family: 'Noto Serif SC', 'Songti SC', serif;
+  line-height: 1;
+}
+.lhc-zx-cell i { font-style: normal; }
+.lhc-zx-cell.is-show { color: #f4d36b; }
+.lhc-roll-slot.is-te .lhc-zx-cell.is-show { color: #ff9aaa; }
+@keyframes lhc-ball-blur {
+  0% { transform: translateY(-3px); filter: blur(0.6px); }
+  50% { transform: translateY(3px); filter: blur(1px); }
+  100% { transform: translateY(-3px); filter: blur(0.6px); }
+}
+@keyframes lhc-ball-pop {
+  0% { transform: scale(0.9); }
+  60% { transform: scale(1.08); }
+  100% { transform: scale(1); }
 }
 .lhc-result-card__foot {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
   gap: 6px;
+  padding: 0 8px;
+  border-top: 1px solid rgba(212, 175, 55, 0.18);
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, opacity 0.3s ease, padding 0.3s ease;
+}
+.lhc-result-card__foot.is-hidden {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.lhc-result-card__foot.is-show {
+  max-height: 72px;
+  opacity: 1;
   padding: 8px;
-  background: rgba(4, 6, 10, 0.92);
-  border-top: 1px solid rgba(80, 140, 220, 0.2);
 }
 .lhc-result-stat {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 6px 4px;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.55);
-  border: 1px solid rgba(60, 120, 80, 0.35);
+  gap: 3px;
+  padding: 5px 3px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(212, 175, 55, 0.22);
 }
 .lhc-result-stat .k {
   font-size: 10px;
-  color: #5ecf88;
-  letter-spacing: 1px;
+  color: #f4d36b;
 }
 .lhc-result-stat .v {
-  font-size: 10px;
+  font-size: 11px;
   color: #f0f4f8;
-  text-align: center;
-  line-height: 1.35;
-  word-break: break-all;
+  font-weight: 600;
 }
 
 .lhc-msg.is-robot .lhc-msg__bubble--line {
@@ -736,7 +787,7 @@ body.lhc-bg::after {
 .lhc-rail {
   position: absolute;
   right: 4px;
-  top: 52%;
+  top: 40%;
   transform: translateY(-50%);
   z-index: 30;
   display: flex;
@@ -909,13 +960,30 @@ body.lhc-bg::after {
 }
 
 /* + 菜单 & 玩法 sheet */
-.lhc-menu-mask,
-.lhc-play-mask {
+.lhc-menu-mask[hidden],
+.lhc-play-mask[hidden],
+.lhc-plus-menu[hidden],
+.lhc-play-sheet[hidden],
+.lhc-keypad[hidden] {
+  display: none !important;
+}
+.lhc-menu-mask {
   position: fixed;
   inset: 0;
   z-index: 100;
   background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(3px);
+}
+/* 玩法遮罩：从历史开奖栏下方起，顶栏/期号/倒计时仍可见 */
+.lhc-play-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--lhc-play-top, 210px);
+  bottom: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
 }
 .lhc-plus-menu {
   position: fixed;
@@ -950,24 +1018,29 @@ body.lhc-bg::after {
   color: var(--gold-bright);
 }
 
+/* 玩法面板：顶贴历史开奖栏下沿，整块替换聊天区，方便选 49 号时仍看倒计时 */
 .lhc-play-sheet {
   position: fixed;
   left: 0;
   right: 0;
+  top: var(--lhc-play-top, 210px);
   bottom: 0;
   z-index: 110;
   width: 100%;
   max-width: 100%;
   margin: 0;
-  max-height: 70vh;
+  height: auto;
+  min-height: 0;
+  max-height: none;
   background: linear-gradient(180deg, var(--bg-card-2), var(--bg-dark));
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border-radius: 12px 12px 0 0;
   border-top: 1px solid var(--lhc-border-strong);
-  transform: translateY(100%);
+  transform: translateY(calc(100% + 8px));
   transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   display: flex;
   flex-direction: column;
   box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
 }
 .lhc-play-sheet.is-open { transform: translateY(0); }
 .lhc-play-sheet__head {
@@ -981,6 +1054,7 @@ body.lhc-bg::after {
   color: var(--gold-bright);
   letter-spacing: 3px;
   font-family: 'Noto Serif SC', serif;
+  flex-shrink: 0;
 }
 .lhc-play-sheet__head button {
   width: 32px;
@@ -992,15 +1066,610 @@ body.lhc-bg::after {
   color: var(--text-muted);
   cursor: pointer;
 }
-.lhc-play-sheet__body {
+.lhc-play-sheet__main {
+  flex: 1 1 0;
+  min-height: 0;
+  height: 0;
+  display: flex;
+  overflow: hidden;
+}
+.lhc-play-nav {
+  flex-shrink: 0;
+  width: 88px;
+  min-height: 0;
+  height: 100%;
+  overflow-x: hidden;
   overflow-y: auto;
-  padding: 12px;
+  border-right: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.28);
+  -webkit-overflow-scrolling: touch;
+}
+.lhc-play-nav__item {
+  display: block;
+  width: 100%;
+  padding: 14px 8px;
+  border: none;
+  border-bottom: 1px solid rgba(58, 47, 37, 0.6);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: var(--lhc-fs-sm);
+  text-align: center;
+  cursor: pointer;
+  line-height: 1.3;
+}
+.lhc-play-nav__item.is-active {
+  background: var(--gold-soft);
+  color: var(--gold-bright);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+.lhc-play-panel {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.lhc-play-panel__hint {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 10px 12px 6px;
+  font-size: var(--lhc-fs-xs);
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+.lhc-play-panel__sub {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  padding: 0 10px 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.lhc-play-panel__sub.is-stack {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 10px;
+  overflow-x: hidden;
+  overflow-y: visible;
+  padding-bottom: 4px;
+}
+.lhc-play-subrow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lhc-play-subrow__hd {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(244, 211, 107, 0.75);
+  letter-spacing: 1px;
+  padding-left: 2px;
+}
+.lhc-play-subrow__hd.is-mode {
+  color: #7eb8e8;
+}
+.lhc-play-subrow__hd.is-play {
+  color: rgba(244, 211, 107, 0.9);
+}
+.lhc-play-subrow__btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.lhc-play-panel__sub[hidden] { display: none !important; }
+.lhc-play-panel__grid.is-lianma {
+  grid-template-columns: repeat(4, 1fr);
+}
+.lhc-play-panel__grid.is-lianma-block {
+  display: block;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 10px 10px;
+}
+.lhc-play-item.is-active {
+  background: var(--gold-soft);
+  border-color: var(--gold);
+  color: var(--gold-bright);
+}
+/* 副玩法：胶囊 + 冷色蓝（生肖连/尾数连等） */
+.lhc-play-mode {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(90, 150, 210, 0.35);
+  background: rgba(28, 48, 72, 0.55);
+  color: #9ec4e8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1.2;
+}
+.lhc-play-mode.is-active {
+  border-color: #5eb3ff;
+  background: rgba(60, 130, 200, 0.35);
+  color: #d4ecff;
+  box-shadow: inset 0 0 0 1px rgba(94, 179, 255, 0.35);
+}
+/* 玩法：方块 + 暖色金（生肖连等） */
+.lhc-play-type {
+  flex: 1 1 calc(25% - 6px);
+  min-width: 64px;
+  padding: 8px 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  background: rgba(48, 36, 16, 0.65);
+  color: #e0c878;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1.2;
+  text-align: center;
+}
+.lhc-play-type.is-active {
+  border-color: var(--gold);
+  background: rgba(212, 175, 55, 0.28);
+  color: #fff0b8;
+  box-shadow: inset 0 0 0 1px rgba(244, 211, 107, 0.4);
+}
+
+/* —— 连码专用：副玩法 3×2 + 玩法 5 等宽，一屏排齐 —— */
+.lhc-play-panel__sub.is-lianma-sub {
+  display: block;
+  flex-shrink: 0;
+  padding: 0 8px 8px;
+  overflow: visible;
+}
+.lhc-lm-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lhc-lm-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.lhc-lm-row__lab {
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding-left: 2px;
+  font-weight: 600;
+}
+.lhc-lm-row__lab.is-mode {
+  color: #7eb8e8;
+}
+.lhc-lm-row__lab.is-play {
+  color: rgba(244, 211, 107, 0.9);
+}
+.lhc-lm-modes,
+.lhc-lm-plays {
+  display: grid;
+  gap: 4px;
+}
+.lhc-lm-modes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.lhc-lm-plays { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.lhc-lm-modes.is-n2,
+.lhc-lm-plays.is-n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.lhc-lm-modes.is-n3,
+.lhc-lm-plays.is-n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.lhc-lm-modes.is-n4,
+.lhc-lm-plays.is-n4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.lhc-lm-modes.is-n5,
+.lhc-lm-plays.is-n5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+/* 任意对碰：左右两组 49 号 */
+.lhc-lm-ab {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 0 2px 4px;
+}
+.lhc-lm-ab__col {
+  min-width: 0;
+  border-radius: 8px;
+  padding: 5px 4px 6px;
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  background: rgba(0, 0, 0, 0.18);
+}
+.lhc-lm-ab__col.is-a {
+  border-color: rgba(212, 175, 55, 0.45);
+  background: rgba(48, 36, 16, 0.35);
+}
+.lhc-lm-ab__col.is-b {
+  border-color: rgba(94, 179, 255, 0.4);
+  background: rgba(28, 48, 72, 0.4);
+}
+.lhc-lm-ab__hd {
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 1px;
+  margin-bottom: 5px;
+}
+.lhc-lm-ab__col.is-a .lhc-lm-ab__hd { color: #f0d56a; }
+.lhc-lm-ab__col.is-b .lhc-lm-ab__hd { color: #9ec4e8; }
+.lhc-lm-ab__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+.lhc-lm-ab__grid .lhc-play-ball {
+  width: 100%;
+  min-width: 0;
+  aspect-ratio: 1;
+  padding: 1px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lhc-lm-ab__grid .lhc-ball-img.play {
+  width: 100%;
+  height: auto;
+  max-width: 22px;
+  max-height: 22px;
+}
+/* 副玩法：胶囊 + 冷色蓝灰 */
+.lhc-lm-mode {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 2px;
+  border-radius: 999px;
+  border: 1px solid rgba(90, 150, 210, 0.35);
+  background: rgba(28, 48, 72, 0.55);
+  color: #9ec4e8;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.15;
+  text-align: center;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lhc-lm-mode.is-active {
+  border-color: #5eb3ff;
+  background: rgba(60, 130, 200, 0.35);
+  color: #d4ecff;
+  box-shadow: inset 0 0 0 1px rgba(94, 179, 255, 0.35);
+}
+/* 玩法：方块 + 暖色金 */
+.lhc-lm-play {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 2px;
+  border-radius: 8px;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  background: rgba(48, 36, 16, 0.65);
+  color: #e0c878;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lhc-lm-play.is-active {
+  border-color: var(--gold);
+  background: rgba(212, 175, 55, 0.28);
+  color: #fff0b8;
+  box-shadow: inset 0 0 0 1px rgba(244, 211, 107, 0.4);
+}
+.lhc-lm-peng {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.lhc-lm-peng__btn {
+  flex: 0 0 auto;
+  min-width: 52px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lhc-lm-peng__btn.is-active {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+  color: var(--gold-bright);
+}
+.lhc-lm-peng__tip {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.lhc-lm-section {
+  margin-bottom: 10px;
+}
+.lhc-lm-section__hd {
+  font-size: 11px;
+  color: rgba(244, 211, 107, 0.8);
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  padding-left: 2px;
+}
+.lhc-lm-section__grid {
+  display: grid;
+  gap: 5px;
+}
+.lhc-lm-section__grid.is-zx {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.lhc-lm-section__grid.is-tail {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.lhc-lm-section__grid .lhc-play-item {
+  min-width: 0;
+  padding: 10px 2px;
+}
+/* 快捷选号（特码/正码）：6 列 × 6 行网格，一屏全部可见、无需滑动 */
+.lhc-play-panel__sub.is-ball-quick {
+  display: block;
+  flex-shrink: 0;
+  padding: 0 8px 8px;
+  overflow: visible;
+  max-height: none;
+}
+.lhc-play-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+}
+.lhc-play-quick {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 2px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lhc-play-quick.is-red { color: #ff6b6b; border-color: rgba(255, 107, 107, 0.35); }
+.lhc-play-quick.is-blue { color: #5eb3ff; border-color: rgba(94, 179, 255, 0.35); }
+.lhc-play-quick.is-green { color: #5fd68a; border-color: rgba(95, 214, 138, 0.35); }
+.lhc-play-quick.is-zx {
+  letter-spacing: 0;
+  font-size: 12px;
+}
+.lhc-play-quick.is-zoo {
+  color: #f0c878;
+  border-color: rgba(240, 200, 120, 0.35);
+}
+.lhc-play-quick.is-active {
+  background: var(--gold-soft);
+  border-color: var(--gold);
+  color: var(--gold-bright);
+  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.35);
+}
+.lhc-play-quick.is-red.is-active { color: #ff8a8a; border-color: #ff6b6b; }
+.lhc-play-quick.is-blue.is-active { color: #8cc8ff; border-color: #5eb3ff; }
+.lhc-play-quick.is-green.is-active { color: #85e5a8; border-color: #5fd68a; }
+.lhc-play-quick.is-zoo.is-active { color: #ffe0a0; border-color: #f0c878; }
+.lhc-play-ball.is-dim { opacity: 0.28; filter: grayscale(0.35); }
+.lhc-play-sheet__foot {
+  flex-shrink: 0;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--lhc-border);
+  background: rgba(13, 10, 8, 0.95);
+}
+.lhc-play-foot__sel {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: var(--lhc-fs-xs);
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.lhc-play-foot__sel-main {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+}
+.lhc-play-foot__sel strong {
+  color: var(--gold-bright);
+  font-size: var(--lhc-fs-sm);
+  font-weight: 600;
+  margin-left: 4px;
+  word-break: break-all;
+}
+.lhc-play-foot__hint {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+.lhc-play-foot__clear {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 120, 120, 0.4);
+  background: rgba(120, 40, 40, 0.35);
+  color: #ffb0b0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  cursor: pointer;
+  line-height: 1.2;
+}
+.lhc-play-foot__clear:active {
+  background: rgba(160, 50, 50, 0.5);
+  color: #ffd0d0;
+}
+.lhc-play-foot__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.lhc-play-foot__chip {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text-dim);
+  font-size: var(--lhc-fs-sm);
+  cursor: pointer;
+}
+.lhc-play-foot__chip.is-active {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+  color: var(--gold-bright);
+}
+.lhc-play-foot__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lhc-play-foot__repeat {
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--gold-bright);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.lhc-play-foot__repeat:active {
+  background: rgba(212, 175, 55, 0.28);
+}
+.lhc-play-foot__step {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--gold-bright);
+  font-size: 20px;
+  cursor: pointer;
+}
+.lhc-play-foot__input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text);
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+}
+.lhc-play-foot__submit {
+  flex-shrink: 0;
+  min-width: 88px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(244, 211, 107, 0.95), rgba(180, 130, 40, 0.95));
+  color: #1a1408;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 2px;
+}
+.lhc-play-panel__grid {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 4px 12px 12px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
+  align-content: start;
+  -webkit-overflow-scrolling: touch;
+}
+.lhc-play-panel__grid.is-tema {
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  padding: 2px 8px 12px;
+}
+.lhc-play-panel__empty {
+  grid-column: 1 / -1;
+  padding: 28px 12px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--lhc-fs-sm);
+  line-height: 1.5;
+}
+.lhc-play-ball {
+  padding: 6px 2px 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.lhc-ball-img.play {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+}
+.lhc-play-ball small {
+  font-size: 9px;
+  color: var(--gold);
+  opacity: 0.85;
+  white-space: nowrap;
+}
+.lhc-play-ball.is-on {
+  background: var(--gold-soft);
+  border-color: var(--gold);
+  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.4);
+}
+/* 拖头胆码 / 任意对碰 A 组 / 多组已封 */
+.lhc-play-ball.is-dan,
+.lhc-play-item.is-dan {
+  border-color: #e8b84a;
+  box-shadow: 0 0 0 1px rgba(232, 184, 74, 0.55);
+  background: rgba(232, 184, 74, 0.18);
+}
+/* 拖头托码 / 任意对碰 B 组 */
+.lhc-play-ball.is-tuo,
+.lhc-play-item.is-tuo {
+  border-color: #5eb8ff;
+  box-shadow: 0 0 0 1px rgba(94, 184, 255, 0.5);
+  background: rgba(60, 140, 220, 0.2);
+}
+.lhc-msg__bet-sum {
+  display: inline-block;
+  margin-top: 4px;
+  color: var(--gold-bright);
+  font-size: 12px;
+}
+.lhc-play-ball:active {
+  transform: scale(0.96);
 }
 .lhc-play-item {
-  padding: 14px 8px;
+  padding: 10px 6px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: rgba(0, 0, 0, 0.25);
@@ -1008,6 +1677,15 @@ body.lhc-bg::after {
   text-align: center;
   color: var(--text);
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.lhc-play-item small {
+  font-size: 10px;
+  color: var(--gold);
+  opacity: 0.9;
 }
 .lhc-play-item:active {
   background: var(--gold-soft);
@@ -1032,3 +1710,174 @@ body.lhc-bg::after {
 .lhc-card.sm { font-size:13px; }
 .lhc-card.tbl { font-size:9px; }
 .lhc-bjl { font-size:13px;color:var(--gold-bright);letter-spacing:1px; }
+
+/* === chat-rail ui v1 (lhc) === */
+
+/* ---------- 右侧栏（chat-rail 统一高度） ---------- */
+.lhc-rail {
+  position: absolute;
+  right: 4px;
+  top: 40%;
+  transform: translateY(-50%);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: var(--rail-w, 56px);
+  pointer-events: none;
+}
+.lhc-rail-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  pointer-events: auto;
+}
+.lhc-rail-ic {
+  width: 42px;
+  height: 42px;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.45));
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.lhc-rail-btn--play .lhc-rail-ic,
+.lhc-rail-ic--play {
+  width: 50px;
+  height: 50px;
+}
+.lhc-rail-btn:active .lhc-rail-ic {
+  transform: scale(0.92);
+}
+.lhc-rail-lb {
+  font-size: 10px;
+  color: var(--text-dim, rgba(245, 236, 214, 0.65));
+  letter-spacing: 0;
+  line-height: 1;
+}
+/* ---------- 底部输入按钮 ---------- */
+.lhc-composer-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lhc-composer-btn__img {
+  width: 40px;
+  height: 40px;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+  transition: transform 0.15s ease;
+}
+.lhc-composer-btn--play .lhc-composer-btn__img,
+.lhc-composer-btn__img--play {
+  width: 46px;
+  height: 46px;
+}
+.lhc-composer-btn--play {
+  width: 46px;
+  height: 46px;
+}
+.lhc-composer-btn:active .lhc-composer-btn__img {
+  transform: scale(0.92);
+}
+.lhc-composer-btn.is-send .lhc-composer-btn__img {
+  filter: drop-shadow(0 2px 8px rgba(212, 175, 55, 0.45));
+}
+/* ---------- 规则弹层 ---------- */
+.lhc-rules-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.55);
+}
+.lhc-rules-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 61;
+  max-height: 72%;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(34, 26, 16, 0.98), rgba(16, 12, 8, 0.99));
+  border-top: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 16px 16px 0 0;
+  transform: translateY(105%);
+  transition: transform 0.28s ease;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.lhc-rules-sheet.is-open {
+  transform: translateY(0);
+}
+.lhc-rules-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gold-bright, #f4d36b);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.18);
+}
+.lhc-rules-sheet__head button {
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #aaa);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.lhc-rules-sheet__body {
+  overflow: auto;
+  padding: 12px 16px 20px;
+  font-size: 13px;
+  color: var(--text, #f5ecd6);
+  line-height: 1.55;
+}
+.lhc-rules-intro {
+  margin: 0 0 12px;
+  color: var(--text-dim, rgba(245, 236, 214, 0.75));
+}
+.lhc-rules-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.lhc-rules-table th,
+.lhc-rules-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.12);
+  text-align: left;
+  vertical-align: top;
+}
+.lhc-rules-table th {
+  color: var(--gold-bright, #f4d36b);
+  font-weight: 600;
+  font-size: 12px;
+}
+.lhc-rules-table td:last-child {
+  color: var(--text-dim, rgba(245, 236, 214, 0.7));
+  font-size: 12px;
+}
+
+.lhc-rail-icon { display: none !important; }
+.lhc-plus-btn {
+  /* legacy class kept for selectors; visual via composer-btn */
+  border: none !important;
+  background: transparent !important;
+  font-size: 0 !important;
+  color: transparent !important;
+}

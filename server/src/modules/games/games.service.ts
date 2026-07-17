@@ -59,28 +59,14 @@ export class GamesService {
   async seed() {
     const defaults = [
       {
-        code: 'lucky-wheel', name: '幸运转盘', category: 'SLOT' as const,
-        status: 'ONLINE' as const, sortOrder: 1,
-        payTable: [
-          { label: '谢谢参与', multiplier: 0,   weight: 40 },
-          { label: '×1',      multiplier: 1,   weight: 25 },
-          { label: '×2',      multiplier: 2,   weight: 15 },
-          { label: '×5',      multiplier: 5,   weight: 10 },
-          { label: '×10',     multiplier: 10,  weight: 6  },
-          { label: '×20',     multiplier: 20,  weight: 3  },
-          { label: '×50',     multiplier: 50,  weight: 1  },
-        ],
-        rtp: 0.95,
-      },
-      {
         code: 'ffc', name: '1分时时彩', category: 'LOTTERY' as const,
         status: 'ONLINE' as const, sortOrder: 2, drawIntervalSec: 60,
         payTable: {
-          big:    { multiplier: 1.98, desc: '总和 11-18' },
-          small:  { multiplier: 1.98, desc: '总和 3-10' },
-          odd:    { multiplier: 1.98, desc: '总和为奇数' },
-          even:   { multiplier: 1.98, desc: '总和为偶数' },
-          exact:  { multiplier: 9.0,  desc: '猜中个位数字' },
+          big:    { multiplier: 1.995, desc: '总和 23-45' },
+          small:  { multiplier: 1.995, desc: '总和 0-22' },
+          odd:    { multiplier: 1.995, desc: '总和为奇数' },
+          even:   { multiplier: 1.995, desc: '总和为偶数' },
+          exact:  { multiplier: 9.95,  desc: '猜中个位数字' },
         },
         rtp: 0.95,
       },

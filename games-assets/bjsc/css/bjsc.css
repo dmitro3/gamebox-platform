@@ -7,11 +7,11 @@
   --ball-5: #5ec8e8; --ball-6: #9b4fd4; --ball-7: #a8a8b0; --ball-8: #e83838;
   --ball-9: #8b1a2e; --ball-10: #2db84a;
   --bjsc-gap: 10px;
-  --rail-w: 48px;
+  --rail-w: 56px;
   --rail-btn: 48px;
   --rail-gap: 11px;
   --rail-top: 46px;
-  --rail-stack-h: calc(var(--rail-top) + var(--rail-btn) * 3 + var(--rail-gap) * 2 + 8px);
+  --rail-stack-h: calc(var(--rail-top) + var(--rail-btn) * 4 + var(--rail-gap) * 3 + 56px);
   --bjsc-fs-xs: 11px;
   --bjsc-fs-sm: 13px;
   --bjsc-fs-md: 15px;
@@ -635,7 +635,7 @@ body.bjsc-bg::after {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--rail-stack-h) var(--bjsc-gap) 12px;
+  padding: 10px calc(var(--bjsc-gap) + var(--rail-w)) 12px var(--bjsc-gap);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -1199,15 +1199,15 @@ body.bjsc-bg::after {
 /* ---------- 聊天区右侧固定按钮（不随聊天滚动） ---------- */
 .bjsc-rail {
   position: absolute;
-  top: var(--rail-top);
-  right: 8px;
+  top: 40%;
+  right: 4px;
   z-index: 30;
   display: flex;
   flex-direction: column;
   gap: var(--rail-gap);
   width: var(--rail-w);
   pointer-events: none;
-  transform: translateZ(0);
+  transform: translateY(-50%);
 }
 .bjsc-rail-btn {
   display: flex;
@@ -1386,10 +1386,20 @@ body.bjsc-bg::after {
 }
 
 /* + 菜单 & 玩法 sheet */
-.bjsc-menu-mask,
-.bjsc-play-mask {
+.bjsc-menu-mask {
   position: fixed;
   inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(3px);
+}
+/* 玩法遮罩：从历史开奖栏下方起，倒计时/历史仍可见 */
+.bjsc-play-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--bjsc-play-top, 210px);
+  bottom: 0;
   z-index: 100;
   background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(3px);
@@ -1431,22 +1441,19 @@ body.bjsc-bg::after {
   position: fixed;
   left: 0;
   right: 0;
+  top: var(--bjsc-play-top, 210px);
   bottom: 0;
   z-index: 110;
   width: 100%;
   max-width: 100%;
   margin: 0;
-  /* 固定高度，切换玩法时弹窗不再忽大忽小 */
-  height: 72vh;
-  height: 72dvh;
-  min-height: 72vh;
-  min-height: 72dvh;
-  max-height: 72vh;
-  max-height: 72dvh;
+  height: auto;
+  min-height: 0;
+  max-height: none;
   background: linear-gradient(180deg, var(--bg-card-2), var(--bg-dark));
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  border-top: 1px solid var(--bjsc-border-strong);
-  transform: translateY(100%);
+  border-radius: 12px 12px 0 0;
+  border-top: 1px solid var(--bjsc-border);
+  transform: translateY(calc(100% + 8px));
   transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   display: flex;
   flex-direction: column;
@@ -2685,7 +2692,7 @@ body.bjsc-bg::after {
     --rail-btn: 44px;
     --rail-w: 44px;
     --rail-top: 38px;
-    right: 6px;
+    right: 4px;
   }
 }
 
@@ -2832,4 +2839,175 @@ body.bjsc-bg::after {
   color: var(--text-muted);
   font-size: 12px;
   background: rgba(18, 14, 8, 0.95);
+}
+
+/* === chat-rail ui v1 (bjsc) === */
+
+/* ---------- 右侧栏（chat-rail 统一高度） ---------- */
+.bjsc-rail {
+  position: absolute;
+  right: 4px;
+  top: 40%;
+  transform: translateY(-50%);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: var(--rail-w, 56px);
+  pointer-events: none;
+}
+.bjsc-rail-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  pointer-events: auto;
+}
+.bjsc-rail-ic {
+  width: 42px;
+  height: 42px;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.45));
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.bjsc-rail-btn--play .bjsc-rail-ic,
+.bjsc-rail-ic--play {
+  width: 50px;
+  height: 50px;
+}
+.bjsc-rail-btn:active .bjsc-rail-ic {
+  transform: scale(0.92);
+}
+.bjsc-rail-lb {
+  font-size: 10px;
+  color: var(--text-dim, rgba(245, 236, 214, 0.65));
+  letter-spacing: 0;
+  line-height: 1;
+}
+/* ---------- 底部输入按钮 ---------- */
+.bjsc-composer-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bjsc-composer-btn__img {
+  width: 40px;
+  height: 40px;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+  transition: transform 0.15s ease;
+}
+.bjsc-composer-btn--play .bjsc-composer-btn__img,
+.bjsc-composer-btn__img--play {
+  width: 46px;
+  height: 46px;
+}
+.bjsc-composer-btn--play {
+  width: 46px;
+  height: 46px;
+}
+.bjsc-composer-btn:active .bjsc-composer-btn__img {
+  transform: scale(0.92);
+}
+.bjsc-composer-btn.is-send .bjsc-composer-btn__img {
+  filter: drop-shadow(0 2px 8px rgba(212, 175, 55, 0.45));
+}
+/* ---------- 规则弹层 ---------- */
+.bjsc-rules-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.55);
+}
+.bjsc-rules-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 61;
+  max-height: 72%;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(34, 26, 16, 0.98), rgba(16, 12, 8, 0.99));
+  border-top: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 16px 16px 0 0;
+  transform: translateY(105%);
+  transition: transform 0.28s ease;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.bjsc-rules-sheet.is-open {
+  transform: translateY(0);
+}
+.bjsc-rules-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gold-bright, #f4d36b);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.18);
+}
+.bjsc-rules-sheet__head button {
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #aaa);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.bjsc-rules-sheet__body {
+  overflow: auto;
+  padding: 12px 16px 20px;
+  font-size: 13px;
+  color: var(--text, #f5ecd6);
+  line-height: 1.55;
+}
+.bjsc-rules-intro {
+  margin: 0 0 12px;
+  color: var(--text-dim, rgba(245, 236, 214, 0.75));
+}
+.bjsc-rules-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.bjsc-rules-table th,
+.bjsc-rules-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.12);
+  text-align: left;
+  vertical-align: top;
+}
+.bjsc-rules-table th {
+  color: var(--gold-bright, #f4d36b);
+  font-weight: 600;
+  font-size: 12px;
+}
+.bjsc-rules-table td:last-child {
+  color: var(--text-dim, rgba(245, 236, 214, 0.7));
+  font-size: 12px;
+}
+
+.bjsc-rail-icon { display: none !important; }
+.bjsc-plus-btn {
+  /* legacy class kept for selectors; visual via composer-btn */
+  border: none !important;
+  background: transparent !important;
+  font-size: 0 !important;
+  color: transparent !important;
 }

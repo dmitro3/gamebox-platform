@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<e:Skin class="Benz.BetRecordDetailPageSkin" width="480" xmlns:e="http://ns.egret.com/eui" xmlns:Locale="Locale.*" xmlns:w="http://ns.egret.com/wing">
+	<e:Rect left="0" right="0" top="0" bottom="0" fillColor="0x0c0c0c"/>
+	<e:Group left="0" right="0" top="0">
+		<e:Group left="0" right="0" top="0" x="0" y="0" scaleX="1" scaleY="1">
+			<e:Rect width="370" height="25" x="91" strokeColor="0xffffff" strokeWeight="1" top="10" y="10" scaleX="1" scaleY="1" fillColor="0x262626" fillAlpha="0"/>
+			<e:Rect width="2" height="24" x="183" y="10.5" fillColor="0xffffff" scaleX="1" scaleY="1"/>
+			<e:Rect width="2" height="24" x="330" y="10.5" fillColor="0xFFFFFF" scaleX="1" scaleY="1"/>
+			<Locale:LocaleLabel text="下注玩法" x="97" y="15.5" size="15" fontFamily="Tahoma" anchorOffsetX="0" width="82.5" textAlign="left" localeKey="yoplayplaza.betRecord.play_type" scaleX="1" scaleY="1"/>
+			<Locale:LocaleLabel text="游戏结果" x="7" y="10.490000000000002" size="15" fontFamily="Tahoma" anchorOffsetX="0" width="80.83" textAlign="center" localeKey="yoplayplaza.betRecord.result" scaleX="1" scaleY="1"/>
+			<Locale:LocaleLabel text="下注金额" x="190.5" y="15.5" size="15" fontFamily="Tahoma" anchorOffsetX="0" width="136" textAlign="left" localeKey="yoplayplaza.betRecord.bet_amount" scaleX="1" scaleY="1"/>
+			<Locale:LocaleLabel text="派彩" x="338" y="15.5" size="15" fontFamily="Tahoma" anchorOffsetX="0" width="118.5" textAlign="left" localeKey="yoplayplaza.betRecord.payout" scaleX="1" scaleY="1"/>
+			<e:List id="betList" width="370" x="91" y="35" scaleX="1" scaleY="1">
+			<e:layout>
+				<e:VerticalLayout gap="0"/>
+			</e:layout>
+			</e:List>
+			<e:Group id="resultIcon" width="55" height="55" x="20" y="31"/>
+		</e:Group>
+		<e:Rect height="10" y="110" fillColor="0x262626" left="0" right="0" fillAlpha="0"/>
+		<e:layout>
+			<e:VerticalLayout gap="0" horizontalAlign="justify" verticalAlign="top"/>
+		</e:layout>
+	</e:Group>
+</e:Skin>

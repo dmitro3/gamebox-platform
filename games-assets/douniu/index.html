@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@600;700;900&family=Orbitron:wght@600;700&family=ZCOOL+QingKe+HuangYou&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./css/dn.css?v=35">
+  <link rel="stylesheet" href="./css/dn.css?v=36">
   <script>
     (function () {
       if (window.parent !== window) document.documentElement.classList.add('dn-in-iframe');
@@ -298,23 +298,23 @@
   <!-- 右侧快捷竖排：客服 / 历史 / 记录 / 玩法 / 设置 -->
   <aside class="dn-rail" id="dnRail" aria-label="快捷操作">
     <button type="button" class="dn-rail-btn" id="railCs" title="客服">
-      <svg class="dn-rail-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a8 8 0 0 0-8 8v4.5A2.5 2.5 0 0 0 6.5 18H8v-6H6v-1a6 6 0 1 1 12 0v1h-2v6h1.5a2.5 2.5 0 0 0 .4-.03A4 4 0 0 1 14 21h-2v-1.6h2a2.4 2.4 0 0 0 2.36-2H16A8 8 0 0 0 12 3z"/></svg>
+      <img class="dn-rail-ic" src="/images/table-rail/rail-cs.png?v=3" alt="" draggable="false">
       <span class="dn-rail-lb">客服</span>
     </button>
     <button type="button" class="dn-rail-btn" id="railHistory" title="历史记录">
-      <svg class="dn-rail-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3a9 9 0 1 0 8.94 10H19.9A7 7 0 1 1 13 5a7 7 0 0 1 5 2.06L15.5 9.5H22V3l-2.35 2.35A9 9 0 0 0 13 3zm-1 4v6l5 3 .9-1.5-4.4-2.6V7z"/></svg>
+      <img class="dn-rail-ic" src="/images/table-rail/rail-history.png?v=3" alt="" draggable="false">
       <span class="dn-rail-lb">历史</span>
     </button>
     <button type="button" class="dn-rail-btn" id="railRecords" title="下注记录">
-      <svg class="dn-rail-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h7l5 5v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm6 1.5V8h4.5L13 3.5zM8.5 12h7v1.6h-7V12zm0 3.4h7V17h-7v-1.6zm0-6.8h4V10h-4V8.6z"/></svg>
+      <img class="dn-rail-ic" src="/images/table-rail/rail-records.png?v=3" alt="" draggable="false">
       <span class="dn-rail-lb">记录</span>
     </button>
     <button type="button" class="dn-rail-btn" id="railRules" title="玩法规则">
-      <svg class="dn-rail-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9a3 3 0 0 1 3 3v15.2a1 1 0 0 1-1.45.9L12 18.8l-3.55 2.3A1 1 0 0 1 7 20.2V4H6a1 1 0 0 1 0-2zm3 2v13.3l2.45-1.58a1 1 0 0 1 1.1 0L15 17.3V5a1 1 0 0 0-1-1H9z"/></svg>
+      <img class="dn-rail-ic" src="/images/table-rail/rail-rules.png?v=3" alt="" draggable="false">
       <span class="dn-rail-lb">玩法</span>
     </button>
     <button type="button" class="dn-rail-btn" id="railSettings" title="设置">
-      <svg class="dn-rail-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0 1.8A2.2 2.2 0 1 1 12 14.2 2.2 2.2 0 0 1 12 9.8zM10.7 2h2.6l.5 2.2a7.6 7.6 0 0 1 1.7 1l2.1-.8 1.3 2.3-1.6 1.5q.1.9 0 1.6l1.6 1.5-1.3 2.3-2.1-.8a7.6 7.6 0 0 1-1.7 1l-.5 2.2h-2.6l-.5-2.2a7.6 7.6 0 0 1-1.7-1l-2.1.8-1.3-2.3 1.6-1.5a7.6 7.6 0 0 1 0-1.6L3.1 6.7 4.4 4.4l2.1.8a7.6 7.6 0 0 1 1.7-1L8.7 2z"/></svg>
+      <img class="dn-rail-ic" src="/images/table-rail/rail-settings.png?v=3" alt="" draggable="false">
       <span class="dn-rail-lb">设置</span>
     </button>
   </aside>
@@ -338,8 +338,11 @@
   if (window.__dnPlayersTimer) { clearInterval(window.__dnPlayersTimer); window.__dnPlayersTimer = null; }
   if (window.__dnBooted) return;
 
-  var TOTAL = 15;
+  /* 总周期 60s：下注 + 开奖流程(10 张发牌翻牌报牌≈17s) + 派奖 4s */
+  var ROUND_SEC = 60;
+  var DRAW_EST_SEC = 17;
   var PAYOUT_SECS = 4;
+  var TOTAL = ROUND_SEC - DRAW_EST_SEC - PAYOUT_SECS;
   var BANNER_MS = 1500;
   var FLY_MS = 360;
   var GAP_MS = 140;
@@ -921,7 +924,10 @@
     return false;
   }
 
-  function sideBetHit(key, bt, pt) {
+  /** 牌型副注：只认赢方牌型；和局时任一方出现即中 */
+  function sideBetHit(key, bt, pt, result) {
+    if (result === 'banker') return handHitsSide(bt, key);
+    if (result === 'player') return handHitsSide(pt, key);
     return handHitsSide(bt, key) || handHitsSide(pt, key);
   }
 
@@ -996,7 +1002,7 @@
       if (key === 'banker') win = result === 'banker';
       else if (key === 'player') win = result === 'player';
       else if (key === 'tie') win = result === 'tie';
-      else win = sideBetHit(key, bt, pt);
+      else win = sideBetHit(key, bt, pt, result);
       var ret = 0;
       if (win && typeof odds === 'number') ret = b.amount + Math.floor(b.amount * odds);
       if (result === 'tie' && (key === 'banker' || key === 'player')) ret += b.amount;
@@ -1030,7 +1036,7 @@
       if (key === 'banker') win = result === 'banker';
       else if (key === 'player') win = result === 'player';
       else if (key === 'tie') win = result === 'tie';
-      else win = sideBetHit(key, bt, pt);
+      else win = sideBetHit(key, bt, pt, result);
       if (win) returnTotal += stake + Math.floor(stake * odds);
       /* 庄闲和：和局时庄闲退本 */
       if (result === 'tie' && (key === 'banker' || key === 'player')) {
@@ -1101,7 +1107,7 @@
     var s = getStats(user.uid);
     s.turnover = (s.turnover || 0) + settlement.stakeTotal;
     s.winloss = (s.winloss || 0) + settlement.profit;
-    s.rebate = (s.rebate || 0) + Math.floor(settlement.stakeTotal * 0.01);
+    s.rebate = (s.rebate || 0) + Math.floor(settlement.stakeTotal * 0.005);
     try {
       localStorage.setItem('dn_stats_' + user.uid, JSON.stringify(s));
     } catch (e) { /* ignore */ }
@@ -1136,7 +1142,7 @@
       if (k === 'banker') isWin = result === 'banker';
       else if (k === 'player') isWin = result === 'player';
       else if (k === 'tie') isWin = result === 'tie';
-      else isWin = sideBetHit(k, bt, pt);
+      else isWin = sideBetHit(k, bt, pt, result);
       /* 和局：庄闲退本，当作赢方区（不再被收走） */
       if (result === 'tie' && (k === 'banker' || k === 'player')) isWin = true;
       if (isWin) {
@@ -1163,7 +1169,7 @@
     else if (result === 'player') keys.push('player');
     var sides = ['small', 'niuniu', 'niu79', 'niu06', 'flower'];
     for (var i = 0; i < sides.length; i++) {
-      if (sideBetHit(sides[i], bt, pt)) keys.push(sides[i]);
+      if (sideBetHit(sides[i], bt, pt, result)) keys.push(sides[i]);
     }
     for (var j = 0; j < keys.length; j++) {
       var btn = betBtn(keys[j]);
@@ -2414,11 +2420,11 @@
     if (rulesBtn) rulesBtn.addEventListener('click', function () {
       var rows = [
         ['庄 / 闲', '押中牌型更大的一方（同级庄赢）', '1 : 0.95'],
-        ['小牛牛', '任一方为五小牛', '1 : 40'],
-        ['牛牛', '任一方为牛牛', '1 : 12'],
-        ['牛7-牛9', '任一方为牛七 / 牛八 / 牛九', '1 : 3.5'],
-        ['无牛-牛6', '任一方为无牛或牛一至牛六', '1 : 1.2'],
-        ['五花牛', '任一方为五花牛（五张皆为 J/Q/K）', '1 : 20']
+        ['小牛牛', '赢方为五小牛（和局时任一方）', '1 : 40'],
+        ['牛牛', '赢方为牛牛（和局时任一方）', '1 : 12'],
+        ['牛7-牛9', '赢方为牛七 / 牛八 / 牛九（和局时任一方）', '1 : 3.5'],
+        ['无牛-牛6', '赢方为无牛或牛一至牛六（和局时任一方）', '1 : 1.2'],
+        ['五花牛', '赢方为五花牛（和局时任一方）', '1 : 20']
       ];
       var body = '';
       for (var i = 0; i < rows.length; i++) {

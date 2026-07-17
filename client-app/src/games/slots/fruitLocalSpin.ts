@@ -148,13 +148,20 @@ function settleWins(
 }
 
 /** 本地演示开奖（金额单位 = 注数×倍数后的实际押注） */
-export function localFruitSpin(bets: Record<string, number>): FruitLocalSpinResult {
+export function localFruitSpin(
+  bets: Record<string, number>,
+  opts?: { forceAward?: FruitAwardType },
+): FruitLocalSpinResult {
   const entries = Object.entries(bets).filter(([, a]) => a > 0)
   const betMap = Object.fromEntries(entries) as Record<FruitBetSymbolId, number>
   const totalBet = entries.reduce((s, [, a]) => s + a, 0)
 
-  const weights = FRUIT_AWARD_TYPES.map((t) => FRUIT_DEFAULT_AWARD_WEIGHTS[t])
-  const awardType = FRUIT_AWARD_TYPES[weightedPick(weights, rnd())]
+  const awardType =
+    opts?.forceAward ??
+    FRUIT_AWARD_TYPES[weightedPick(
+      FRUIT_AWARD_TYPES.map((t) => FRUIT_DEFAULT_AWARD_WEIGHTS[t]),
+      rnd(),
+    )]
   const { stopIndex, hitIndexes } = resolveHits(awardType)
   const wins = settleWins(hitIndexes, betMap)
   const totalWin = wins.reduce((s, w) => s + w.amount, 0)

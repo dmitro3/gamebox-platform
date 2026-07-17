@@ -9,14 +9,15 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LotteryService } from './lottery.service';
 
-/** 各彩票游戏的开奖间隔（秒） */
+/** 各彩票游戏的开奖间隔（秒）——与前端 INTERVAL 对齐 */
 const GAME_INTERVALS: Record<string, number> = {
-  ffc:           60,
-  ssc:           120,
-  kuai3:         60,
-  bjsc:          300,
-  'speed-racing': 60,
+  ssc:            90,
+  ffc:            60,
+  'speed-racing': 55,
+  bjsc:           60,
   'speed-boat':   60,
+  kuai3:          55,
+  lhc:            60,
 };
 
 @Injectable()

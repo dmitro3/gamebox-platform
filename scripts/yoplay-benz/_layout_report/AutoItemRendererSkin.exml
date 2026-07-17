@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<e:Skin class="Benz.AutoItemRendererSkin" states="up,down,disabled" xmlns:e="http://ns.egret.com/eui">
+	<!--<e:Image source="yben_betboard_json.yben_btn_autoplay_off" source.down="yben_betboard_json.yben_btn_autoplay_on"/>
+	<e:Label rotation="15.48" horizontalCenter="9.5" verticalCenter="-1" text="{data.round}" maxHeight="30" maxWidth="51" size="28"/>-->
+	<e:Image pixelHitTest="true" touchEnabled="true" source="yben_betboard_json.yben_btn_autoplay_bg_detect"/>
+	<e:Image source="yben_betboard_json.yben_btn_autoplay_off" source.down="yben_betboard_json.yben_btn_autoplay_on" touchEnabled="false"/>
+	<e:Label rotation="15.48" horizontalCenter="9.5" verticalCenter="-1" text="{data.round}" maxHeight="30" maxWidth="51" size="28" touchEnabled="false"/>
+</e:Skin>

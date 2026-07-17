@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<e:Skin class="Benz.BetRecordPopupDetailSkin" width="1140" xmlns:e="http://ns.egret.com/eui" xmlns:Locale="Locale.*" xmlns:w="http://ns.egret.com/wing" >
+	<e:Group left="0" right="0" top="6">
+		<e:List id="betList" left="0" right="0" top="6" x="0" y="6" scaleX="1" scaleY="1" width="1140">
+			<e:layout>
+			<e:VerticalLayout/>
+			</e:layout>
+		</e:List>
+		<e:Rect width="1140" height="6" x="1120" y="2" alpha="0"/>
+		<e:layout>
+			<e:VerticalLayout gap="0"/>
+		</e:layout>
+	</e:Group>
+</e:Skin>

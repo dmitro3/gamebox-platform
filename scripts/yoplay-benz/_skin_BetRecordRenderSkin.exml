@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<e:Skin class="Benz.BetRecordRenderSkin" width="1160" height="26" currentState="title" xmlns:e="http://ns.egret.com/eui" xmlns:Locale="Locale.*" xmlns:w="http://ns.egret.com/wing" states="title,record" >
+	<e:Rect id="bgRect" left="0" right="0" bottom="0" height="26" fillColor.record="0xacacac" height.record="2" bottom.record="0" left.record="8" right.record="8" height.title="24" left.title="0" right.title="0" fillColor="0x000000"/>
+	<e:Group id="columnGroup" left="0" right="0" top="0" bottom="0">
+		<Locale:LocaleLabel id="billNoLabel" x="171" y="1" size="16" textAlign="center" verticalAlign="middle" width="178" textColor.record="0xffffff" textColor="0xffffff" bold.title="true" text="{data.billno}"/>
+		<Locale:LocaleLabel id="billTimeLabel" x="171" y="1" size="16" textAlign="center" verticalAlign="middle" width="181" textColor.record="0xffffff" textColor="0xffffff" bold.title="true" text="{data.billtime}"/>
+		<Locale:LocaleLabel id="betLabel" x="171" y="1" size="16" textAlign="center" verticalAlign="middle" width="130" textColor="0xffffff" bold.title="true" text="{data.bet}" textColor.record="0xffffff"/>
+		<Locale:LocaleLabel id="payoutLabel" x="171" y="1" size="16" textAlign="center" verticalAlign="middle" width="130"  bold.title="true" text="{data.payout}" textColor="{data.payoutColor}"/>
+		<e:layout>
+			<e:HorizontalLayout horizontalAlign="justify" verticalAlign="justify"/>
+		</e:layout>
+	</e:Group>
+</e:Skin>

@@ -6,13 +6,19 @@
       alt="水果机"
       draggable="false"
     />
-    <!-- 透明热区：对准图里的「开始」按钮，看起来一体、可点击 -->
     <button
       type="button"
-      class="start-hotspot"
+      class="start-btn"
       aria-label="开始"
       @click="handleStart"
-    />
+    >
+      <img
+        src="/images/games/slots/开始按钮.png"
+        class="start-btn-img"
+        alt=""
+        draggable="false"
+      />
+    </button>
   </div>
 </template>
 
@@ -40,7 +46,6 @@ function handleStart() {
   overflow: hidden;
 }
 
-/* 铺满整屏，不留黑边 */
 .cover-bg {
   position: absolute;
   inset: 0;
@@ -57,32 +62,51 @@ function handleStart() {
   to { transform: scale(1); opacity: 1; }
 }
 
-/* 热区盖在图内按钮上：透明但可点，按下有轻微反馈 */
-.start-hotspot {
+/*
+  与封面同坐标系锁定（设计稿 1024×1536，按钮素材 615×259 @ 204,1204）。
+  宽高都用百分比 + 按钮图 object-fit:fill，跟封面 fill 同步拉伸，避免缩放错位。
+*/
+.start-btn {
   position: absolute;
-  left: 50%;
-  bottom: 7%;
-  transform: translateX(-50%);
-  width: min(62vw, 280px);
-  height: min(10vh, 72px);
+  left: calc(204 / 1024 * 100%);
+  top: calc(1204 / 1536 * 100%);
+  width: calc(615 / 1024 * 100%);
+  height: calc(259 / 1536 * 100%);
   border: none;
   padding: 0;
   margin: 0;
   background: transparent;
   cursor: pointer;
-  border-radius: 999px;
   z-index: 2;
   -webkit-tap-highlight-color: transparent;
-  animation: hotspotPulse 2.2s ease-in-out infinite;
+  line-height: 0;
+  animation: btnPulse 2s ease-in-out infinite;
+  transition: filter 0.12s ease, transform 0.12s ease;
 }
 
-.start-hotspot:active {
-  transform: translateX(-50%) scale(0.97);
-  filter: brightness(1.08);
+.start-btn-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
-@keyframes hotspotPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 200, 60, 0); }
-  50% { box-shadow: 0 0 28px 6px rgba(255, 190, 40, 0.28); }
+/* 按下只变暗、轻微下压，不缩小，避免露出封面黑槽 */
+.start-btn:active {
+  animation: none;
+  transform: translateY(2px);
+  filter: brightness(0.86);
+}
+
+@keyframes btnPulse {
+  0%, 100% {
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45)) brightness(1);
+  }
+  50% {
+    filter: drop-shadow(0 6px 18px rgba(255, 190, 40, 0.55)) brightness(1.06);
+  }
 }
 </style>
