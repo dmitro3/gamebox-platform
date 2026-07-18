@@ -14,7 +14,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   PG_INITIAL_LOADER_FADE_MS,
@@ -31,13 +31,13 @@ const props = defineProps({
 
 const emit = defineEmits(['done'])
 
-const svgHost = ref(null)
+const svgHost = ref<HTMLElement | null>(null)
 const hiding = ref(false)
 const showDots = ref(true)
 
-let cleanup = null
-let hideTimer = null
-let doneTimer = null
+let cleanup: (() => void) | null = null
+let hideTimer: ReturnType<typeof setTimeout> | null = null
+let doneTimer: ReturnType<typeof setTimeout> | null = null
 let bootAt = 0
 
 function scheduleHide() {

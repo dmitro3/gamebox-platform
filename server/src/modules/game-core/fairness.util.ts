@@ -29,7 +29,13 @@ export function deriveRandom(serverSeed: string, clientSeed: string, nonce: numb
  * weights: 各奖项权重；rnd: [0,1) 随机数。
  */
 export function weightedPick(weights: number[], rnd: number): number {
+  if (weights.length === 0) throw new Error('权重表不能为空');
+  if (!Number.isFinite(rnd) || rnd < 0 || rnd >= 1) throw new Error('随机数必须在 [0,1) 范围');
+  if (weights.some((weight) => !Number.isFinite(weight) || weight < 0)) {
+    throw new Error('权重必须是非负有限数');
+  }
   const total = weights.reduce((s, w) => s + w, 0);
+  if (total <= 0) throw new Error('权重总和必须大于 0');
   let acc = 0;
   const target = rnd * total;
   for (let i = 0; i < weights.length; i++) {

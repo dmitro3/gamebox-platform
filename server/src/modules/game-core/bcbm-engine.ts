@@ -9,6 +9,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { PointsService, PLATFORM_OWNER_ID } from '../points/points.service';
 import { CommissionService } from '../agents/commission.service';
+import { GameConfigCache } from './game-config.cache';
 import { genServerSeed, deriveRandom, weightedPick } from './fairness.util';
 import {
   BCBM_RING,
@@ -25,6 +26,7 @@ import {
   type BcbmBrandId,
   type BcbmColorId,
 } from '@gamebox/shared';
+import { businessNo } from './business-id';
 
 const GAME_CODE = 'bcbm';
 const REBATE_RATE = 0.005;
@@ -54,12 +56,16 @@ export class BcbmEngine {
     private prisma: PrismaService,
     private points: PointsService,
     private commission: CommissionService,
+    private configCache: GameConfigCache,
   ) {}
 
   async spin(input: BcbmSpinInput) {
     const { playerId, bets, clientSeed = 'default' } = input;
     const gameCode = input.gameCode || GAME_CODE;
 
+    if (Object.keys(bets ?? {}).length > BCBM_BET_SLOTS.length) {
+      throw new BadRequestException('押注仓位数量超限');
+    }
     const entries = Object.entries(bets ?? {}).filter(([, amt]) => amt > 0);
     if (entries.length === 0) throw new BadRequestException('请至少押一个仓位');
     for (const [pos, amt] of entries) {
@@ -69,10 +75,7 @@ export class BcbmEngine {
     const totalAmount = entries.reduce((s, [, amt]) => s + amt, 0);
     const betMap = Object.fromEntries(entries) as Record<BcbmBetId, number>;
 
-    const game = await this.prisma.game.findUnique({
-      where: { code: gameCode },
-      include: { configs: { where: { active: true }, take: 1 } },
-    });
+    const game = await this.configCache.get(gameCode);
     if (!game || game.status !== 'ONLINE') throw new NotFoundException('游戏不存在或已下架');
     if (game.category !== 'ARCADE') throw new BadRequestException('该游戏不是街机品类');
     const config = game.configs[0];
@@ -101,7 +104,7 @@ export class BcbmEngine {
     });
 
     const result = await this.prisma.$transaction(async (tx) => {
-      const roundNo = `BCBM${Date.now()}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+      const roundNo = businessNo('BCBM');
       const round = await tx.gameRound.create({
         data: {
           roundNo, gameId: game.id, category: 'ARCADE',
@@ -129,7 +132,7 @@ export class BcbmEngine {
 
         const bet = await tx.bet.create({
           data: {
-            betNo: `BB${Date.now()}${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+            betNo: businessNo('BB'),
             playerId, gameId: game.id, roundId: round.id,
             betType: pos, amount: amt,
             status: won ? 'WON' : 'LOST',

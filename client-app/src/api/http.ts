@@ -22,10 +22,11 @@ http.interceptors.request.use((config) => {
 })
 
 // 响应拦截：解包信封 / 统一错误处理
+// axios 类型要求返回 AxiosResponse，运行时我们直接返回 data（由泛型第二参承接）
 http.interceptors.response.use(
   (res: AxiosResponse<Envelope>) => {
     const envelope = res.data
-    if (envelope.code === 0) return envelope.data as any
+    if (envelope.code === 0) return envelope.data as never
     return Promise.reject(new Error(envelope.message ?? '请求失败'))
   },
   (err) => {

@@ -16,5 +16,10 @@ export const useWalletStore = defineStore('wallet', () => {
     }
   }
 
-  return { balance, loading, fetchBalance }
+  function reset() {
+    balance.value = 0
+    loading.value = false
+  }
+
+  return { balance, loading, fetchBalance, reset }
 })

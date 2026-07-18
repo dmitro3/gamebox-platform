@@ -34,10 +34,10 @@
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue';
+<script setup lang="ts">
+import { ref } from 'vue';
 
-const props = defineProps({
+defineProps({
   visible: {
     type: Boolean,
     default: true
@@ -55,10 +55,12 @@ const props = defineProps({
 const blockSize = 12; // Size of each block including gap
 const blockGap = 2;   // Gap between blocks
 
+type PgBlock = { x: number; y: number; color: string | null; delay: number }
+
 // Generate blocks for P and G
 const generateBlocks = () => {
-  const blocksArray = [];
-  const addBlock = (x, y, color = null) => {
+  const blocksArray: PgBlock[] = [];
+  const addBlock = (x: number, y: number, color: string | null = null) => {
     if (!blocksArray.find(b => b.x === x && b.y === y)) {
       // Random delay for the animation
       const delay = Math.random() * 0.8;
@@ -66,7 +68,7 @@ const generateBlocks = () => {
     }
   };
 
-  const setColor = (x, y, color) => {
+  const setColor = (x: number, y: number, color: string) => {
     const b = blocksArray.find(b => b.x === x && b.y === y);
     if (b) b.color = color;
   };

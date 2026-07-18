@@ -3,31 +3,39 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SlotEngine } from './slot-engine';
 import { BcbmEngine } from './bcbm-engine';
 import { FruitMachineEngine } from './fruit-machine-engine';
-import { IsString, IsInt, IsOptional, IsObject, Min, Max } from 'class-validator';
+import { IsString, IsInt, IsOptional, IsObject, IsIn, Min, Max, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PrismaService } from '../../prisma/prisma.service';
+import { MahjongEngine } from './mahjong-engine';
 
 export class PlaceBetDto {
   @IsString() gameCode!: string;
   @IsInt() @Min(1) @Max(10_000_000) @Type(() => Number) amount!: number;
-  @IsOptional() @IsString() clientSeed?: string;
+  @IsOptional() @IsString() @MaxLength(128) clientSeed?: string;
 }
 
 export class BcbmSpinDto {
   @IsString() gameCode!: string;
   @IsObject() bets!: Record<string, number>;
-  @IsOptional() @IsString() clientSeed?: string;
+  @IsOptional() @IsString() @MaxLength(128) clientSeed?: string;
 }
 
 export class FruitSpinDto {
   @IsOptional() @IsString() gameCode?: string;
   @IsObject() bets!: Record<string, number>;
-  @IsOptional() @IsString() clientSeed?: string;
+  @IsOptional() @IsString() @MaxLength(128) clientSeed?: string;
 }
 
 export class FruitGambleDto {
   @IsInt() @Min(1) @Max(10_000_000) @Type(() => Number) amount!: number;
-  @IsString() choice!: 'big' | 'small';
+  @IsString() @IsIn(['big', 'small']) choice!: 'big' | 'small';
+}
+
+export class MahjongSpinDto {
+  @IsInt() @Min(0) @Max(10_000_000) @Type(() => Number) amount!: number;
+  @IsString() @MaxLength(100) clientRequestId!: string;
+  @IsOptional() @IsString() @MaxLength(128) clientSeed?: string;
+  @IsOptional() @IsString() @MaxLength(100) sessionId?: string;
 }
 
 @Controller('bet')
@@ -36,22 +44,22 @@ export class BetController {
     private slot: SlotEngine,
     private bcbm: BcbmEngine,
     private fruit: FruitMachineEngine,
+    private mahjong: MahjongEngine,
     private prisma: PrismaService,
   ) {}
 
   /**
-   * POST /api/bet/spin — 电子/街机一键下注+立即开奖（合并两步，客户端体验更简单）
+   * POST /api/bet/spin — 电子/街机一键下注+立即开奖（单事务，失败整体回滚）
    * 返回：中奖结果 + 新余额
    */
   @Post('spin')
   async spin(@CurrentUser() u: { id: string }, @Body() dto: PlaceBetDto) {
-    const { betId, roundId } = await this.slot.placeBet({
+    const result = await this.slot.spin({
       playerId: u.id,
       gameCode: dto.gameCode,
       amount: dto.amount,
       clientSeed: dto.clientSeed,
     });
-    const result = await this.slot.settle(roundId);
 
     // 查最新余额
     const account = await this.prisma.pointsAccount.findUnique({
@@ -99,6 +107,12 @@ export class BetController {
       amount: dto.amount,
       choice: dto.choice,
     });
+  }
+
+  /** POST /api/bet/mahjong/spin — 麻将胡了服务端权威级联结算 */
+  @Post('mahjong/spin')
+  mahjongSpin(@CurrentUser() u: { id: string }, @Body() dto: MahjongSpinDto) {
+    return this.mahjong.spin(u.id, dto);
   }
 
   /** GET /api/bet/history — 下注历史（街机按局聚合，含明细供展开） */
@@ -217,9 +231,16 @@ export class BetController {
 
   /** GET /api/bet/round/:id — 查单局详情（可证明公平验证用） */
   @Get('round/:id')
-  async round(@Param('id') id: string) {
-    return this.prisma.gameRound.findUnique({
-      where: { id },
+  async round(@Param('id') id: string, @CurrentUser() u: { id: string }) {
+    return this.prisma.gameRound.findFirst({
+      where: {
+        id,
+        state: 'SETTLED',
+        OR: [
+          { playerId: u.id },
+          { bets: { some: { playerId: u.id } } },
+        ],
+      },
       select: {
         roundNo: true, state: true, outcome: true,
         serverSeed: true, serverSeedHash: true, clientSeed: true, nonce: true,

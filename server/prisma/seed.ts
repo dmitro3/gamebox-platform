@@ -38,16 +38,13 @@ const GAMES = [
     code: 'slots-mahjong', name: '麻将胡了', category: 'SLOT' as const,
     status: 'ONLINE' as const, sortOrder: 5, minBet: 1, maxBet: 10000,
     rtp: 0.96,
-    payTable: [
-      { label: '和了！',  multiplier: 0,    weight: 28 },
-      { label: '×1',     multiplier: 1,    weight: 26 },
-      { label: '×2',     multiplier: 2,    weight: 18 },
-      { label: '×5',     multiplier: 5,    weight: 12 },
-      { label: '×10',    multiplier: 10,   weight: 8  },
-      { label: '×30',    multiplier: 30,   weight: 5  },
-      { label: '天胡×88', multiplier: 88,  weight: 2  },
-      { label: '地胡×188', multiplier: 188, weight: 1 },
-    ],
+    payTable: {
+      symbolWeights: {
+        '2t': 16, '2s': 16, '5t': 12, '5s': 12,
+        '8w': 9, bai: 7, zhong: 6, fa: 5, wild: 2, hu: 2.5,
+      },
+      goldenChance: 0.14,
+    },
   },
   // ── 街机类游戏 ──
   {

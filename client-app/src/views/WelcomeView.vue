@@ -117,13 +117,18 @@ onMounted(() => {
   try {
     const raw = localStorage.getItem(REMEMBER_KEY)
     if (!raw) return
-    const saved = JSON.parse(raw)
+    const saved = JSON.parse(raw) as { acc?: string; pwd?: string }
     if (saved?.acc) {
       account.value = saved.acc
-      if (saved.pwd) password.value = saved.pwd
       rememberMe.value = true
     }
-  } catch (_) {}
+    // 历史版本曾明文存密码，发现即清除
+    if (saved?.pwd) {
+      localStorage.setItem(REMEMBER_KEY, JSON.stringify({ acc: saved.acc }))
+    }
+  } catch {
+    /* ignore */
+  }
 })
 
 async function doLogin() {
@@ -135,15 +140,17 @@ async function doLogin() {
     userStore.setAuth(res.user, res.token)
     try {
       if (rememberMe.value) {
-        localStorage.setItem(REMEMBER_KEY, JSON.stringify({ acc: account.value, pwd: password.value }))
+        localStorage.setItem(REMEMBER_KEY, JSON.stringify({ acc: account.value.trim() }))
       } else {
         localStorage.removeItem(REMEMBER_KEY)
       }
-    } catch (_) {}
+    } catch {
+      /* ignore */
+    }
     toast(`欢迎 ${res.user.nickname}`)
     setTimeout(() => router.push('/lobby'), 600)
-  } catch (e: any) {
-    toast(e.message ?? '登录失败')
+  } catch (e: unknown) {
+    toast(e instanceof Error ? e.message : '登录失败')
   } finally {
     loading.value = false
   }

@@ -1,11 +1,13 @@
 <template>
-  <div class="bcbm-cover" v-if="visible">
-    <img
-      src="/images/games/bcbm/bcbm-cover-custom.png"
-      class="cover-bg"
-      alt="奔驰宝马"
-      draggable="false"
-    />
+  <GameCoverShell
+    :visible="visible"
+    bg-src="/images/games/bcbm/bcbm-cover-custom.png"
+    alt="奔驰宝马"
+    bg-color="#060018"
+    :duration-ms="800"
+    :from-scale="1.05"
+    class="bcbm-cover-shell"
+  >
     <!--
       封面金紫霓虹风：用官方蓝框 + 金色「开始」字，
       替代通用红金 start-btn-ai（与封面/局内 UI 不搭）
@@ -25,10 +27,12 @@
       <span class="btn-text">开始</span>
       <span class="btn-shine" aria-hidden="true" />
     </button>
-  </div>
+  </GameCoverShell>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import GameCoverShell from './GameCoverShell.vue'
+
 defineProps({
   visible: {
     type: Boolean,
@@ -44,41 +48,8 @@ function handleStart() {
 </script>
 
 <style scoped>
-.bcbm-cover {
-  position: fixed;
-  inset: 0;
-  z-index: 9998;
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
-  background-color: #060018;
-  overflow: hidden;
-  font-family: 'PingFang SC', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-}
-
-.cover-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
-  user-select: none;
-  -webkit-user-drag: none;
-  animation: coverScaleIn 0.8s ease-out forwards;
-}
-
-@keyframes coverScaleIn {
-  from {
-    transform: scale(1.05);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
 .start-btn {
+  font-family: 'PingFang SC', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   position: absolute;
   left: 50%;
   bottom: 9%;

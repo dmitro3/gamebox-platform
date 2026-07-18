@@ -776,7 +776,7 @@ function onGameClick(g: LobbyGame) {
   }
 
   // 彩票类等直接跳转
-  router.push(g.route)
+  if (g.route) router.push(g.route)
 }
 
 let timer: ReturnType<typeof setInterval>

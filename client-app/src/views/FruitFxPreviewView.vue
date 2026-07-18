@@ -130,7 +130,6 @@ import {
   FRUIT_FX_GROUPS,
   getFruitFxSheet,
   type FruitFxGroup,
-  type FruitFxItem,
   type FruitFxKind,
 } from '@/games/slots/fruitFxCatalog'
 

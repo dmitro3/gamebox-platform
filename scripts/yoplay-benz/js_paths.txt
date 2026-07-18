@@ -1,2 +1,0 @@
-PC_Benz/pc_benz.res.json
-PC_Benz/pc_benz.thm.json

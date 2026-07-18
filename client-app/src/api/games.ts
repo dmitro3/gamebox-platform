@@ -1,17 +1,12 @@
 import http from './http'
+import type {
+  BetHistoryRowDTO,
+  GameItemDTO,
+  MahjongSpinRequestDTO,
+  MahjongSpinResultDTO,
+} from '@gamebox/shared'
 
-export interface GameItem {
-  id: string
-  code: string
-  name: string
-  category: string
-  status: string
-  coverUrl: string | null
-  sortOrder: number
-  minBet: number
-  maxBet: number
-  configs: Array<{ version: number; rtp: number; payTable: unknown }>
-}
+export type GameItem = GameItemDTO
 
 export interface SpinResult {
   gameCode: string
@@ -86,6 +81,9 @@ export const gamesApi = {
       clientSeed,
     }),
 
+  mahjongSpin: (request: MahjongSpinRequestDTO) =>
+    http.post<MahjongSpinResultDTO, MahjongSpinResultDTO>('/bet/mahjong/spin', request),
+
   betHistory: () =>
-    http.get<any[], any[]>('/bet/history'),
+    http.get<BetHistoryRowDTO[], BetHistoryRowDTO[]>('/bet/history'),
 }

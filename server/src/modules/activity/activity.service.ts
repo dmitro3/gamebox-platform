@@ -7,6 +7,7 @@
  *   NEWBIE         新人注册礼：注册后 24h 内可领固定奖励
  */
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PointsService, PLATFORM_OWNER_ID } from '../points/points.service';
 
@@ -81,28 +82,38 @@ export class ActivityService {
     const reward = await this.calcReward(playerId, act.type, cfg);
     if (reward <= 0) throw new BadRequestException('暂不符合领取条件');
 
-    // 发奖
-    return this.prisma.$transaction(async (tx) => {
-      const idKey = `activity_${activityId}_${playerId}`;
-      await this.points.creditInTx(tx, 'PLATFORM', PLATFORM_OWNER_ID, -reward, 'ACTIVITY', {
-        idempotencyKey: `${idKey}_plat`,
-        remark: `活动:${act.title}`,
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        // 先占用唯一领取记录，数据库约束作为并发场景下的最终防线。
+        const claim = await tx.activityClaim.create({
+          data: {
+            activityId,
+            playerId,
+            rewardPoints: reward,
+            status: 'PENDING',
+          },
+        });
+        const idKey = `activity_${activityId}_${playerId}`;
+        await this.points.creditInTx(tx, 'PLATFORM', PLATFORM_OWNER_ID, -reward, 'ACTIVITY', {
+          idempotencyKey: `${idKey}_plat`,
+          remark: `活动:${act.title}`,
+        });
+        const ledger = await this.points.creditInTx(tx, 'PLAYER', playerId, reward, 'ACTIVITY', {
+          idempotencyKey: `${idKey}_player`,
+          remark: `活动奖励:${act.title}`,
+        });
+        const granted = await tx.activityClaim.update({
+          where: { id: claim.id },
+          data: { status: 'GRANTED', ledgerId: ledger.id },
+        });
+        return { claim: granted, reward };
       });
-      const ledger = await this.points.creditInTx(tx, 'PLAYER', playerId, reward, 'ACTIVITY', {
-        idempotencyKey: `${idKey}_player`,
-        remark: `活动奖励:${act.title}`,
-      });
-      const claim = await tx.activityClaim.create({
-        data: {
-          activityId,
-          playerId,
-          rewardPoints: reward,
-          status: 'GRANTED',
-          ledgerId: ledger.id,
-        },
-      });
-      return { claim, reward };
-    });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new BadRequestException('已领取过该活动奖励');
+      }
+      throw error;
+    }
   }
 
   /** 根据活动类型计算本次应发奖励 */

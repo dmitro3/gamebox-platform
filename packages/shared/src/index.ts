@@ -10,5 +10,7 @@
 export * from './enums';
 export * from './validators';
 export * from './format';
+export * from './api-types';
 export * from './fruit-machine';
 export * from './bcbm';
+export * from './mahjong';

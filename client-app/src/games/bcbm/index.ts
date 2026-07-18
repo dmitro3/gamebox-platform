@@ -1,6 +1,8 @@
 /**
  * 奔驰宝马前端 —— 素材来自 YoPlay PC_Benz（紫霓虹版，与截图一致）
  */
+import type { BcbmBetId } from '@gamebox/shared'
+
 export {
   BCBM_RING,
   BCBM_RING_XY,

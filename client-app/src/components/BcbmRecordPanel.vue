@@ -56,7 +56,7 @@
 
       <div class="list">
         <div v-if="loading" class="empty">加载中…</div>
-        <div v-else-if="!filteredRows.length" class="empty">暂无记录</div>
+        <div v-else-if="mode === 'credit' ? !creditFiltered.length : !betFiltered.length" class="empty">暂无记录</div>
 
         <template v-if="mode === 'credit'">
           <div

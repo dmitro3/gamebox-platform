@@ -10,20 +10,17 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import PgFooterLogo from './PgFooterLogo.vue'
 
 /** certUrl：认证条图片（正版 download.png），由各游戏从自己的 manifest 传入 */
-const props = defineProps({
-  bottom: {
-    type: String,
-    default: '52px',
-  },
-  certUrl: {
-    type: String,
-    default: null,
-  },
-})
+const props = withDefaults(
+  defineProps<{
+    bottom?: string
+    certUrl?: string
+  }>(),
+  { bottom: '52px' },
+)
 </script>
 
 <style scoped>

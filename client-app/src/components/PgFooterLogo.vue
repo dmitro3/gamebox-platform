@@ -87,13 +87,13 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { mountPgLogoColorCycle } from '@/games/pg-common/pgFooterLogoAnimator'
 
-const rootRef = ref(null)
+const rootRef = ref<HTMLElement | null>(null)
 
-let cleanup = null
+let cleanup: (() => void) | null = null
 
 onMounted(async () => {
   await nextTick()

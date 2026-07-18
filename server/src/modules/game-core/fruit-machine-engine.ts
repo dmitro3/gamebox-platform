@@ -8,6 +8,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { PointsService, PLATFORM_OWNER_ID } from '../points/points.service';
 import { CommissionService } from '../agents/commission.service';
+import { GameConfigCache } from './game-config.cache';
 import { genServerSeed, deriveRandom, weightedPick } from './fairness.util';
 import {
   FRUIT_RING,
@@ -22,6 +23,8 @@ import {
   type FruitAwardType,
   type FruitBetSymbolId,
 } from '@gamebox/shared';
+import { businessNo } from './business-id';
+import { RiskService } from '../risk/risk.service';
 
 const GAME_CODE = 'fruit-machine';
 
@@ -50,12 +53,17 @@ export class FruitMachineEngine {
     private prisma: PrismaService,
     private points: PointsService,
     private commission: CommissionService,
+    private configCache: GameConfigCache,
+    private risk: RiskService,
   ) {}
 
   async spin(input: FruitSpinInput) {
     const { playerId, bets, clientSeed = 'default' } = input;
     const gameCode = input.gameCode || GAME_CODE;
 
+    if (Object.keys(bets ?? {}).length > FRUIT_BET_SYMBOLS.length) {
+      throw new BadRequestException('押注仓位数量超限');
+    }
     const entries = Object.entries(bets ?? {}).filter(([, amt]) => amt > 0);
     if (entries.length === 0) throw new BadRequestException('请至少押一个符号');
     for (const [sym, amt] of entries) {
@@ -65,10 +73,7 @@ export class FruitMachineEngine {
     const totalAmount = entries.reduce((s, [, amt]) => s + amt, 0);
     const betMap = Object.fromEntries(entries) as Record<FruitBetSymbolId, number>;
 
-    const game = await this.prisma.game.findUnique({
-      where: { code: gameCode },
-      include: { configs: { where: { active: true }, take: 1 } },
-    });
+    const game = await this.configCache.get(gameCode);
     if (!game || game.status !== 'ONLINE') throw new NotFoundException('游戏不存在或已下架');
     if (game.category !== 'ARCADE') throw new BadRequestException('该游戏不是街机品类');
     const config = game.configs[0];
@@ -97,7 +102,7 @@ export class FruitMachineEngine {
     });
 
     const result = await this.prisma.$transaction(async (tx) => {
-      const roundNo = `FRU${Date.now()}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+      const roundNo = businessNo('FRU');
       const round = await tx.gameRound.create({
         data: {
           roundNo,
@@ -135,7 +140,7 @@ export class FruitMachineEngine {
 
         const bet = await tx.bet.create({
           data: {
-            betNo: `FR${Date.now()}${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+            betNo: businessNo('FR'),
             playerId,
             gameId: game.id,
             roundId: round.id,
@@ -193,6 +198,15 @@ export class FruitMachineEngine {
       return { roundId: round.id, betResults, totalPayout };
     });
 
+    if (result.totalPayout >= Math.max(totalAmount * 50, 100_000)) {
+      await this.risk.record({
+        type: 'BIG_WIN',
+        level: 'WARN',
+        targetId: result.roundId,
+        detail: { playerId, totalAmount, totalPayout: result.totalPayout, gameCode },
+      });
+    }
+
     const account = await this.prisma.pointsAccount.findUnique({
       where: { ownerId: playerId },
       select: { balance: true },
@@ -228,37 +242,105 @@ export class FruitMachineEngine {
       throw new BadRequestException('请选择大或小');
     }
 
-    const account = await this.prisma.pointsAccount.findUnique({
-      where: { ownerId: playerId },
-      select: { balance: true },
-    });
-    if (!account || account.balance < amount) {
-      throw new BadRequestException('积分不足，无法再赌');
+    const game = await this.configCache.get(GAME_CODE);
+    const config = game?.configs[0];
+    if (!game || game.status !== 'ONLINE' || !config) {
+      throw new NotFoundException('水果机未上线或未配置');
     }
 
-    const { seed } = genServerSeed();
-    const rnd = deriveRandom(seed, `${playerId}:${amount}:${Date.now()}`, 1);
+    const { seed, hash } = genServerSeed();
+    const clientSeed = `${playerId}:${amount}:${businessNo('FGS')}`;
+    const rnd = deriveRandom(seed, clientSeed, 1);
     const roll = 1 + Math.floor(rnd * 13); // 1..13
     let result: 'win' | 'lose' | 'push' = 'push';
     if (roll === 7) result = 'push';
     else if (roll <= 6) result = choice === 'small' ? 'win' : 'lose';
     else result = choice === 'big' ? 'win' : 'lose';
 
-    let delta = 0;
-    if (result === 'win') delta = amount;
-    if (result === 'lose') delta = -amount;
-
-    if (delta !== 0) {
-      await this.prisma.$transaction(async (tx) => {
-        await this.points.creditInTx(tx, 'PLAYER', playerId, delta, delta > 0 ? 'WIN' : 'BET', {
-          remark: `水果机大小再赌 ${choice} 点数${roll}`,
-          idempotencyKey: `fruit_gamble_${playerId}_${seed}`,
-        });
-        await this.points.creditInTx(tx, 'PLATFORM', PLATFORM_OWNER_ID, -delta, delta > 0 ? 'WIN' : 'BET', {
-          idempotencyKey: `fruit_gamble_plat_${playerId}_${seed}`,
-        });
+    // 净结算：win +amount / lose -amount / push 0。
+    // 事务内先扣本金（账本层带余额条件保护，防并发透支），再按结果派彩；
+    // 余额不足会在扣款处抛错回滚，玩家不会出现「只赢不输」的中间态。
+    const payoutBack = result === 'win' ? amount * 2 : result === 'push' ? amount : 0;
+    const player = await this.prisma.user.findUnique({
+      where: { id: playerId },
+      select: { id: true, agentPath: true },
+    });
+    const audit = await this.prisma.$transaction(async (tx) => {
+      const round = await tx.gameRound.create({
+        data: {
+          roundNo: businessNo('FGR'),
+          gameId: game.id,
+          category: 'ARCADE',
+          playerId,
+          configVer: config.version,
+          state: 'PLAYING',
+          serverSeed: seed,
+          serverSeedHash: hash,
+          clientSeed,
+          nonce: 1,
+        },
       });
-    }
+      const bet = await tx.bet.create({
+        data: {
+          betNo: businessNo('FGB'),
+          playerId,
+          gameId: game.id,
+          roundId: round.id,
+          betType: `GAMBLE_${choice.toUpperCase()}`,
+          amount,
+          status: 'PENDING',
+        },
+      });
+      await this.points.creditInTx(tx, 'PLAYER', playerId, -amount, 'BET', {
+        refType: 'round',
+        refId: round.id,
+        remark: `水果机大小再赌 ${choice} 押注`,
+        idempotencyKey: `fruit_gamble_stake_${bet.id}`,
+      });
+      await this.points.creditInTx(tx, 'PLATFORM', PLATFORM_OWNER_ID, amount, 'BET', {
+        refType: 'round',
+        refId: round.id,
+        idempotencyKey: `fruit_gamble_stake_plat_${bet.id}`,
+      });
+      if (payoutBack > 0) {
+        await this.points.creditInTx(tx, 'PLATFORM', PLATFORM_OWNER_ID, -payoutBack, 'WIN', {
+          refType: 'round',
+          refId: round.id,
+          idempotencyKey: `fruit_gamble_plat_${bet.id}`,
+        });
+        await this.points.creditInTx(tx, 'PLAYER', playerId, payoutBack, 'WIN', {
+          refType: 'round',
+          refId: round.id,
+          remark: `水果机大小再赌 ${choice} 点数${roll}`,
+          idempotencyKey: `fruit_gamble_${bet.id}`,
+        });
+      }
+      await tx.bet.update({
+        where: { id: bet.id },
+        data: {
+          status: result === 'lose' ? 'LOST' : 'WON',
+          payout: payoutBack,
+          odds: payoutBack / amount,
+          multiplier: payoutBack / amount,
+          validFlow: amount,
+          settledAt: new Date(),
+          payload: { choice, roll, result },
+        },
+      });
+      if (player?.agentPath) {
+        await this.commission.distributeInTx(tx, player, amount, round.id);
+      }
+      await tx.gameRound.update({
+        where: { id: round.id },
+        data: {
+          state: 'SETTLED',
+          totalFlow: amount,
+          endedAt: new Date(),
+          outcome: { choice, roll, result, payout: payoutBack },
+        },
+      });
+      return { roundId: round.id, betId: bet.id };
+    });
 
     const after = await this.prisma.pointsAccount.findUnique({
       where: { ownerId: playerId },
@@ -270,8 +352,12 @@ export class FruitMachineEngine {
       choice,
       result,
       amount,
-      payout: result === 'win' ? amount * 2 : result === 'push' ? amount : 0,
+      payout: payoutBack,
       balance: after?.balance ?? 0,
+      roundId: audit.roundId,
+      betId: audit.betId,
+      serverSeed: seed,
+      serverSeedHash: hash,
     };
   }
 }

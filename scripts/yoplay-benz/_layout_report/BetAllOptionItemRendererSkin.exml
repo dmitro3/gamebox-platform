@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<e:Skin class="Benz.BetAllOptionItemRendererSkin" states="up,down,disabled" xmlns:e="http://ns.egret.com/eui" xmlns:Locale="Locale.*">
-	<e:Image id="backgroundImage1" source="yben_betboard_json.yben_btn_allbet_select_off_1" source.down="yben_betboard_json.yben_btn_allbet_select_on_1" touchEnabled="false" visible="false"/>
-	<e:Image id="backgroundImage2" source="yben_betboard_json.yben_btn_allbet_select_off_2" source.down="yben_betboard_json.yben_btn_allbet_select_on_2" touchEnabled="false"/>
-	
-	<e:Image id="optionIcon" source="yben_betboard_json.yben_icon_select_bmw" touchEnabled="false" horizontalCenter="0" verticalCenter="0" smoothing="false"/>
-	<Locale:LocaleImage id="betAllImageText" localeName="yben_txt_select_allbet_on" source="yben_lang_hans_json.yben_txt_select_allbet_on_hans" horizontalCenter="0" verticalCenter="0" visible="false"/>
-	<e:Rect width="68" height="32" anchorOffsetX="0" anchorOffsetY="0" touchEnabled="true" fillColor="0xffffff" strokeColor="0xffffff" fillAlpha="0" strokeAlpha="0" x.up="10" y.up="11" verticalCenter="0" horizontalCenter="0"/>
-</e:Skin>

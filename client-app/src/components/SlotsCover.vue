@@ -1,11 +1,12 @@
 <template>
-  <div class="slots-cover" v-if="visible">
-    <img
-      src="/images/games/slots/fruit-cover.png"
-      class="cover-bg"
-      alt="水果机"
-      draggable="false"
-    />
+  <GameCoverShell
+    :visible="visible"
+    bg-src="/images/games/slots/fruit-cover.png"
+    alt="水果机"
+    bg-color="#0a0604"
+    :duration-ms="750"
+    :from-scale="1.04"
+  >
     <button
       type="button"
       class="start-btn"
@@ -19,10 +20,12 @@
         draggable="false"
       />
     </button>
-  </div>
+  </GameCoverShell>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import GameCoverShell from './GameCoverShell.vue'
+
 defineProps({
   visible: { type: Boolean, default: true },
 })
@@ -35,33 +38,6 @@ function handleStart() {
 </script>
 
 <style scoped>
-.slots-cover {
-  position: fixed;
-  inset: 0;
-  z-index: 9998;
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
-  background: #0a0604;
-  overflow: hidden;
-}
-
-.cover-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
-  user-select: none;
-  -webkit-user-drag: none;
-  animation: coverIn 0.75s ease-out both;
-}
-
-@keyframes coverIn {
-  from { transform: scale(1.04); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
 /*
   与封面同坐标系锁定（设计稿 1024×1536，按钮素材 615×259 @ 204,1204）。
   宽高都用百分比 + 按钮图 object-fit:fill，跟封面 fill 同步拉伸，避免缩放错位。

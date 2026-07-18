@@ -41,7 +41,7 @@ export interface FruitFxItem {
   }
 }
 
-function sheetNote(key: string, spec: CenterSheetSpec) {
+function sheetNote(spec: CenterSheetSpec) {
   const file = spec.url.replace(/^.*\//, '')
   return `${file} · ${spec.cols}×${spec.rows} · ${spec.fps}fps · ${spec.loop ? '循环' : '播完停'}`
 }
@@ -217,7 +217,7 @@ export const FRUIT_FX_CATALOG: FruitFxItem[] = [
     id: `symbol-${key}`,
     group: '中奖符号' as const,
     label: `符号 · ${symbolLabel(key)}`,
-    note: sheetNote(key, spec),
+    note: sheetNote(spec),
     kind: 'symbol' as const,
     sheetKey: key,
   })),

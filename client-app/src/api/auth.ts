@@ -1,21 +1,9 @@
 import http from './http'
+import type { UserProfileDTO, AuthResultDTO } from '@gamebox/shared'
 
-export interface UserProfile {
-  id: string
-  uid: string
-  username: string
-  nickname: string
-  avatar: string | null
-  role: string
-  status: string
-  promoCode: string | null
-  createdAt: string
-}
-
-export interface AuthResult {
-  user: UserProfile
-  token: string
-}
+// 契约统一由 @gamebox/shared 提供，前端保留同名类型别名避免大面积改动
+export type UserProfile = UserProfileDTO
+export type AuthResult = AuthResultDTO
 
 export const authApi = {
   register: (data: { username: string; password: string; nickname?: string; inviteCode?: string }) =>

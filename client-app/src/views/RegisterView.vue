@@ -70,6 +70,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { validateAccount, validatePassword } from '@gamebox/shared'
 import { useUserStore } from '@/stores/user'
 import { authApi } from '@/api/auth'
 import { useToast } from '@/composables/useToast'
@@ -91,9 +92,11 @@ const loading = ref(false)
 
 async function doRegister() {
   const acc = account.value.trim()
-  if (!acc) { toast('请输入账号'); return }
-  if (acc.length < 8) { toast('账号至少 8 位'); return }
-  if (!password.value || password.value.length < 6) { toast('密码至少 6 位'); return }
+  // 复用 @gamebox/shared 权威校验，与后端规则同源（后端仍会独立再校验）
+  const accErr = validateAccount(acc)
+  if (accErr) { toast(accErr); return }
+  const pwdErr = validatePassword(password.value)
+  if (pwdErr) { toast(pwdErr); return }
   if (password.value !== password2.value) { toast('两次密码不一致'); return }
   loading.value = true
   try {

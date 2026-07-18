@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export type OwnerType = 'PLATFORM' | 'BRANCH' | 'AGENT' | 'PROXY' | 'PLAYER';
@@ -68,17 +68,26 @@ export class PointsService {
       if (existed) return existed;
     }
 
-    let account = await tx.pointsAccount.findUnique({ where: { ownerId } });
-    if (!account) {
-      account = await tx.pointsAccount.create({ data: { ownerType: ownerType as never, ownerId } });
-    }
+    const account = await tx.pointsAccount.upsert({
+      where: { ownerId },
+      update: {},
+      create: { ownerType: ownerType as never, ownerId },
+    });
 
-    const newBalance = account.balance + amount;
-    if (newBalance < 0 && ownerType !== 'PLATFORM') {
+    // 原子增减（UPDATE 自带行锁），杜绝并发读改写丢更新；
+    // 非 PLATFORM 账户扣款时附带余额条件，防并发透支。
+    const needGuard = amount < 0 && ownerType !== 'PLATFORM';
+    const rows = await tx.$queryRaw<{ balance: number }[]>`
+      UPDATE "PointsAccount"
+      SET "balance" = "balance" + ${amount}, "updatedAt" = NOW()
+      WHERE "id" = ${account.id}
+        ${needGuard ? Prisma.sql`AND "balance" >= ${-amount}` : Prisma.empty}
+      RETURNING "balance"
+    `;
+    if (rows.length === 0) {
       throw new BadRequestException(`账户余额不足：${ownerType}/${ownerId}`);
     }
-
-    await tx.pointsAccount.update({ where: { id: account.id }, data: { balance: newBalance } });
+    const newBalance = rows[0].balance;
 
     return tx.pointsLedger.create({
       data: {

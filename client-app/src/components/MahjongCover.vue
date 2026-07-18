@@ -60,15 +60,16 @@
         />
       </div>
 
-      <PgLogoContainer :cert-url="certUrl" />
+      <PgLogoContainer :cert-url="certUrl ?? undefined" />
     </div>
     </PgScreenCompat>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { pgUi } from '@/games/mahjong/pgAssets'
+import { pgUi, pgPreloadUrls } from '@/games/mahjong/pgAssets'
+import { preloadImages } from '@/games/pg-common/imagePreloader'
 import PgScreenCompat from './PgScreenCompat.vue'
 import PgFooterContainer from './PgFooterContainer.vue'
 import PgLogoContainer from './PgLogoContainer.vue'
@@ -89,6 +90,7 @@ const tipText = ref('正在加载游戏资源...')
 const startPressed = ref(false)
 
 let progressTimer = null
+let cancelled = false
 
 const coverBottomBgUrl = computed(() => pgUi('cover-bottom-bg'))
 const coverBgUrl = computed(() => pgUi('cover'))
@@ -112,19 +114,21 @@ function handleStart() {
 }
 
 function startLoading() {
-  const durationMs = 2200
-  const startAt = Date.now()
-  progressTimer = window.setInterval(() => {
-    const elapsed = Date.now() - startAt
-    const ratio = Math.min(1, elapsed / durationMs)
-    progress.value = Math.min(100, Math.round(ratio * 100))
-    if (ratio >= 0.15) showPercent.value = true
-    if (ratio >= 1) {
-      window.clearInterval(progressTimer)
-      progressTimer = null
-      phase.value = 'ready'
-    }
-  }, 50)
+  // 真实资源进度：预加载进场必需图，进度条跟随实际完成度；
+  // 仍保留最短展示时长，避免秒回时进度条一闪而过（视觉与原先一致）。
+  showPercent.value = true
+  void preloadImages(pgPreloadUrls(), {
+    minDurationMs: 1200,
+    timeoutMs: 8000,
+    onProgress: (loaded, total) => {
+      if (cancelled) return
+      progress.value = Math.min(100, Math.round((loaded / total) * 100))
+    },
+  }).then(() => {
+    if (cancelled) return
+    progress.value = 100
+    phase.value = 'ready'
+  })
 }
 
 onMounted(() => {
@@ -132,6 +136,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  cancelled = true
   if (progressTimer !== null) window.clearInterval(progressTimer)
 })
 </script>

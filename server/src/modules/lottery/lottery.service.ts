@@ -15,9 +15,11 @@ import { createHash, randomBytes } from 'node:crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PointsService, PLATFORM_OWNER_ID } from '../points/points.service';
 import { CommissionService } from '../agents/commission.service';
+import { GameConfigCache } from '../game-core/game-config.cache';
 import { LotteryGameRegistry } from './lottery-game.registry';
 import type { LotteryBetPayload, LotteryPayTable } from './lottery.types';
 import type { Prisma } from '@prisma/client';
+import { businessNo } from '../game-core/business-id';
 
 function genIssueNo(gameCode: string, openAt: Date): string {
   const y = openAt.getFullYear();
@@ -40,6 +42,7 @@ export class LotteryService {
     private points: PointsService,
     private commission: CommissionService,
     private registry: LotteryGameRegistry,
+    private configCache: GameConfigCache,
   ) {}
 
   // ─── 期号管理 ─────────────────────────────────────────
@@ -51,8 +54,12 @@ export class LotteryService {
    * @param ahead  预创多少期（默认 3）
    */
   async preCreateIssues(gameCode: string, intervalSec: number, ahead = 3) {
-    const game = await this.prisma.game.findUnique({ where: { code: gameCode } });
-    if (!game) return;
+    const game = await this.prisma.game.findUnique({
+      where: { code: gameCode },
+      include: { configs: { where: { active: true }, take: 1 } },
+    });
+    const activeConfig = game?.configs[0];
+    if (!game || !activeConfig) return;
 
     // 找最晚一期的 openAt
     const last = await this.prisma.lotteryIssue.findFirst({
@@ -73,7 +80,7 @@ export class LotteryService {
         where: { gameId_issueNo: { gameId: game.id, issueNo } },
         update: {},
         create: {
-          gameId: game.id, issueNo, status: 'PENDING',
+          gameId: game.id, configVer: activeConfig.version, issueNo, status: 'PENDING',
           openAt: nextOpen, lockAt, serverSeed, serverSeedHash,
         },
       });
@@ -94,14 +101,21 @@ export class LotteryService {
   async draw(issueId: string) {
     const issue = await this.prisma.lotteryIssue.findUnique({
       where: { id: issueId },
-      include: { game: { include: { configs: { where: { active: true }, take: 1 } } } },
+      include: { game: true },
     });
     if (!issue || issue.status === 'DRAWN' || issue.status === 'CANCELLED') return;
 
     const gameDef = this.registry.get(issue.game.code);
     if (!gameDef) return;
 
-    const config = issue.game.configs[0];
+    const config = await this.prisma.gameConfig.findUnique({
+      where: {
+        gameId_version: {
+          gameId: issue.gameId,
+          version: issue.configVer,
+        },
+      },
+    });
     if (!config) return;
 
     const drawResult = gameDef.draw(
@@ -112,6 +126,18 @@ export class LotteryService {
 
     // 在事务内结算所有注单
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // CAS 抢占：事务第一条语句拿下期号行锁并推进状态，
+      // 并发 draw 只有一个能抢到（count=1），其余直接返回，根治双开奖。
+      const claimed = await tx.lotteryIssue.updateMany({
+        where: { id: issue.id, status: { in: ['PENDING', 'LOCKED'] } },
+        data: {
+          status: 'DRAWN',
+          drawNumbers: JSON.stringify(drawResult.numbers),
+          drawnAt: new Date(),
+        },
+      });
+      if (claimed.count === 0) return;
+
       const bets = await tx.bet.findMany({
         where: { issueId: issue.id, status: 'PENDING' },
         include: { player: { select: { id: true, agentPath: true } } },
@@ -149,12 +175,7 @@ export class LotteryService {
 
       await tx.lotteryIssue.update({
         where: { id: issue.id },
-        data: {
-          status: 'DRAWN',
-          drawNumbers: JSON.stringify(drawResult.numbers),
-          drawnAt: new Date(),
-          totalFlow: bets.reduce((s, b) => s + b.amount, 0),
-        },
+        data: { totalFlow: bets.reduce((s, b) => s + b.amount, 0) },
       });
     });
   }
@@ -170,10 +191,7 @@ export class LotteryService {
   ) {
     if (!Number.isInteger(amount) || amount < 1) throw new BadRequestException('投注额无效');
 
-    const game = await this.prisma.game.findUnique({
-      where: { code: gameCode },
-      include: { configs: { where: { active: true }, take: 1 } },
-    });
+    const game = await this.configCache.get(gameCode);
     if (!game || game.status !== 'ONLINE') throw new NotFoundException('游戏未上架');
     if (amount < game.minBet || amount > game.maxBet) {
       throw new BadRequestException(`投注额须在 ${game.minBet}~${game.maxBet} 之间`);
@@ -200,9 +218,18 @@ export class LotteryService {
 
     // 写注单 + 扣款 + 平台入账（事务；幂等键基于 bet.id，杜绝同毫秒重复键碰撞）
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // 事务内复核期号状态与封盘时间，堵「查到可投 → 期已封盘/开奖」的竞态窗口
+      const fresh = await tx.lotteryIssue.findUnique({
+        where: { id: issue.id },
+        select: { status: true, lockAt: true },
+      });
+      if (!fresh || fresh.status !== 'PENDING' || fresh.lockAt <= new Date()) {
+        throw new BadRequestException('本期已封盘，请等待下期');
+      }
+
       const bet = await tx.bet.create({
         data: {
-          betNo: `B${Date.now()}${Math.floor(Math.random() * 1000)}`,
+          betNo: businessNo('LB'),
           playerId, gameId: game.id,
           issueId: issue.id,
           betType, payload: payload as never,

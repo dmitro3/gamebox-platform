@@ -16,6 +16,7 @@
  *   报奖旁白：announce-sanyuan / sixi / fast / uturn / lightning / drift
  */
 import type { BcbmAwardType } from '@gamebox/shared'
+import { playOneShot } from '../pg-common/audioPool'
 
 const BASE = '/audio/bcbm'
 
@@ -91,15 +92,11 @@ function getAudio(url: string) {
   return a
 }
 
-/** 一次性音效：新建 Audio，避免 clone 未加载缓存导致静默失败 */
+/** 一次性音效：走 pg-common 对象池，复用空闲实例，避免高频下注堆积游离 Audio */
 function playUrl(url: string, volume = 0.75) {
   if (sfxMuted) return null
   unlockBcbmAudio()
-  const a = new Audio(url)
-  a.preload = 'auto'
-  a.volume = Math.min(1, Math.max(0, volume))
-  void a.play().catch(() => {})
-  return a
+  return playOneShot(url, volume)
 }
 
 function stopEl(el: HTMLAudioElement | null) {

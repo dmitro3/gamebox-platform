@@ -115,6 +115,9 @@ export class AgentAdminController {
     if (!Number.isInteger(amount) || amount <= 0) throw new BadRequestException('金额无效');
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('用户不存在');
+    if (!['BRANCH', 'AGENT', 'PROXY'].includes(user.role)) {
+      throw new BadRequestException('额度只能下发给分公司、代理或代分账户');
+    }
 
     const ownerType = user.role as 'BRANCH' | 'AGENT' | 'PROXY';
     await this.points.transfer(

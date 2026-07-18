@@ -145,6 +145,7 @@ model User {
   commissionsAsSource      CommissionRecord[] @relation("CommissionSource")
   rebates        RebateRecord[]
   activityClaims ActivityClaim[]
+  slotFeatureSessions SlotFeatureSession[]
   feedbacks      Feedback[]
   csMessages     CsMessage[]
   ledgerOps      PointsLedger[]  @relation("LedgerOperator")
@@ -289,6 +290,7 @@ model Game {
   issues     LotteryIssue[]
   rounds     GameRound[]
   bets       Bet[]
+  slotFeatureSessions SlotFeatureSession[]
 }
 
 // 爆率/赔率配置：服务端据此裁决结果，前端拿不到、改不了
@@ -320,6 +322,7 @@ model LotteryIssue {
   id          String      @id @default(cuid())
   gameId      String
   game        Game        @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  configVer   Int         @default(1)
   issueNo     String // 期号，如 20260613001
   status      IssueStatus @default(PENDING)
   openAt      DateTime // 开奖时间
@@ -335,6 +338,28 @@ model LotteryIssue {
 
   @@unique([gameId, issueNo])
   @@index([gameId, status, openAt])
+}
+
+// ======================= 电子特色玩法会话（免费旋转等）=======================
+
+model SlotFeatureSession {
+  id              String   @id @default(cuid())
+  playerId        String
+  player          User     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  gameId          String
+  game            Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  feature         String
+  lockedBetAmount Int
+  spinsRemaining Int
+  totalWin        Int      @default(0)
+  status          String   @default("ACTIVE") // ACTIVE | COMPLETED | EXPIRED
+  version         Int      @default(0)
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([playerId, gameId, status])
+  @@index([expiresAt, status])
 }
 
 // ======================= 棋牌/电子/街机：一局 =======================
@@ -368,6 +393,7 @@ model GameRound {
   @@index([gameId, startedAt])
   @@index([roomId, startedAt])
   @@index([playerId, startedAt])
+  @@index([category, state]) // 重启恢复扫孤儿局（TABLE + PLAYING）
 }
 
 // ======================= 统一注单 =======================
@@ -376,6 +402,7 @@ model GameRound {
 model Bet {
   id           String    @id @default(cuid())
   betNo        String    @unique
+  clientRequestId String? @unique
   playerId     String
   player       User      @relation(fields: [playerId], references: [id], onDelete: Cascade)
   gameId       String
@@ -398,6 +425,8 @@ model Bet {
   createdAt    DateTime  @default(now())
 
   @@index([playerId, createdAt])
+  @@index([playerId, gameId, createdAt]) // 玩家按游戏筛注单
+  @@index([gameId, createdAt]) // 运营/报表按游戏统计
   @@index([issueId, status])
   @@index([roundId, status])
 }
@@ -470,7 +499,7 @@ model ActivityClaim {
   ledgerId     String?
   claimedAt    DateTime @default(now())
 
-  @@index([activityId, playerId])
+  @@unique([activityId, playerId])
   @@index([playerId, claimedAt])
 }
 

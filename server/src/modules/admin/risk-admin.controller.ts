@@ -4,11 +4,16 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AdminLogService } from './admin-log.service';
 
 @Controller('admin/risk')
 @Roles('ADMIN', 'BRANCH')
 export class RiskAdminController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private adminLog: AdminLogService,
+  ) {}
 
   @Get()
   async list(
@@ -34,8 +39,9 @@ export class RiskAdminController {
   }
 
   @Patch(':id/handle')
-  async handle(@Param('id') id: string) {
+  async handle(@Param('id') id: string, @CurrentUser() user: { id: string }) {
     await this.prisma.riskEvent.update({ where: { id }, data: { handled: true } });
+    await this.adminLog.log(user.id, 'RISK_EVENT_HANDLE', id);
     return { ok: true };
   }
 }

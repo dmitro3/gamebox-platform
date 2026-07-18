@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<e:Skin class="Benz.ChipItemSkin" currentState="up" xmlns:e="http://ns.egret.com/eui" states="up,down" >
-	<e:Image smoothing="false" source="yben_betboard_json.yben_btn_chips_off" source.down="yben_betboard_json.yben_btn_chips_on"/>
-	<e:Label text="{data.chipValue}" size="18" verticalCenter="0" horizontalCenter="0" />
-</e:Skin>

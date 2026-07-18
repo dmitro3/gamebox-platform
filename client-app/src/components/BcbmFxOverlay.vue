@@ -268,8 +268,6 @@ const REWARD2_MS = 2080
 const REWARD4_MS = 1460
 const AMOUNT_CENTER_Y = 400
 const AMOUNT_CENTER_SCALE = 0.6
-/** 飞到左上余额旁「+金额」的目标缩放 / 停留 */
-const AMOUNT_PLUS_SCALE = 1
 /** 飞顶后短暂停留；过长会拖慢整段派彩 */
 const AMOUNT_TOP_HOLD_MS = 480
 const AMOUNT_FLY_MS = 480
@@ -755,16 +753,6 @@ function getBalancePlusPos() {
   }
 }
 
-function setAmountTop(text: string) {
-  const pos = getBalancePlusPos()
-  amountAtTop.value = true
-  amountLeft.value = pos.x
-  amountY.value = pos.y
-  amountScale.value = AMOUNT_PLUS_SCALE
-  amountScaleY.value = 1
-  amountText.value = Number(text).toLocaleString('en-US')
-  amountVisible.value = true
-}
 
 /**
  * 官方 ShowAmount：中心从 0 滚到总奖金，再飞到左上余额旁变成「+金额」。

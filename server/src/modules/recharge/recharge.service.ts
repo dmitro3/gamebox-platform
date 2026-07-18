@@ -1,8 +1,10 @@
 import {
   Injectable, BadRequestException, NotFoundException, ForbiddenException,
 } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PointsService } from '../points/points.service';
+import { AdminLogService } from '../admin/admin-log.service';
 
 function genOrderNo(): string {
   const now = new Date();
@@ -16,7 +18,36 @@ export class RechargeService {
   constructor(
     private prisma: PrismaService,
     private points: PointsService,
+    private adminLog: AdminLogService,
   ) {}
+
+  private async assertReviewScope(
+    tx: Prisma.TransactionClient,
+    reviewerId: string,
+    playerId: string,
+  ) {
+    if (reviewerId === playerId) throw new ForbiddenException('不能审核自己的订单');
+    const [reviewer, player] = await Promise.all([
+      tx.user.findUnique({
+        where: { id: reviewerId },
+        select: { role: true, agentPath: true },
+      }),
+      tx.user.findUnique({
+        where: { id: playerId },
+        select: { agentPath: true },
+      }),
+    ]);
+    if (!reviewer || !['AGENT', 'BRANCH', 'ADMIN'].includes(reviewer.role)) {
+      throw new ForbiddenException('无权操作');
+    }
+    if (!player) throw new NotFoundException('玩家不存在');
+    if (reviewer.role === 'ADMIN') return;
+
+    const teamPrefix = `${reviewer.agentPath}${reviewerId}/`;
+    if (!player.agentPath.startsWith(teamPrefix)) {
+      throw new ForbiddenException('只能审核所属团队玩家的订单');
+    }
+  }
 
   /** 玩家申请上分（RECHARGE） */
   async applyRecharge(playerId: string, amount: number, channel?: string) {
@@ -60,53 +91,93 @@ export class RechargeService {
 
   /** 代理/管理员：审核通过（UP 加积分 / DOWN 标记完成，余额已在申请时冻结） */
   async approveRecharge(orderId: string, reviewerId: string) {
-    const order = await this.prisma.rechargeOrder.findUnique({ where: { id: orderId } });
-    if (!order) throw new NotFoundException('订单不存在');
-    if (order.status !== 'PENDING') throw new BadRequestException('订单已处理');
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.rechargeOrder.findUnique({ where: { id: orderId } });
+      if (!order) throw new NotFoundException('订单不存在');
+      await this.assertReviewScope(tx, reviewerId, order.playerId);
 
-    if (order.type === 'UP') {
-      // 上分：给玩家加积分
-      const ledger = await this.points.credit(
-        'PLAYER', order.playerId, order.amount, 'RECHARGE',
-        { refType: 'recharge', refId: order.id, operatorId: reviewerId,
-          idempotencyKey: `recharge_approve_${order.id}` },
-      );
-      await this.prisma.rechargeOrder.update({
-        where: { id: orderId },
-        data: { status: 'APPROVED', reviewerId, reviewedAt: new Date(), ledgerId: ledger.id },
+      const reviewedAt = new Date();
+      const claimed = await tx.rechargeOrder.updateMany({
+        where: { id: orderId, status: 'PENDING' },
+        data: { status: 'APPROVED', reviewerId, reviewedAt },
       });
-    } else {
-      // 下分：余额已在申请时冻结（扣除），审核通过只需更新状态
-      // 平台实际打款给玩家（线下操作），这里仅标记完成
-      await this.prisma.rechargeOrder.update({
-        where: { id: orderId },
-        data: { status: 'APPROVED', reviewerId, reviewedAt: new Date() },
-      });
-    }
+      if (claimed.count === 0) throw new BadRequestException('订单已处理');
 
-    return { ok: true };
+      let ledgerId: string | undefined;
+      if (order.type === 'UP') {
+        const ledger = await this.points.creditInTx(
+          tx,
+          'PLAYER',
+          order.playerId,
+          order.amount,
+          'RECHARGE',
+          {
+            refType: 'recharge',
+            refId: order.id,
+            operatorId: reviewerId,
+            idempotencyKey: `recharge_approve_${order.id}`,
+          },
+        );
+        ledgerId = ledger.id;
+        await tx.rechargeOrder.update({
+          where: { id: orderId },
+          data: { ledgerId },
+        });
+      }
+
+      await this.adminLog.logInTx(tx, reviewerId, 'RECHARGE_APPROVE', orderId, {
+        playerId: order.playerId,
+        type: order.type,
+        amount: order.amount,
+        ledgerId,
+      });
+      return { ok: true };
+    });
   }
 
   /** 代理/管理员：拒绝上分 */
   async rejectOrder(orderId: string, reviewerId: string, reason: string) {
-    const order = await this.prisma.rechargeOrder.findUnique({ where: { id: orderId } });
-    if (!order) throw new NotFoundException('订单不存在');
-    if (order.status !== 'PENDING') throw new BadRequestException('订单已处理');
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.rechargeOrder.findUnique({ where: { id: orderId } });
+      if (!order) throw new NotFoundException('订单不存在');
+      await this.assertReviewScope(tx, reviewerId, order.playerId);
 
-    // 如果是下分且被拒绝，退还冻结的余额
-    if (order.type === 'DOWN') {
-      await this.points.credit(
-        'PLAYER', order.playerId, order.amount, 'ADJUST',
-        { refType: 'recharge', refId: order.id, operatorId: reviewerId,
-          remark: '下分拒绝退款', idempotencyKey: `reject_${order.id}` },
-      );
-    }
+      const claimed = await tx.rechargeOrder.updateMany({
+        where: { id: orderId, status: 'PENDING' },
+        data: {
+          status: 'REJECTED',
+          reviewerId,
+          reviewedAt: new Date(),
+          rejectReason: reason,
+        },
+      });
+      if (claimed.count === 0) throw new BadRequestException('订单已处理');
 
-    await this.prisma.rechargeOrder.update({
-      where: { id: orderId },
-      data: { status: 'REJECTED', reviewerId, reviewedAt: new Date(), rejectReason: reason },
+      if (order.type === 'DOWN') {
+        await this.points.creditInTx(
+          tx,
+          'PLAYER',
+          order.playerId,
+          order.amount,
+          'ADJUST',
+          {
+            refType: 'recharge',
+            refId: order.id,
+            operatorId: reviewerId,
+            remark: '下分拒绝退款',
+            idempotencyKey: `reject_${order.id}`,
+          },
+        );
+      }
+
+      await this.adminLog.logInTx(tx, reviewerId, 'RECHARGE_REJECT', orderId, {
+        playerId: order.playerId,
+        type: order.type,
+        amount: order.amount,
+        reason,
+      });
+      return { ok: true };
     });
-    return { ok: true };
   }
 
   /** 玩家查询自己的充值/提现记录 */
@@ -127,18 +198,23 @@ export class RechargeService {
 
   /** 代理/管理员：待审核订单列表 */
   async pendingOrders(reviewerId: string, page = 1, pageSize = 50) {
-    // 验证权限（必须是 AGENT / BRANCH / ADMIN）
     const reviewer = await this.prisma.user.findUnique({
-      where: { id: reviewerId }, select: { role: true },
+      where: { id: reviewerId }, select: { role: true, agentPath: true },
     });
-    if (!reviewer || !['AGENT','BRANCH','ADMIN'].includes(reviewer.role)) {
+    if (!reviewer || !['AGENT', 'BRANCH', 'ADMIN'].includes(reviewer.role)) {
       throw new ForbiddenException('无权操作');
+    }
+    const where: Prisma.RechargeOrderWhereInput = { status: 'PENDING' };
+    if (reviewer.role !== 'ADMIN') {
+      where.player = {
+        agentPath: { startsWith: `${reviewer.agentPath}${reviewerId}/` },
+      };
     }
 
     const [total, list] = await this.prisma.$transaction([
-      this.prisma.rechargeOrder.count({ where: { status: 'PENDING' } }),
+      this.prisma.rechargeOrder.count({ where }),
       this.prisma.rechargeOrder.findMany({
-        where: { status: 'PENDING' },
+        where,
         orderBy: { createdAt: 'asc' },
         skip: (page - 1) * pageSize,
         take: pageSize,

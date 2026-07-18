@@ -4,11 +4,11 @@
       <div class="footer-mask footer-mask-color" :style="maskColorStyle" />
       <div class="footer-mask footer-mask-black" />
     </div>
-    <p class="footer-copyright-text">PGSOFT.COM 2025 © PG SOFT® 版权所有</p>
+    <p class="footer-copyright-text">PGSOFT.COM 2025 ÂŠ PG SOFTÂŽ çććć</p>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { PG_THEME_COLOR, usePgFooterTheme } from './pgFooterTheme'
 
 const props = defineProps({
@@ -22,7 +22,7 @@ const { maskColorStyle } = usePgFooterTheme(() => props.themeColor)
 </script>
 
 <style scoped>
-/* 正版 shell #footer-container：只有 CSS 渐变 + 版权文字，不铺底图 */
+/* ć­Łç shell #footer-containerďźĺŞć CSS ć¸ĺ + çććĺ­ďźä¸éşĺşĺž */
 .footer-container {
   display: flex;
   height: 77px;

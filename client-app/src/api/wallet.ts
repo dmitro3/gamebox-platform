@@ -1,13 +1,7 @@
 import http from './http'
+import type { LedgerItemDTO } from '@gamebox/shared'
 
-export interface LedgerItem {
-  id: string
-  bizType: string
-  amount: number
-  balanceAfter: number
-  remark: string | null
-  createdAt: string
-}
+export type LedgerItem = LedgerItemDTO
 
 export const walletApi = {
   balance: () => http.get<{ balance: number }, { balance: number }>('/wallet/balance'),

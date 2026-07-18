@@ -84,3 +84,25 @@ export function pgBigWinImage(tier: BigWinTier): string | null {
 
 export const pgManifest = manifest
 
+/**
+ * 进场必需的关键图 URL（封面期预加载用）：全部符号 + 金符号 + 常用 UI 底图/按钮。
+ * 用于把真实资源加载进度接到封面进度条，避免进场首帧等图。
+ */
+export function pgPreloadUrls(): string[] {
+  const urls: string[] = []
+  const symbols = (manifest.symbols ?? {}) as Record<string, string>
+  const golden = (manifest.symbols_golden ?? {}) as Record<string, string>
+  for (const rel of Object.values(symbols)) if (rel) urls.push(resolvePath(rel))
+  for (const rel of Object.values(golden)) if (rel) urls.push(resolvePath(rel))
+  // 封面/主要 UI 底图（存在才收）
+  const uiKeys = [
+    'cover', 'cover-bottom-bg', 'reel-bg', 'reel-frame',
+    'btn-start', 'btn-spin', 'panel-bottom', 'top-header',
+  ]
+  for (const k of uiKeys) {
+    const u = pgUi(k)
+    if (u) urls.push(u)
+  }
+  return urls
+}
+

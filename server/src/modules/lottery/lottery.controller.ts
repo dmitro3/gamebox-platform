@@ -2,11 +2,30 @@ import {
   Controller, Post, Get, Body, Param, Query,
   DefaultValuePipe, ParseIntPipe,
 } from '@nestjs/common';
+import { Type } from 'class-transformer';
+import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { LotteryService } from './lottery.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 
 interface JwtUser { id: string; uid: string; role: string }
+
+class LotteryBetDto {
+  @IsString()
+  @MaxLength(50)
+  betType!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  betValue?: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(10_000_000)
+  amount!: number;
+}
 
 @Controller('lottery')
 export class LotteryController {
@@ -16,12 +35,10 @@ export class LotteryController {
   @Post(':gameCode/bet')
   async bet(
     @Param('gameCode') gameCode: string,
-    @Body('betType') betType: string,
-    @Body('betValue') betValue: string | undefined,
-    @Body('amount') amount: number,
+    @Body() dto: LotteryBetDto,
     @CurrentUser() user: JwtUser,
   ) {
-    return this.lottery.placeBet(user.id, gameCode, betType, betValue, amount);
+    return this.lottery.placeBet(user.id, gameCode, dto.betType, dto.betValue, dto.amount);
   }
 
   /** 当前期（公开） */

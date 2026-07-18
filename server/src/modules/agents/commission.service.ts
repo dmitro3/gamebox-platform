@@ -49,13 +49,33 @@ export class CommissionService {
     if (!scope) {
       throw new Error('distributeInTx 需要 refRoundId 或 idemScope 之一作为幂等作用域');
     }
+    if (ancestors.length === 0) return;
+
+    // 批量预查整条代理链的 agent 与 role，消除逐级 N+1 往返
+    const [agents, users] = await Promise.all([
+      tx.agent.findMany({
+        where: { userId: { in: ancestors } },
+        select: { userId: true, commissionRate: true },
+      }),
+      tx.user.findMany({
+        where: { id: { in: ancestors } },
+        select: { id: true, role: true },
+      }),
+    ]);
+    const agentMap = new Map(agents.map((a) => [a.userId, a]));
+    const roleMap = new Map(users.map((u) => [u.id, u.role]));
+    const maxTotalRate = Number(this.cfg.get('COMMISSION_MAX_RATE') ?? 0.2);
+    let lowerLevelRate = 0;
 
     for (let i = 0; i < ancestors.length; i++) {
       const beneficiaryUserId = ancestors[i];
-      const agent = await tx.agent.findUnique({ where: { userId: beneficiaryUserId } });
+      const agent = agentMap.get(beneficiaryUserId);
       if (!agent || agent.commissionRate <= 0) continue;
 
-      const amount = Math.floor(validFlow * agent.commissionRate);
+      const configuredRate = Math.min(agent.commissionRate, maxTotalRate);
+      const differentialRate = Math.max(0, configuredRate - lowerLevelRate);
+      lowerLevelRate = Math.max(lowerLevelRate, configuredRate);
+      const amount = Math.floor(validFlow * differentialRate);
       if (amount <= 0) continue;
 
       const key = `commission:${scope}:${sourceUser.id}:${beneficiaryUserId}`;
@@ -65,7 +85,7 @@ export class CommissionService {
         refId: refRoundId,
         idempotencyKey: `${key}:OUT`,
       });
-      const ownerType = await this.ownerTypeOf(tx, beneficiaryUserId);
+      const ownerType = this.roleToOwnerType(roleMap.get(beneficiaryUserId));
       const ledger = await this.points.creditInTx(
         tx,
         ownerType,
@@ -86,7 +106,7 @@ export class CommissionService {
           level: i + 1,
           sourceRoundId: refRoundId,
           baseFlow: validFlow,
-          rate: agent.commissionRate,
+          rate: differentialRate,
           amount,
           ledgerId: ledger.id,
         },
@@ -94,13 +114,9 @@ export class CommissionService {
     }
   }
 
-  private async ownerTypeOf(
-    tx: Prisma.TransactionClient,
-    userId: string,
-  ): Promise<'BRANCH' | 'AGENT' | 'PROXY'> {
-    const u = await tx.user.findUnique({ where: { id: userId }, select: { role: true } });
-    if (u?.role === 'BRANCH') return 'BRANCH';
-    if (u?.role === 'PROXY') return 'PROXY';
+  private roleToOwnerType(role?: string): 'BRANCH' | 'AGENT' | 'PROXY' {
+    if (role === 'BRANCH') return 'BRANCH';
+    if (role === 'PROXY') return 'PROXY';
     return 'AGENT';
   }
 }

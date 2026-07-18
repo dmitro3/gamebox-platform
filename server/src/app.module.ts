@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
+import { RedisModule } from './redis/redis.module';
+import { GameConfigModule } from './modules/game-core/game-config.cache';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { PointsModule } from './modules/points/points.module';
@@ -15,8 +18,10 @@ import { AdminModule } from './modules/admin/admin.module';
 import { LotteryModule } from './modules/lottery/lottery.module';
 import { TableModule } from './modules/table/table.module';
 import { ActivityModule } from './modules/activity/activity.module';
+import { HealthModule } from './modules/health/health.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { RiskModule } from './modules/risk/risk.module';
 
 /**
  * 应用根模块。
@@ -29,7 +34,19 @@ import { RolesGuard } from './common/guards/roles.guard';
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (cfg: ConfigService) => [
+        {
+          name: 'default',
+          ttl: Number(cfg.get('THROTTLE_TTL_MS') ?? 60_000),
+          limit: Number(cfg.get('THROTTLE_LIMIT') ?? 120),
+        },
+      ],
+    }),
     PrismaModule,
+    RedisModule,
+    GameConfigModule,
     AuthModule,
     UsersModule,
     PointsModule,
@@ -42,10 +59,13 @@ import { RolesGuard } from './common/guards/roles.guard';
     LotteryModule,
     TableModule,
     ActivityModule,
+    RiskModule,
+    HealthModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule {}

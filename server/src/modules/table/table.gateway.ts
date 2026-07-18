@@ -23,6 +23,7 @@ import type { Server, Socket } from 'socket.io';
 import { TableService } from './table.service';
 import type { TableBetPayload, TableSnapshot } from './table.types';
 import type { JwtPayload } from '../auth/jwt.strategy';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @WebSocketGateway({
   namespace: '/table',
@@ -35,6 +36,7 @@ export class TableGateway implements OnGatewayInit, OnGatewayConnection {
   constructor(
     private tableService: TableService,
     private jwt: JwtService,
+    private prisma: PrismaService,
   ) {}
 
   afterInit() {
@@ -44,12 +46,16 @@ export class TableGateway implements OnGatewayInit, OnGatewayConnection {
   }
 
   /** 连接时校验 JWT，把真实 userId 存入 socket.data（伪造 token 会校验失败） */
-  handleConnection(client: Socket) {
+  async handleConnection(client: Socket) {
     const token: string | undefined = client.handshake.auth?.token;
     if (!token) return; // 旁观者
     try {
       const payload = this.jwt.verify<JwtPayload>(token);
-      client.data.userId = payload.sub;
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: { status: true },
+      });
+      if (user?.status === 'ACTIVE') client.data.userId = payload.sub;
     } catch {
       // token 无效 → 按旁观者处理，不断开（前端会在下注时收到提示）
     }
@@ -83,6 +89,15 @@ export class TableGateway implements OnGatewayInit, OnGatewayConnection {
       return;
     }
     try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: playerId },
+        select: { status: true },
+      });
+      if (user?.status !== 'ACTIVE') {
+        client.data.userId = undefined;
+        client.emit('table:error', { message: '账号已被禁用' });
+        return;
+      }
       const result = await this.tableService.placeBet(playerId, payload);
       client.emit('table:betOk', result);
     } catch (err: unknown) {

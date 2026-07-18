@@ -57,9 +57,9 @@
       <div
         v-for="(cell, i) in cellBoxes"
         :key="`c${i}`"
+        :ref="(el) => setRingCellRef(el as any, i)"
         class="ring-cell"
         :class="{
-          active: cursorIndex === i,
           hit: hitLit.has(i) && trainHead !== i && trainTail !== i,
           train: trainHead === i,
           'train-tail': trainTail === i,
@@ -160,6 +160,7 @@
 
     <div class="fruit-top-right">
       <button
+        v-if="isDev"
         type="button"
         class="fruit-demo-chip"
         :disabled="busy || autoPlaying"
@@ -227,6 +228,7 @@
           <p><b>猜大小</b>：当局有赢分时可猜大(8-13)或小(1-6)，猜中翻倍，猜错清零，7 为和局。自动模式下跳过猜大小，直接连开下一局。</p>
           <p>顶部弧槽跑马灯会在报奖与庆祝时追跑点亮，属老式柜机效果。</p>
           <button
+            v-if="isDev"
             type="button"
             class="fruit-demo-btn"
             :disabled="busy || autoPlaying"
@@ -250,7 +252,6 @@ import {
   type FruitAwardType,
   type FruitBetSymbolId,
 } from '@/games/slots'
-import { localFruitSpin } from '@/games/slots/fruitLocalSpin'
 import type { CenterStageMode } from '@/games/slots/fruitCenterAssets'
 import FruitCenterStage from '@/components/FruitCenterStage.vue'
 import FruitSettingsPanel from '@/components/FruitSettingsPanel.vue'
@@ -338,7 +339,8 @@ const SegDigit = defineComponent({
 
 const router = useRouter()
 const route = useRoute()
-/** 下一局强制大奖（演示用，跳过服务端随机） */
+const isDev = import.meta.env.DEV
+/** DEV 下一局强制大奖（仅本地演示，不改真钱包） */
 const forceAwardOnce = ref<FruitAwardType | null>(null)
 const walletStore = useWalletStore()
 const { toast } = useToast()
@@ -456,6 +458,19 @@ const totalScore = ref(0)
 const winScore = ref(0)
 const busy = ref(false)
 const cursorIndex = ref(-1)
+// 跑灯高亮直写 DOM：只在旧/新两个格子上增删 .active class，
+// 不再让 24 格 v-for 每步整体重算 class（跑灯每圈数十步），显著降低主线程压力。
+const ringCellEls: (HTMLElement | null)[] = []
+function setRingCellRef(el: HTMLElement | null, i: number) {
+  ringCellEls[i] = el
+}
+function setCursor(idx: number) {
+  const old = cursorIndex.value
+  if (old === idx) return
+  if (old >= 0) ringCellEls[old]?.classList.remove('active')
+  if (idx >= 0) ringCellEls[idx]?.classList.add('active')
+  cursorIndex.value = idx
+}
 const hitLit = ref<Set<number>>(new Set())
 const trainHead = ref(-1)
 const trainTail = ref(-1)
@@ -639,7 +654,9 @@ function onBetHoldStart(id: BetId, ev?: PointerEvent) {
   startFruitBgm()
   ev?.preventDefault()
   try {
-    ;(ev?.currentTarget as HTMLElement | undefined)?.setPointerCapture?.(ev.pointerId)
+    if (ev) {
+      ;(ev.currentTarget as HTMLElement | null)?.setPointerCapture?.(ev.pointerId)
+    }
   } catch {
     /* ignore */
   }
@@ -864,7 +881,7 @@ async function onControlClick(id: ControlId) {
     clearBoardBets(true)
     syncScoreFromWallet()
     hitLit.value = new Set()
-    cursorIndex.value = -1
+    setCursor(-1)
     trainHead.value = -1
     trainTail.value = -1
     clearCenterHit()
@@ -1001,24 +1018,10 @@ async function doGamble(choice: 'big' | 'small') {
   playFruitSfx(choice === 'big' ? 'big' : 'small')
   const amount = winScore.value
   try {
-    let result: 'win' | 'lose' | 'push' = 'push'
-    let roll = 7
-
-    try {
-      const res = await gamesApi.fruitGamble(amount, choice)
-      walletStore.balance = res.balance
-      roll = res.roll
-      result = res.result as 'win' | 'lose' | 'push'
-    } catch {
-      roll = 1 + Math.floor(Math.random() * 13)
-      if (roll === 7) result = 'push'
-      else if (roll <= 6) result = choice === 'small' ? 'win' : 'lose'
-      else result = choice === 'big' ? 'win' : 'lose'
-      if (result === 'win') walletStore.balance += amount
-      else if (result === 'lose') {
-        walletStore.balance = Math.max(0, walletStore.balance - amount)
-      }
-    }
+    const res = await gamesApi.fruitGamble(amount, choice)
+    walletStore.balance = res.balance
+    const result = res.result as 'win' | 'lose' | 'push'
+    const roll = res.roll
 
     gambleResultNum.value = roll
     if (result === 'win') {
@@ -1058,7 +1061,7 @@ async function runLightTo(stopIndex: number, minLaps = 2) {
   playFruitGo()
   for (let step = 0; step <= totalSteps; step++) {
     const idx = (start + step) % n
-    cursorIndex.value = idx
+    setCursor(idx)
     const p = step / totalSteps
     if (p > 0.72) playFruitSfx('tick', 0.35)
     let delay = 55
@@ -1068,7 +1071,7 @@ async function runLightTo(stopIndex: number, minLaps = 2) {
     await sleep(Math.max(28, delay))
   }
   stopFruitGo()
-  cursorIndex.value = stopIndex
+  setCursor(stopIndex)
   playFruitSfx('stop')
   await sleep(220)
 }
@@ -1132,7 +1135,7 @@ async function playTrainReveal(
     const next = new Set(hitLit.value)
     next.add(idx)
     hitLit.value = next
-    cursorIndex.value = idx
+    setCursor(idx)
     setCenterHit(idx)
     playFruitSfx('trainStep', 0.85)
     await announceCell(idx, winByCell.get(idx) ?? 0)
@@ -1157,7 +1160,7 @@ async function playMultiHitReveal(
     const next = new Set(hitLit.value)
     next.add(idx)
     hitLit.value = next
-    cursorIndex.value = idx
+    setCursor(idx)
     setCenterHit(idx)
     playFruitSfx('special', 0.4)
     await announceCell(idx, winByCell.get(idx) ?? 0)
@@ -1200,7 +1203,7 @@ async function revealHits(
 
   // —— 吃灯：停 Luck → 闪 → 报吃灯 → 本局无分 ——
   if (awardType === 'luck_eat') {
-    cursorIndex.value = stopIndex
+    setCursor(stopIndex)
     centerHitSymbol.value = 'luck'
     centerHitSize.value = 'luck'
     centerHitKind.value = 'luck'
@@ -1218,7 +1221,7 @@ async function revealHits(
 
   // —— 送灯：停 Luck → 闪 → 报送灯 → 再分别跑灯到各中奖格并算账 ——
   if (isSend) {
-    cursorIndex.value = stopIndex
+    setCursor(stopIndex)
     centerHitSymbol.value = 'luck'
     centerHitSize.value = 'luck'
     centerHitKind.value = 'luck'
@@ -1237,7 +1240,7 @@ async function revealHits(
   // —— 开火车：停灯 → 闪 → 报奖 → 从停点一格格开并算账 ——
   else if (awardType === 'train') {
     clearCenterHit()
-    cursorIndex.value = stopIndex
+    setCursor(stopIndex)
     await sleep(420)
     playFruitSfx('special', 0.75)
     await flashRing(4, 90)
@@ -1254,7 +1257,7 @@ async function revealHits(
   // 停灯 → 闪 → 语音揭晓 → 对应格一格格点亮并算账
   else if (awardType === 'big3' || awardType === 'small3' || awardType === 'four' || awardType === 'slam') {
     clearCenterHit()
-    cursorIndex.value = stopIndex
+    setCursor(stopIndex)
     await sleep(400)
     playFruitSfx('jackpot', 0.95)
     await flashRing(awardType === 'slam' ? 5 : 4, 90)
@@ -1274,7 +1277,7 @@ async function revealHits(
   else if (hitIndexes.length) {
     hitLit.value = new Set(hitIndexes)
     for (const idx of hitIndexes) {
-      cursorIndex.value = idx
+      setCursor(idx)
       const amt = winByCell.get(idx) ?? 0
       setCenterHit(idx)
       stageMode.value = 'idle'
@@ -1332,24 +1335,18 @@ async function doSpin() {
   }
 
   try {
-    const forced = forceAwardOnce.value
+    // DEV 演示强制奖只改表现，不改钱包；生产路径一律服务端权威
+    const forced = isDev ? forceAwardOnce.value : null
     forceAwardOnce.value = null
     if (forced) {
-      // 演示：强制本地开出指定大奖，完整播报奖流程
-      const local = localFruitSpin(payload, { forceAward: forced })
-      result = local
-      walletStore.balance = totalScore.value + local.totalWin
+      const { localFruitSpin } = await import('@/games/slots/fruitLocalSpin')
+      result = localFruitSpin(payload, { forceAward: forced })
+      // 演示不触碰真钱包，用本地总分做演出
+      totalScore.value = Math.max(0, totalScore.value)
     } else {
-      try {
-        const res = await gamesApi.fruitSpin(payload)
-        result = res
-        if (typeof res.balance === 'number') walletStore.balance = res.balance
-      } catch {
-        // 本地演示：钱包按「当前总积分(已扣押) + 赢分」对齐
-        const local = localFruitSpin(payload)
-        result = local
-        walletStore.balance = totalScore.value + local.totalWin
-      }
+      const res = await gamesApi.fruitSpin(payload)
+      result = res
+      if (typeof res.balance === 'number') walletStore.balance = res.balance
     }
 
     const wins = (result.wins ?? []).map((w) => ({
@@ -1362,15 +1359,14 @@ async function doSpin() {
     await runLightTo(result.stopIndex, 2)
     await revealHits(award, result.stopIndex, result.hitIndexes, wins)
 
-    // 以服务端/本地结算为准校正当局赢分（报奖过程中已滚动累加）
-    // 钱包余额已含赢分；总积分不含当局赢分，赢分挂在「当局赢分」
+    // 以服务端结算为准校正当局赢分（报奖过程中已滚动累加）
     const win = result.totalWin ?? 0
     winScore.value = win
     pushSpinHistory(String(result.awardType || 'normal'), win)
     // 押注已消耗，清盘面但不退分
     stakedScore.value = 0
     for (const k of Object.keys(betCounts.value) as BetId[]) betCounts.value[k] = 0
-    syncScoreFromWallet()
+    if (!forced) syncScoreFromWallet()
 
     const isSpecial = result.awardType !== 'normal'
     if (win > 0) {
@@ -1387,7 +1383,8 @@ async function doSpin() {
 
     // 报奖完全结束后再进猜大小（有赢分才转）
     await sleep(isSpecial ? 450 : 320)
-    enterGambleOrIdle()
+    if (!forced) enterGambleOrIdle()
+    else stageMode.value = 'idle'
     await sleep(isSpecial ? 200 : 280)
   } catch (e) {
     stopFruitGo()
@@ -1410,32 +1407,29 @@ async function doSpin() {
   }
 }
 
-/** 一键演示完整开火车：停灯→全闪→报奖→逐格开火车算账 */
+/** DEV：一键演示完整开火车（不改真钱包） */
 async function playTrainDemo() {
-  if (busy.value || autoPlaying.value) return
+  if (!isDev || busy.value || autoPlaying.value) return
   showRules.value = false
   unlockFruitAudio()
   startFruitBgm()
 
-  // 保证盘面有押分，火车沿途才能看到报分跳动
   if (!hasAnyBet()) {
     const ids: BetId[] = ['apple', 'orange', 'lemon', 'melon', 'bell', 'bar', 'seven', 'star']
     for (const id of ids) {
       betCounts.value[id] = Math.max(betCounts.value[id] || 0, 2)
     }
-    // 同步扣押（与正常点押一致）
     const units = ids.reduce((s, id) => s + (betCounts.value[id] || 0), 0)
     const cost = units * selectedMult.value
     if (totalScore.value < cost) {
-      walletStore.balance = Math.max(walletStore.balance, cost + 5000)
-      syncScoreFromWallet()
+      totalScore.value = cost + 5000
     }
     stakedScore.value = cost
     totalScore.value = Math.max(0, totalScore.value - cost)
   }
 
   forceAwardOnce.value = 'train'
-  toast('演示：开火车完整效果')
+  toast('演示：开火车完整效果（DEV）')
   await doSpin()
 }
 
@@ -1444,16 +1438,11 @@ onMounted(async () => {
   try {
     await walletStore.fetchBalance()
   } catch {
-    /* 未登录时用本地分 */
-  }
-  if (walletStore.balance <= 0) {
-    // 演示初始分
-    walletStore.balance = 10000
+    /* 未登录时总分保持 0，不允许伪造余额 */
   }
   syncScoreFromWallet()
 
-  if (String(route.query.demo || '') === 'train') {
-    // 预览页跳转进来：稍等布局稳定后自动播完整开火车
+  if (isDev && String(route.query.demo || '') === 'train') {
     await sleep(400)
     await playTrainDemo()
     router.replace({ path: route.path, query: {} })

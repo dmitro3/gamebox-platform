@@ -5,6 +5,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AdminLogService } from './admin-log.service';
+import { GameConfigCache } from '../game-core/game-config.cache';
+import { validateGamePayTable } from '../game-core/game-config.validator';
 
 @Controller('admin/games')
 @Roles('ADMIN')
@@ -12,6 +14,7 @@ export class GameAdminController {
   constructor(
     private prisma: PrismaService,
     private adminLog: AdminLogService,
+    private configCache: GameConfigCache,
   ) {}
 
   /** 游戏列表（含所有配置版本） */
@@ -42,6 +45,7 @@ export class GameAdminController {
     if (!game) throw new NotFoundException('游戏不存在');
 
     await this.prisma.game.update({ where: { code }, data: { status: status as never } });
+    this.configCache.invalidate(code);
     await this.adminLog.log(user.id, 'GAME_STATUS_CHANGE', code, { from: game.status, to: status });
     return { ok: true };
   }
@@ -67,6 +71,7 @@ export class GameAdminController {
     const game = await this.prisma.game.findUnique({ where: { code } });
     if (!game) throw new NotFoundException('游戏不存在');
     if (body.rtp <= 0 || body.rtp >= 1) throw new BadRequestException('RTP 须在 0~1 之间');
+    validateGamePayTable(game, body.payTable);
 
     // 最新版本号 + 1
     const last = await this.prisma.gameConfig.findFirst({
@@ -81,6 +86,7 @@ export class GameAdminController {
       }),
     ]);
 
+    this.configCache.invalidate(code);
     await this.adminLog.log(user.id, 'GAME_CONFIG_UPDATE', code, { version: newVersion, rtp: body.rtp });
     return { ok: true, version: newVersion };
   }
@@ -104,6 +110,7 @@ export class GameAdminController {
       this.prisma.gameConfig.update({ where: { id: config.id }, data: { active: true } }),
     ]);
 
+    this.configCache.invalidate(code);
     await this.adminLog.log(user.id, 'GAME_CONFIG_ACTIVATE', code, { version });
     return { ok: true };
   }

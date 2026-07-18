@@ -41,28 +41,51 @@ export class LotteryScheduler {
     }
   }
 
+  /** 防重入：上一轮 settle 未跑完时跳过本轮，避免慢结算堆叠 */
+  private settling = false;
+
   /** 每 5 秒：结算到期期号 */
   @Cron('*/5 * * * * *')
   async settle() {
-    const now = new Date();
-    const due = await this.prisma.lotteryIssue.findMany({
-      where: {
-        status: { in: ['PENDING', 'LOCKED'] },
-        openAt: { lte: now },
-      },
-      take: 20,
-    });
+    if (this.settling) return;
+    this.settling = true;
+    try {
+      const now = new Date();
+      const due = await this.prisma.lotteryIssue.findMany({
+        where: {
+          status: { in: ['PENDING', 'LOCKED'] },
+          openAt: { lte: now },
+        },
+        orderBy: { openAt: 'asc' },
+        take: 50,
+      });
 
-    for (const issue of due) {
-      await this.lottery.draw(issue.id).catch(e =>
-        this.logger.error(`settle[${issue.issueNo}] failed: ${e.message}`)
+      // 按游戏分组：同游戏组内串行（保期号时序），组间并发（多游戏同时到期不互相阻塞）。
+      // draw 内部已有 CAS 抢占，即使并发重入也不会双开奖。
+      const groups = new Map<string, typeof due>();
+      for (const issue of due) {
+        const arr = groups.get(issue.gameId) ?? [];
+        arr.push(issue);
+        groups.set(issue.gameId, arr);
+      }
+
+      await Promise.allSettled(
+        [...groups.values()].map(async (issues) => {
+          for (const issue of issues) {
+            await this.lottery.draw(issue.id).catch((e) =>
+              this.logger.error(`settle[${issue.issueNo}] failed: ${e.message}`),
+            );
+          }
+        }),
       );
-    }
 
-    // 封盘：lockAt 已过但仍 PENDING 的期号
-    await this.prisma.lotteryIssue.updateMany({
-      where: { status: 'PENDING', lockAt: { lte: now }, openAt: { gt: now } },
-      data: { status: 'LOCKED' },
-    });
+      // 封盘：lockAt 已过但仍 PENDING 的期号
+      await this.prisma.lotteryIssue.updateMany({
+        where: { status: 'PENDING', lockAt: { lte: now }, openAt: { gt: now } },
+        data: { status: 'LOCKED' },
+      });
+    } finally {
+      this.settling = false;
+    }
   }
 }

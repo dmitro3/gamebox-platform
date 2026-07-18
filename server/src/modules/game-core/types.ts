@@ -52,7 +52,7 @@ export interface SettlementSummary {
 
 /**
  * 游戏引擎统一接口。
- * 每个品类（lottery/table/slot/arcade）实现一份，注册到 GameEngineRegistry。
+ * 每个品类（lottery/table/slot/arcade）实现一份，供各自模块直接注入使用。
  */
 export interface IGameEngine {
   readonly category: GameCategory;

@@ -120,11 +120,8 @@ import type { FruitAwardType, FruitBetSymbolId } from '@gamebox/shared'
 import {
   CENTER_SHEETS,
   CENTER_SYMBOL_SHEETS,
-  awardTitleForCenter,
-  centerKindUrl,
   centerSheetKeyForMode,
   centerSymbolSheetKey,
-  centerSymbolUrl,
   IDLE_LAYOUT_PCT,
   IDLE_ORANGE_BOX,
   IDLE_RING_ICON_BOX,
@@ -182,25 +179,6 @@ const skin = computed(() => {
   return 'normal'
 })
 
-const awardTitle = computed(() => {
-  if (props.awardType === 'bar' || props.hitSymbol === 'bar') {
-    return props.hitLabel || '天门'
-  }
-  if (props.awardType === 'normal' && props.hitLabel) {
-    return props.hitLabel
-  }
-  return awardTitleForCenter(props.awardType || 'normal')
-})
-
-const hitIcon = computed(() => {
-  if (props.hitKind) return centerKindUrl(props.hitKind)
-  if (props.hitSymbol) return centerSymbolUrl(props.hitSymbol, props.hitSize)
-  if (props.mode === 'award' && (props.awardType === 'luck_send' || props.awardType === 'luck_eat')) {
-    return centerSymbolUrl('luck', 'luck')
-  }
-  return ''
-})
-
 /** 常驻顶行：fruit-ring-icons-clean 整格裁切 */
 const idleHitStyle = computed(() => {
   const sym = props.hitSymbol
@@ -241,20 +219,6 @@ const sheetStyle = computed(() => {
   if (!spec || !sheetReady.value) return {}
   const total = spec.cols * spec.rows
   const idx = Math.min(frameIndex.value, total - 1)
-  const col = idx % spec.cols
-  const row = Math.floor(idx / spec.cols)
-  return {
-    backgroundImage: `url(${spec.url})`,
-    backgroundSize: `${spec.cols * 100}% ${spec.rows * 100}%`,
-    backgroundPosition: `${(col / Math.max(1, spec.cols - 1)) * 100}% ${(row / Math.max(1, spec.rows - 1)) * 100}%`,
-  }
-})
-
-const symbolSheetStyle = computed(() => {
-  const spec = activeSymbolSheet.value
-  if (!spec || !symbolSheetReady.value) return {}
-  const total = spec.cols * spec.rows
-  const idx = Math.min(symbolFrameIndex.value, total - 1)
   const col = idx % spec.cols
   const row = Math.floor(idx / spec.cols)
   return {
@@ -465,11 +429,6 @@ function startRoll() {
     rollRaf = requestAnimationFrame(tick)
   }
   rollRaf = requestAnimationFrame(tick)
-}
-
-/** 点大/小后立刻停在结果格（同一条滚轮，无长减速） */
-function lockReelTo(result: number) {
-  snapReelTo(result)
 }
 
 function snapReelTo(result: number) {

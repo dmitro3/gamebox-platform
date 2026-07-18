@@ -120,23 +120,38 @@ function playSprite(src: string, cue: AudioSpriteCue, volume = 1, fallback?: () 
     const ms = Math.max(40, (cue.end - cue.start) * 1000)
 
     const ctx = getCtx()
+    let source: MediaElementAudioSourceNode | null = null
+    let gain: GainNode | null = null
     if (ctx) {
       try {
-        const source = ctx.createMediaElementSource(clip)
-        const gain = ctx.createGain()
+        source = ctx.createMediaElementSource(clip)
+        gain = ctx.createGain()
         gain.gain.value = Math.min(MAX_SPRITE_GAIN, Math.max(0, targetGain))
         source.connect(gain)
         gain.connect(ctx.destination)
       } catch {
+        source = null
+        gain = null
         clip.volume = Math.min(1, Math.max(0, targetGain))
       }
     } else {
       clip.volume = Math.min(1, Math.max(0, targetGain))
     }
 
+    // 播完后断开 WebAudio 节点，避免每个 sprite clip 的 source/gain 长期堆积泄漏
+    const cleanup = () => {
+      try {
+        source?.disconnect()
+        gain?.disconnect()
+      } catch {
+        /* already disconnected */
+      }
+    }
+
     clip.play().catch(() => fallback?.())
     window.setTimeout(() => {
       clip.pause()
+      cleanup()
     }, ms + 30)
   })
 }
